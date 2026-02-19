@@ -53,12 +53,12 @@ export default function Home() {
   };
 
   const getActivityTime = (lastActivity?: string) => {
-    if (!lastActivity) return "No activity";
-    
+    if (!lastActivity) return "Radio silence from the throne room.";
+
     const now = new Date();
     const activity = new Date(lastActivity);
     const diffInMinutes = Math.floor((now.getTime() - activity.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -89,16 +89,16 @@ export default function Home() {
           </div>
           <div className="w-16 h-16 bg-secondary-foreground/20 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M5 16L3 5h5.5l1.5 11zM10 16L8.5 5h5l-1.5 11zM15 16L13.5 5H19l-2 11z"/>
+              <path d="M5 16L3 5h5.5l1.5 11zM10 16L8.5 5h5l-1.5 11zM15 16L13.5 5H19l-2 11z" />
             </svg>
           </div>
         </div>
       </div>
 
-      {/* Days with Most Deuces */}
+      {/* Peak Throne Days */}
       <Card className="mb-6 shadow-sm">
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Days with Most Deuces</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Peak Throne Days</h3>
           {analytics && analytics.count > 0 ? (
             <div className="bg-secondary text-secondary-foreground p-4 rounded-xl">
               <div className="flex items-center justify-between">
@@ -113,9 +113,10 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No deuce entries yet</p>
-              <p className="text-sm">Start logging to see your analytics</p>
+            <div className="bg-muted rounded-xl p-8 text-center">
+              <p className="text-4xl mb-3">🚽</p>
+              <p className="font-bold text-foreground">The throne is quiet.</p>
+              <p className="text-sm text-muted-foreground mt-1">Log your first deuce to get the party started</p>
             </div>
           )}
         </CardContent>
@@ -124,7 +125,7 @@ export default function Home() {
       {/* Groups List */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Your Groups</h3>
-        
+
         {groupsLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -177,15 +178,11 @@ export default function Home() {
           </div>
         ) : (
           <Card>
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">No groups yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first group to start sharing throne thoughts
+            <CardContent className="p-8 text-center bg-muted rounded-xl">
+              <p className="text-4xl mb-3">💩</p>
+              <h3 className="text-lg font-bold text-foreground mb-1">No squads yet — start a poop posse!</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Gather your dudes. Your throne wisdom deserves an audience.
               </p>
               <Link href="/groups">
                 <Button variant="outline">Create Group</Button>
@@ -194,8 +191,6 @@ export default function Home() {
           </Card>
         )}
       </div>
-
-
 
       <LogDeuceModal open={showLogModal} onOpenChange={setShowLogModal} />
     </div>

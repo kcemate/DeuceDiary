@@ -35,12 +35,12 @@ export default function Groups() {
   }, [groups, joinGroup]);
 
   const getActivityTime = (lastActivity?: string) => {
-    if (!lastActivity) return "No activity";
-    
+    if (!lastActivity) return "Radio silence from the throne room.";
+
     const now = new Date();
     const activity = new Date(lastActivity);
     const diffInMinutes = Math.floor((now.getTime() - activity.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
@@ -51,7 +51,7 @@ export default function Groups() {
     <div className="pt-6 pb-24">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Groups</h2>
-        <Button 
+        <Button
           onClick={() => setShowCreateModal(true)}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
@@ -92,10 +92,9 @@ export default function Groups() {
                     {group.lastActivity ? "Active" : "Quiet"}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center mb-3">
                   <div className="flex -space-x-2">
-                    {/* Mock member avatars */}
                     {Array.from({ length: Math.min(group.memberCount, 3) }).map((_, i) => (
                       <Avatar key={i} className="w-8 h-8 border-2 border-background">
                         <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${group.id}-${i}`} />
@@ -129,17 +128,13 @@ export default function Groups() {
         </div>
       ) : (
         <Card>
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No groups yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Create your first group to start sharing throne thoughts with your dudes
+          <CardContent className="p-8 text-center bg-muted rounded-xl">
+            <p className="text-4xl mb-3">💩</p>
+            <h3 className="text-lg font-bold text-foreground mb-1">No squads yet.</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create a group and invite your dudes
             </p>
-            <Button 
+            <Button
               onClick={() => setShowCreateModal(true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >

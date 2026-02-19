@@ -50,6 +50,7 @@ export default function Landing() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Deuce Diary</h1>
+          <p className="text-sm text-muted-foreground italic mb-2">Where great thoughts are born.</p>
           <p className="text-muted-foreground text-center">
             Share your best thoughts from the throne with your dudes.
           </p>
@@ -60,11 +61,7 @@ export default function Landing() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
+                <span className="text-3xl">👥</span>
                 <div>
                   <h3 className="font-semibold text-foreground">Create Groups</h3>
                   <p className="text-sm text-muted-foreground">Form groups to share your throne thoughts</p>
@@ -76,11 +73,7 @@ export default function Landing() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </div>
+                <span className="text-3xl">🚽</span>
                 <div>
                   <h3 className="font-semibold text-foreground">Log Your Deuces</h3>
                   <p className="text-sm text-muted-foreground">Track thoughts, locations, and more</p>
@@ -92,11 +85,7 @@ export default function Landing() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 01-7.5-7.5h-5l5-5 5 5h-5a7.5 7.5 0 017.5 7.5v5z" />
-                  </svg>
-                </div>
+                <span className="text-3xl">⚡</span>
                 <div>
                   <h3 className="font-semibold text-foreground">Real-time Updates</h3>
                   <p className="text-sm text-muted-foreground">Get notified when your dudes log entries</p>
@@ -110,7 +99,7 @@ export default function Landing() {
         <form onSubmit={handleLogin} className="space-y-3">
           <Input
             type="text"
-            placeholder="Enter your name to get started"
+            placeholder="What do your dudes call you?"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
@@ -122,7 +111,7 @@ export default function Landing() {
             disabled={loading || !username.trim()}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
           >
-            {loading ? "Signing in…" : "Get Started"}
+            {loading ? "Signing in…" : "Enter the Throne Room"}
           </Button>
         </form>
       </div>

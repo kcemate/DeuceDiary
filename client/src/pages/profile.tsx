@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
@@ -24,8 +25,8 @@ interface Group {
 
 export default function Profile() {
   const { user } = useAuth();
+  const { isDark, toggleDark } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [editUsernameOpen, setEditUsernameOpen] = useState(false);
 
   const { data: analytics } = useQuery<Analytics>({
@@ -36,10 +37,8 @@ export default function Profile() {
     queryKey: ["/api/groups"],
   });
 
-  const thisMonthCount = user?.deuceCount || 0; // In real app, would calculate from current month
+  const streak = user?.deuceCount || 0;
   const bestDayCount = analytics?.count || 0;
-
-  // Remove old helper function - now using utility functions
 
   return (
     <div className="pt-6 pb-24">
@@ -67,32 +66,32 @@ export default function Profile() {
         <p className="text-muted-foreground text-sm">Throne Philosopher</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid — 2x2 */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-l-4 border-l-green-500">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-primary">{user?.deuceCount || 0}</p>
+            <p className="text-2xl font-bold text-green-600">{user?.deuceCount || 0}</p>
             <p className="text-sm text-muted-foreground">Total Deuces</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-l-4 border-l-blue-500">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-secondary">{groups.length}</p>
+            <p className="text-2xl font-bold text-blue-600">{groups.length}</p>
             <p className="text-sm text-muted-foreground">Groups</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-l-4 border-l-amber-500">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-accent">{thisMonthCount}</p>
-            <p className="text-sm text-muted-foreground">This Month</p>
+            <p className="text-2xl font-bold text-amber-500">🔥 {streak}</p>
+            <p className="text-sm text-muted-foreground">Streak</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm border-l-4 border-l-purple-500">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{bestDayCount}</p>
+            <p className="text-2xl font-bold text-purple-600">{bestDayCount}</p>
             <p className="text-sm text-muted-foreground">Best Day</p>
           </CardContent>
         </Card>
@@ -116,8 +115,9 @@ export default function Profile() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                <p>No recent activity</p>
+              <div className="bg-muted rounded-xl p-8 text-center">
+                <p className="text-4xl mb-2">📜</p>
+                <p className="font-bold text-foreground">Your legacy begins here.</p>
               </div>
             )}
           </div>
@@ -131,7 +131,7 @@ export default function Profile() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="push-notifications" className="text-sm text-foreground">
-                Push Notifications
+                Throne Alerts
               </Label>
               <Switch
                 id="push-notifications"
@@ -145,8 +145,8 @@ export default function Profile() {
               </Label>
               <Switch
                 id="dark-mode"
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
+                checked={isDark}
+                onCheckedChange={toggleDark}
               />
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function Profile() {
             variant="destructive"
             className="w-full"
           >
-            Logout
+            Leave the Throne Room
           </Button>
         </CardContent>
       </Card>

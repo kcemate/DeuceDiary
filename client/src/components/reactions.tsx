@@ -133,7 +133,7 @@ export function Reactions({ entryId }: ReactionsProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleEmojiClick(emoji)}
-                className="h-8 w-8 p-0 text-base hover:bg-gray-100"
+                className="h-8 w-8 p-0 text-base hover:bg-muted"
               >
                 {emoji}
               </Button>

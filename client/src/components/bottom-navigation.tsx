@@ -16,7 +16,7 @@ export function BottomNavigation() {
         <div className="flex items-center justify-around py-2">
           <Link href="/">
             <a className={cn(
-              "nav-item flex flex-col items-center py-2 px-3 transition-colors",
+              "nav-item flex flex-col items-center py-3 px-3 transition-colors",
               isActive("/") ? "text-primary" : "text-muted-foreground"
             )}>
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@ export function BottomNavigation() {
 
           <Link href="/groups">
             <a className={cn(
-              "nav-item flex flex-col items-center py-2 px-3 transition-colors",
+              "nav-item flex flex-col items-center py-3 px-3 transition-colors",
               isActive("/groups") ? "text-primary" : "text-muted-foreground"
             )}>
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,7 +40,7 @@ export function BottomNavigation() {
 
           <Link href="/profile">
             <a className={cn(
-              "nav-item flex flex-col items-center py-2 px-3 transition-colors",
+              "nav-item flex flex-col items-center py-3 px-3 transition-colors",
               isActive("/profile") ? "text-primary" : "text-muted-foreground"
             )}>
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

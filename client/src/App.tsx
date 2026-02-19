@@ -12,12 +12,63 @@ import { NotificationBanner } from "@/components/notification-banner";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Groups from "@/pages/groups";
 import Profile from "@/pages/profile";
 import GroupDetail from "@/pages/group-detail";
 import NotFound from "@/pages/not-found";
+
+function AppRoutes({
+  isLoading,
+  isAuthenticated,
+  error,
+}: {
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  error: Error | null;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="*">
+          {error?.message?.includes("401") ? (
+            <div className="flex flex-col items-center justify-center min-h-96 space-y-4">
+              <p className="text-center text-muted-foreground">
+                Your session timed out — back to the throne!
+              </p>
+              <Button onClick={() => (window.location.href = "/api/login")}>
+                Log In Again
+              </Button>
+            </div>
+          ) : (
+            <NotFound />
+          )}
+        </Route>
+      </Switch>
+    );
+  }
+
+  return (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/groups" component={Groups} />
+      <Route path="/groups/:groupId" component={GroupDetail} />
+      <Route path="/profile" component={Profile} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
@@ -38,7 +89,7 @@ function Router() {
     onSuccess: (response: any) => {
       console.log("Successfully joined group:", response.group);
       setProcessingInvite(false);
-      
+
       if (response.message === "Already a member of this group") {
         toast({
           title: "Already a member",
@@ -50,7 +101,7 @@ function Router() {
           description: `Joined group "${response.group.name}" successfully!`,
         });
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setLocation("/groups");
     },
@@ -82,7 +133,7 @@ function Router() {
       if (lastMessage.userId && (user as any)?.id === lastMessage.userId) {
         return;
       }
-      
+
       setNotificationMessage(lastMessage.message);
       setNotificationVisible(true);
     }
@@ -93,21 +144,17 @@ function Router() {
     if (isAuthenticated && location === "/") {
       const urlParams = new URLSearchParams(window.location.search);
       const joinInviteId = urlParams.get("join");
-      
+
       if (joinInviteId && !joinGroupMutation.isPending && !processingInvite) {
         console.log("Processing invite link:", joinInviteId);
         setProcessingInvite(true);
-        
-        // Show processing message
+
         toast({
           title: "Processing invite...",
           description: "Joining group, please wait...",
         });
-        
-        // Clear the URL parameter
+
         window.history.replaceState({}, "", "/");
-        
-        // Join the group
         joinGroupMutation.mutate(joinInviteId);
       }
     }
@@ -120,7 +167,7 @@ function Router() {
         visible={notificationVisible}
         onClose={() => setNotificationVisible(false)}
       />
-      
+
       <div className="max-w-md mx-auto bg-background min-h-screen relative">
         {/* Header */}
         {isAuthenticated && (
@@ -128,50 +175,24 @@ function Router() {
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z"/>
+                  <path d="M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z" />
                 </svg>
               </div>
-              <h1 className="text-xl font-bold text-foreground">Deuce Diary</h1>
+              <div>
+                <h1 className="text-xl font-bold text-foreground leading-tight">Deuce Diary</h1>
+                <p className="text-xs text-muted-foreground leading-tight">Your throne. Your legacy.</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Content */}
         <div className="px-4">
-          <Switch>
-            {isLoading ? (
-              <Route path="*">
-                <div className="flex items-center justify-center min-h-96">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              </Route>
-            ) : !isAuthenticated ? (
-              <>
-                <Route path="/" component={Landing} />
-                <Route path="*">
-                  {/* For any protected route when not authenticated, redirect to login */}
-                  {error?.message?.includes("401") ? (
-                    <div className="flex flex-col items-center justify-center min-h-96 space-y-4">
-                      <p className="text-center text-muted-foreground">Your session has expired</p>
-                      <Button onClick={() => window.location.href = "/api/login"}>
-                        Log In Again
-                      </Button>
-                    </div>
-                  ) : (
-                    <NotFound />
-                  )}
-                </Route>
-              </>
-            ) : (
-              <>
-                <Route path="/" component={Home} />
-                <Route path="/groups" component={Groups} />
-                <Route path="/groups/:groupId" component={GroupDetail} />
-                <Route path="/profile" component={Profile} />
-                <Route component={NotFound} />
-              </>
-            )}
-          </Switch>
+          <AppRoutes
+            isLoading={isLoading}
+            isAuthenticated={isAuthenticated}
+            error={error}
+          />
         </div>
 
         {/* Bottom Navigation */}
@@ -183,12 +204,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,8 +1,9 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import { Webhook } from "svix";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -34,9 +35,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Uploads directory already exists or created successfully');
   }
 
+  // --- Clerk webhook (must be before session middleware) ---
+  if (clerkEnabled) {
+    app.post("/api/webhooks/clerk", express.raw({ type: "application/json" }), async (req, res) => {
+      const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+      if (!WEBHOOK_SECRET) {
+        console.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
+        return res.status(500).json({ message: "Webhook secret not configured" });
+      }
+
+      const svixId = req.headers["svix-id"] as string;
+      const svixTimestamp = req.headers["svix-timestamp"] as string;
+      const svixSignature = req.headers["svix-signature"] as string;
+
+      if (!svixId || !svixTimestamp || !svixSignature) {
+        return res.status(400).json({ message: "Missing svix headers" });
+      }
+
+      try {
+        const wh = new Webhook(WEBHOOK_SECRET);
+        const event = wh.verify(req.body, {
+          "svix-id": svixId,
+          "svix-timestamp": svixTimestamp,
+          "svix-signature": svixSignature,
+        }) as any;
+
+        if (event.type === "user.created" || event.type === "user.updated") {
+          const { id, email_addresses, first_name, last_name, image_url } = event.data;
+          await storage.upsertUser({
+            id,
+            email: email_addresses?.[0]?.email_address ?? null,
+            firstName: first_name ?? null,
+            lastName: last_name ?? null,
+            profileImageUrl: image_url ?? null,
+          });
+          console.log(`Clerk webhook: synced user ${id} (${event.type})`);
+        }
+
+        res.json({ received: true });
+      } catch (err) {
+        console.error("Clerk webhook verification failed:", err);
+        res.status(400).json({ message: "Invalid webhook signature" });
+      }
+    });
+  }
+
   // Auth middleware
   await setupAuth(app);
-  
+
   // Serve uploaded files
   app.use('/uploads', express.static(path.join(process.cwd(), 'dist', 'public', 'uploads')));
 
@@ -229,18 +275,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Route to handle invite links via GET (for browser navigation)
-  app.get('/join/:inviteId', async (req, res) => {
+  app.get('/join/:inviteId', async (req: any, res) => {
     const { inviteId } = req.params;
-    
-    console.log("Processing invite link:", inviteId, "authenticated:", req.isAuthenticated());
-    
-    if (!req.isAuthenticated()) {
-      // Redirect to login with return URL
+
+    // In Clerk mode, the client handles auth — just redirect to frontend.
+    // In dev mode, check the session.
+    const hasSession = !clerkEnabled && !!(req.session as any)?.userId;
+    const isAuthed = clerkEnabled || hasSession;
+
+    console.log("Processing invite link:", inviteId, "authenticated:", isAuthed);
+
+    if (!isAuthed) {
       return res.redirect(`/api/login?returnTo=${encodeURIComponent(`/join/${inviteId}`)}`);
     }
-    
-    // User is authenticated, redirect to frontend which will handle the join
-    console.log("Redirecting authenticated user to frontend with invite:", inviteId);
+
+    console.log("Redirecting to frontend with invite:", inviteId);
     res.redirect(`/?join=${inviteId}`);
   });
 
