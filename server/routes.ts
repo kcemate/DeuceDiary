@@ -43,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const userData = updateUserSchema.parse(req.body);
       const updatedUser = await storage.updateUserUsername(userId, userData.username);
       res.json(updatedUser);
@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile picture upload endpoint
   app.post('/api/auth/user/profile-picture', isAuthenticated, upload.single('profilePicture'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -99,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Group routes
   app.post('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const groupData = insertGroupSchema.parse({
         ...req.body,
         createdBy: userId,
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       console.log("Fetching groups for user:", userId);
       const groups = await storage.getUserGroups(userId);
       console.log("User groups result:", groups);
@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/groups/:groupId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { groupId } = req.params;
       
       console.log("Fetching group details for:", groupId, "user:", userId);
@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Invite routes
   app.post('/api/groups/:groupId/invite', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { groupId } = req.params;
       
       const isInGroup = await storage.isUserInGroup(userId, groupId);
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/join/:inviteId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { inviteId } = req.params;
       
       console.log("User attempting to join group:", userId, "invite:", inviteId);
@@ -209,15 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Adding user to group:", userId, "group:", invite.groupId);
-      // Ensure user exists in users table before adding to group
-      await storage.upsertUser({
-        id: userId,
-        email: req.user.claims.email,
-        firstName: req.user.claims.first_name,
-        lastName: req.user.claims.last_name,
-        profileImageUrl: req.user.claims.profile_image_url,
-        deuceCount: 0,
-      });
+      // User already exists (isAuthenticated ensures this), just add to group
       
       await storage.addGroupMember({
         groupId: invite.groupId,
@@ -265,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/locations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { name } = req.body;
       
       if (!name || !name.trim()) {
@@ -294,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reaction routes
   app.post('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { entryId } = req.params;
       const { emoji } = req.body;
       
@@ -331,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { entryId } = req.params;
       const { emoji } = req.body;
       
@@ -361,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deuce entry routes
   app.post('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { groupIds, ...entryData } = req.body;
       
       // Handle both single group (backward compatibility) and multiple groups
@@ -425,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/analytics/most-deuces', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const deucesByDate = await storage.getUserDeucesByDate(userId);
       
       const topDay = deucesByDate.reduce((max, current) => 

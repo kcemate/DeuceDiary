@@ -1,7 +1,40 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Landing() {
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!username.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "Login failed");
+        return;
+      }
+      // Invalidate auth query so the app picks up the new session
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    } catch {
+      setError("Network error — is the server running?");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
@@ -73,15 +106,25 @@ export default function Landing() {
           </Card>
         </div>
 
-        {/* Login Button */}
-        <div className="text-center">
-          <Button 
-            onClick={() => window.location.href = '/api/login'}
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="space-y-3">
+          <Input
+            type="text"
+            placeholder="Enter your name to get started"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            disabled={loading}
+            autoFocus
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button
+            type="submit"
+            disabled={loading || !username.trim()}
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
           >
-            Get Started
+            {loading ? "Signing in…" : "Get Started"}
           </Button>
-        </div>
+        </form>
       </div>
     </div>
   );

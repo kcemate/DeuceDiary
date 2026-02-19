@@ -1,0 +1,27 @@
+- name: bug
+  color: "d73a4a"
+  description: Something isn't working
+
+- name: feature
+  color: "0075ca"
+  description: New feature or enhancement
+
+- name: chore
+  color: "6b7280"
+  description: Maintenance, dependencies, CI
+
+- name: auth
+  color: "7c3aed"
+  description: Authentication and authorization
+
+- name: ios
+  color: "f97316"
+  description: iOS / mobile-specific
+
+- name: ux
+  color: "ec4899"
+  description: User experience and design
+
+- name: backend
+  color: "16a34a"
+  description: Server, API, database
