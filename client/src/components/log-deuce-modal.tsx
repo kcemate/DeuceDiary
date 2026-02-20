@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { format } from "date-fns";
+import { Link } from "wouter";
 
 interface LogDeuceModalProps {
   open: boolean;
@@ -54,6 +55,13 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     queryKey: ["/api/locations"],
     enabled: open,
   });
+
+  // Auto-select when user has exactly one group
+  useEffect(() => {
+    if (open && groups.length === 1 && selectedGroupIds.length === 0) {
+      setSelectedGroupIds([groups[0].id]);
+    }
+  }, [open, groups]);
 
   const createLocationMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -130,8 +138,10 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     
     if (selectedGroupIds.length === 0) {
       toast({
-        title: "Error",
-        description: "Please select at least one group",
+        title: "No group selected",
+        description: groups.length === 0
+          ? "Create a group first from the Groups tab"
+          : "Please select at least one group",
         variant: "destructive",
       });
       return;
@@ -296,11 +306,36 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
             ) : groupsError ? (
               <div className="text-sm text-red-500">Error loading groups: {groupsError.message}</div>
             ) : groups.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No groups available. Join a group first!</div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-sm text-muted-foreground mb-2">You need a group to log deuces.</p>
+                <Link href="/groups" onClick={() => onOpenChange(false)}>
+                  <span className="text-sm font-semibold text-primary hover:underline cursor-pointer">
+                    + Create a Group
+                  </span>
+                </Link>
+              </div>
+            ) : groups.length === 1 ? (
+              <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
+                <Checkbox
+                  id={`group-${groups[0].id}`}
+                  checked={selectedGroupIds.includes(groups[0].id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedGroupIds([groups[0].id]);
+                    } else {
+                      setSelectedGroupIds([]);
+                    }
+                  }}
+                />
+                <Label htmlFor={`group-${groups[0].id}`} className="text-sm font-normal cursor-pointer">
+                  Logging to: <span className="font-semibold">{groups[0].name}</span>
+                  <span className="text-muted-foreground"> (your default group)</span>
+                </Label>
+              </div>
             ) : (
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground mb-2">
-                  Selected: {selectedGroupIds.map(id => groups.find(g => g.id === id)?.name).filter(Boolean).join(', ')}
+                  Selected: {selectedGroupIds.map(id => groups.find(g => g.id === id)?.name).filter(Boolean).join(', ') || 'None'}
                 </div>
                 {groups.map((group) => {
                   const isSelected = selectedGroupIds.includes(group.id);

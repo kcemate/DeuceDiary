@@ -91,6 +91,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
+
+      // Auto-create "Solo Deuces" default group for new users with no groups
+      const userGroups = await storage.getUserGroups(userId);
+      if (userGroups.length === 0) {
+        await storage.createGroup({
+          id: uuidv4(),
+          name: "Solo Deuces",
+          description: "Your personal throne log",
+          createdBy: userId,
+        });
+      }
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

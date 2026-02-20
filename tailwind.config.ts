@@ -44,6 +44,17 @@ export default {
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
+        /* Deuce Diary custom palette */
+        surface: "#0A0A0A",
+        "surface-card": "#111111",
+        "surface-border": "#1F1F1F",
+        throne: {
+          brown: "#92400E",
+          "brown-light": "#B45309",
+        },
+        lime: {
+          accent: "#A3E635",
+        },
         chart: {
           "1": "var(--chart-1)",
           "2": "var(--chart-2)",

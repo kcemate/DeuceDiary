@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -45,9 +44,11 @@ export default function Profile() {
       {/* Profile Header */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
-          <ProfilePictureUpload user={user} size="lg" />
+          <div className="ring-[3px] ring-primary ring-offset-2 ring-offset-background rounded-full">
+            <ProfilePictureUpload user={user} size="lg" />
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-foreground">
+        <h2 className="text-2xl font-extrabold text-foreground">
           {user ? getUserDisplayName(user) : "User"}
         </h2>
         <div className="flex items-center justify-center gap-2 mt-1">
@@ -63,108 +64,98 @@ export default function Profile() {
             <Edit2 className="h-3 w-3" />
           </Button>
         </div>
-        <p className="text-muted-foreground text-sm">Throne Philosopher</p>
+        <span className="inline-block mt-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          Throne Philosopher
+        </span>
       </div>
 
-      {/* Stats Grid — 2x2 */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <Card className="shadow-sm border-l-4 border-l-green-500">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{user?.deuceCount || 0}</p>
-            <p className="text-sm text-muted-foreground">Total Deuces</p>
-          </CardContent>
-        </Card>
+      {/* Stats Grid — 2x2 with gradient background */}
+      <div className="relative bg-gradient-to-b from-muted/50 to-transparent p-4 -mx-4 mb-6 rounded-2xl">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
+            <p className="stat-number text-4xl text-primary">{user?.deuceCount || 0}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Total Deuces</p>
+          </div>
 
-        <Card className="shadow-sm border-l-4 border-l-blue-500">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-blue-600">{groups.length}</p>
-            <p className="text-sm text-muted-foreground">Groups</p>
-          </CardContent>
-        </Card>
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
+            <p className="stat-number text-4xl text-blue-500">{groups.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Groups</p>
+          </div>
 
-        <Card className="shadow-sm border-l-4 border-l-amber-500">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-amber-500">🔥 {streak}</p>
-            <p className="text-sm text-muted-foreground">Streak</p>
-          </CardContent>
-        </Card>
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
+            <p className="stat-number text-4xl text-amber-500">🔥 {streak}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Streak</p>
+          </div>
 
-        <Card className="shadow-sm border-l-4 border-l-purple-500">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-purple-600">{bestDayCount}</p>
-            <p className="text-sm text-muted-foreground">Best Day</p>
-          </CardContent>
-        </Card>
+          <div className="bg-card border border-border rounded-2xl p-4 text-center">
+            <p className="stat-number text-4xl text-purple-500">{bestDayCount}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Best Day</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent Activity */}
-      <Card className="shadow-sm mb-6">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-foreground mb-3">Recent Activity</h3>
-          <div className="space-y-3">
-            {groups.length > 0 ? (
-              groups.slice(0, 3).map((group) => (
-                <div key={group.id} className="flex items-center">
-                  <div className="w-3 h-3 bg-primary rounded-full mr-3"></div>
-                  <span className="text-sm text-muted-foreground flex-1">
-                    Member of {group.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {group.entryCount} entries
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="bg-muted rounded-xl p-8 text-center">
-                <p className="text-4xl mb-2">📜</p>
-                <p className="font-bold text-foreground">Your legacy begins here.</p>
+      <div className="bg-card border border-border rounded-2xl p-5 mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Recent Activity</h3>
+        <div className="space-y-3">
+          {groups.length > 0 ? (
+            groups.slice(0, 3).map((group) => (
+              <div key={group.id} className="flex items-center">
+                <div className="w-2.5 h-2.5 bg-primary rounded-full mr-3"></div>
+                <span className="text-sm text-foreground flex-1 font-medium">
+                  Member of {group.name}
+                </span>
+                <span className="text-xs text-muted-foreground font-bold">
+                  {group.entryCount} entries
+                </span>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            ))
+          ) : (
+            <div className="bg-muted rounded-xl p-8 text-center border border-border">
+              <p className="text-5xl mb-3">📜</p>
+              <p className="font-extrabold text-foreground text-lg">Your legacy begins here.</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Settings */}
-      <Card className="shadow-sm mb-6">
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-foreground mb-3">Settings</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="push-notifications" className="text-sm text-foreground">
-                Throne Alerts
-              </Label>
-              <Switch
-                id="push-notifications"
-                checked={pushNotifications}
-                onCheckedChange={setPushNotifications}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="dark-mode" className="text-sm text-foreground">
-                Dark Mode
-              </Label>
-              <Switch
-                id="dark-mode"
-                checked={isDark}
-                onCheckedChange={toggleDark}
-              />
-            </div>
+      <div className="bg-card border border-border rounded-2xl p-5 mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Settings</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="push-notifications" className="text-sm font-medium text-foreground">
+              Throne Alerts
+            </Label>
+            <Switch
+              id="push-notifications"
+              checked={pushNotifications}
+              onCheckedChange={setPushNotifications}
+            />
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="dark-mode" className="text-sm font-medium text-foreground">
+              Dark Mode
+            </Label>
+            <Switch
+              id="dark-mode"
+              checked={isDark}
+              onCheckedChange={toggleDark}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Logout */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <Button
-            onClick={() => window.location.href = "/api/logout"}
-            variant="destructive"
-            className="w-full"
-          >
-            Leave the Throne Room
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="bg-card border border-border rounded-2xl p-5">
+        <Button
+          onClick={() => window.location.href = "/api/logout"}
+          variant="destructive"
+          className="w-full rounded-xl font-bold"
+        >
+          Leave the Throne Room
+        </Button>
+      </div>
 
       <EditUsernameModal
         open={editUsernameOpen}

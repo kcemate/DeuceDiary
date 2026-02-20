@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -40,59 +39,45 @@ export default function Landing() {
       <div className="max-w-md w-full space-y-8">
         {/* Logo and Welcome */}
         <div className="text-center">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-10 h-10 text-primary"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z"/>
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to Deuce Diary</h1>
+          <div className="text-6xl mb-4">🚽</div>
+          <h1 className="text-3xl font-extrabold text-foreground mb-2 tracking-tight">Welcome to Deuce Diary</h1>
           <p className="text-sm text-muted-foreground italic mb-2">Where great thoughts are born.</p>
           <p className="text-muted-foreground text-center">
             Share your best thoughts from the throne with your dudes.
           </p>
         </div>
 
-        {/* Features */}
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">👥</span>
-                <div>
-                  <h3 className="font-semibold text-foreground">Create Groups</h3>
-                  <p className="text-sm text-muted-foreground">Form groups to share your throne thoughts</p>
-                </div>
+        {/* Features — colored left borders */}
+        <div className="space-y-3">
+          <div className="bg-card border border-border border-l-4 border-l-primary rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl">👥</span>
+              <div>
+                <h3 className="font-bold text-foreground">Create Groups</h3>
+                <p className="text-sm text-muted-foreground">Form groups to share your throne thoughts</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">🚽</span>
-                <div>
-                  <h3 className="font-semibold text-foreground">Log Your Deuces</h3>
-                  <p className="text-sm text-muted-foreground">Track thoughts, locations, and more</p>
-                </div>
+          <div className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl">🚽</span>
+              <div>
+                <h3 className="font-bold text-foreground">Log Your Deuces</h3>
+                <p className="text-sm text-muted-foreground">Track thoughts, locations, and more</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-3">
-                <span className="text-3xl">⚡</span>
-                <div>
-                  <h3 className="font-semibold text-foreground">Real-time Updates</h3>
-                  <p className="text-sm text-muted-foreground">Get notified when your dudes log entries</p>
-                </div>
+          <div className="bg-card border border-border border-l-4 border-l-blue-500 rounded-2xl p-4">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl">⚡</span>
+              <div>
+                <h3 className="font-bold text-foreground">Real-time Updates</h3>
+                <p className="text-sm text-muted-foreground">Get notified when your dudes log entries</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Login Form */}
@@ -104,12 +89,13 @@ export default function Landing() {
             onChange={(e) => setUsername(e.target.value)}
             disabled={loading}
             autoFocus
+            className="rounded-xl border-border bg-card py-3 text-base"
           />
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive font-medium">{error}</p>}
           <Button
             type="submit"
             disabled={loading || !username.trim()}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3"
+            className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none"
           >
             {loading ? "Signing in…" : "Enter the Throne Room"}
           </Button>
