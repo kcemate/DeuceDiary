@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: deuce-diary
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: deuce-diary-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false
+
+databases:
+  - name: deuce-diary-db
+    plan: free
+    databaseName: deuce_diary
