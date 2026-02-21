@@ -22,6 +22,7 @@ import InviteLanding from "@/pages/invite-landing";
 import NotFound from "@/pages/not-found";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import Premium from "@/pages/premium";
 
 function AppRoutes({
   isLoading,
@@ -74,6 +75,7 @@ function AppRoutes({
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/profile" component={Profile} />
+      <Route path="/premium" component={Premium} />
       <Route component={NotFound} />
     </Switch>
   );
