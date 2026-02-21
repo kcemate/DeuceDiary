@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 
 export default function Landing() {
   const [username, setUsername] = useState("");
@@ -40,10 +41,10 @@ export default function Landing() {
         {/* Logo and Welcome */}
         <div className="text-center">
           <div className="text-6xl mb-4">🚽</div>
-          <h1 className="text-3xl font-extrabold text-foreground mb-2 tracking-tight">Welcome to Deuce Diary</h1>
-          <p className="text-sm text-muted-foreground italic mb-2">Where great thoughts are born.</p>
+          <h1 className="text-3xl font-extrabold text-foreground mb-2 tracking-tight">Deuce Diary</h1>
+          <p className="text-sm text-muted-foreground italic mb-2">Drop a thought. Leave a mark.</p>
           <p className="text-muted-foreground text-center">
-            Share your best thoughts from the throne with your dudes.
+            Your best ideas happen on the throne. Share them with your squad.
           </p>
         </div>
 
@@ -53,8 +54,8 @@ export default function Landing() {
             <div className="flex items-center space-x-3">
               <span className="text-3xl">👥</span>
               <div>
-                <h3 className="font-bold text-foreground">Create Groups</h3>
-                <p className="text-sm text-muted-foreground">Form groups to share your throne thoughts</p>
+                <h3 className="font-bold text-foreground">Build Your Squad</h3>
+                <p className="text-sm text-muted-foreground">Round up your crew. Your best ideas need witnesses.</p>
               </div>
             </div>
           </div>
@@ -63,8 +64,8 @@ export default function Landing() {
             <div className="flex items-center space-x-3">
               <span className="text-3xl">🚽</span>
               <div>
-                <h3 className="font-bold text-foreground">Log Your Deuces</h3>
-                <p className="text-sm text-muted-foreground">Track thoughts, locations, and more</p>
+                <h3 className="font-bold text-foreground">Drop Your Deuces</h3>
+                <p className="text-sm text-muted-foreground">Log your throne-time thoughts, where, and when</p>
               </div>
             </div>
           </div>
@@ -73,8 +74,8 @@ export default function Landing() {
             <div className="flex items-center space-x-3">
               <span className="text-3xl">⚡</span>
               <div>
-                <h3 className="font-bold text-foreground">Real-time Updates</h3>
-                <p className="text-sm text-muted-foreground">Get notified when your dudes log entries</p>
+                <h3 className="font-bold text-foreground">Live from the Throne</h3>
+                <p className="text-sm text-muted-foreground">Get pinged the moment your squad drops one</p>
               </div>
             </div>
           </div>
@@ -100,6 +101,12 @@ export default function Landing() {
             {loading ? "Signing in…" : "Enter the Throne Room"}
           </Button>
         </form>
+
+        <div className="text-center text-xs text-muted-foreground pt-4">
+          <Link href="/privacy" className="hover:underline">Privacy</Link>
+          <span className="mx-1">&middot;</span>
+          <Link href="/terms" className="hover:underline">Terms</Link>
+        </div>
       </div>
     </div>
   );

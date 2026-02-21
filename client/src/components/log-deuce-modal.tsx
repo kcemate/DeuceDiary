@@ -291,11 +291,15 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
               placeholder="Share your throne thoughts..."
               value={thoughts}
               onChange={(e) => setThoughts(e.target.value)}
-              maxLength={1000}
+              maxLength={500}
               className="h-32 resize-none"
             />
-            <div className="text-right text-xs text-muted-foreground mt-1">
-              {thoughts.length}/1000 characters
+            <div className={`text-right text-xs mt-1 ${
+              thoughts.length > 500 ? "text-destructive" :
+              thoughts.length > 480 ? "text-amber-500" :
+              "text-muted-foreground"
+            }`}>
+              {thoughts.length} / 500
             </div>
           </div>
 
@@ -369,10 +373,16 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={logDeuceMutation.isPending}
+            disabled={logDeuceMutation.isPending || thoughts.length > 500}
           >
             {logDeuceMutation.isPending ? "Logging..." : "Log Deuce"}
           </Button>
+
+          <div className="text-center text-xs text-muted-foreground">
+            <Link href="/privacy" className="hover:underline">Privacy</Link>
+            <span className="mx-1">&middot;</span>
+            <Link href="/terms" className="hover:underline">Terms</Link>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

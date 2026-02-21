@@ -18,7 +18,10 @@ import Home from "@/pages/home";
 import Groups from "@/pages/groups";
 import Profile from "@/pages/profile";
 import GroupDetail from "@/pages/group-detail";
+import InviteLanding from "@/pages/invite-landing";
 import NotFound from "@/pages/not-found";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 function AppRoutes({
   isLoading,
@@ -41,6 +44,9 @@ function AppRoutes({
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/invite/:code" component={InviteLanding} />
         <Route path="*">
           {error?.message?.includes("401") ? (
             <div className="flex flex-col items-center justify-center min-h-96 space-y-4">
@@ -64,6 +70,9 @@ function AppRoutes({
       <Route path="/" component={Home} />
       <Route path="/groups" component={Groups} />
       <Route path="/groups/:groupId" component={GroupDetail} />
+      <Route path="/invite/:code" component={InviteLanding} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
