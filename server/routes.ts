@@ -10,8 +10,99 @@ import multer from "multer";
 import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
+import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
+
+/** Get today's date as YYYY-MM-DD in UTC */
+function getTodayUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Get yesterday's date as YYYY-MM-DD in UTC */
+function getYesterdayUTC(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * After a deuce is logged, check if all group members have logged today.
+ * If yes, advance the streak. If a day was missed, reset first.
+ */
+async function recalculateStreak(groupId: string): Promise<void> {
+  const today = getTodayUTC();
+  const yesterday = getYesterdayUTC();
+  const streak = await storage.getGroupStreak(groupId);
+  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+
+  const allLoggedToday = memberStatuses.every(m => m.hasLogged);
+
+  if (!allLoggedToday) {
+    // Not everyone has logged today yet — but check if streak needs resetting
+    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+      // Missed a day — reset
+      await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+    }
+    return;
+  }
+
+  // Everyone logged today
+  if (streak.lastStreakDate === today) {
+    // Already counted today
+    return;
+  }
+
+  let newStreak: number;
+  if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
+    // Fresh start (first time or missed a day)
+    newStreak = 1;
+  } else {
+    // Continuing from yesterday
+    newStreak = streak.currentStreak + 1;
+  }
+
+  const newLongest = Math.max(newStreak, streak.longestStreak);
+  await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
+}
+
+/**
+ * Check if a group's streak is at risk (any member hasn't logged today).
+ */
+async function checkAndNotifyStreakRisk(groupId: string): Promise<{ atRisk: boolean; missingMembers: string[] }> {
+  const today = getTodayUTC();
+  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+  const missing = memberStatuses.filter(m => !m.hasLogged);
+
+  if (missing.length > 0) {
+    const missingNames = missing.map(m => m.username || m.firstName || m.userId);
+    console.log(`[STREAK RISK] Group ${groupId}: ${missingNames.join(', ')} haven't logged today`);
+    return { atRisk: true, missingMembers: missingNames };
+  }
+
+  return { atRisk: false, missingMembers: [] };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check (no auth required)
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Internal streak check endpoint (cron / manual trigger, no session auth)
+  const INTERNAL_KEY = process.env.INTERNAL_API_KEY || 'streak-check-secret';
+  app.post('/api/internal/streak-check', async (req, res) => {
+    const key = req.headers['x-internal-key'];
+    if (key !== INTERNAL_KEY) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    try {
+      const summary = await checkAllGroupStreaksAndNotify();
+      res.json(summary);
+    } catch (error) {
+      console.error('[STREAK CHECK ERROR]', error);
+      res.status(500).json({ message: 'Streak check failed' });
+    }
+  });
+
   // Configure multer for file uploads
   const upload = multer({
     storage: multer.memoryStorage(),
@@ -80,6 +171,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // --- Public endpoints (no auth required) ---
+
+  // Group preview for invite landing page
+  app.get('/api/groups/preview/:inviteCode', async (req, res) => {
+    try {
+      const { inviteCode } = req.params;
+      const invite = await storage.getInviteById(inviteCode);
+      if (!invite || invite.expiresAt < new Date()) {
+        return res.status(404).json({ message: "Invite not found or expired" });
+      }
+      const group = await storage.getGroupById(invite.groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Group not found" });
+      }
+      const memberCount = await storage.getGroupMemberCount(invite.groupId);
+      const deuceCount = await storage.getGroupDeuceCount(invite.groupId);
+      res.json({ name: group.name, memberCount, deuceCount });
+    } catch (error) {
+      console.error("Error fetching group preview:", error);
+      res.status(500).json({ message: "Failed to fetch group preview" });
+    }
+  });
+
   // Auth middleware
   await setupAuth(app);
 
@@ -91,18 +205,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
-
-      // Auto-create "Solo Deuces" default group for new users with no groups
-      const userGroups = await storage.getUserGroups(userId);
-      if (userGroups.length === 0) {
-        await storage.createGroup({
-          id: uuidv4(),
-          name: "Solo Deuces",
-          description: "Your personal throne log",
-          createdBy: userId,
-        });
-      }
-
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -286,23 +388,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Route to handle invite links via GET (for browser navigation)
+  // Legacy /join/:inviteId redirect → new client-side /invite/:code page
   app.get('/join/:inviteId', async (req: any, res) => {
-    const { inviteId } = req.params;
-
-    // In Clerk mode, the client handles auth — just redirect to frontend.
-    // In dev mode, check the session.
-    const hasSession = !clerkEnabled && !!(req.session as any)?.userId;
-    const isAuthed = clerkEnabled || hasSession;
-
-    console.log("Processing invite link:", inviteId, "authenticated:", isAuthed);
-
-    if (!isAuthed) {
-      return res.redirect(`/api/login?returnTo=${encodeURIComponent(`/join/${inviteId}`)}`);
-    }
-
-    console.log("Redirecting to frontend with invite:", inviteId);
-    res.redirect(`/?join=${inviteId}`);
+    res.redirect(`/invite/${req.params.inviteId}`);
   });
 
   // Location routes
@@ -411,6 +499,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Streak routes
+  app.get('/api/groups/:groupId/streak', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { groupId } = req.params;
+
+      const isInGroup = await storage.isUserInGroup(userId, groupId);
+      if (!isInGroup) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const today = getTodayUTC();
+      const yesterday = getYesterdayUTC();
+      const streak = await storage.getGroupStreak(groupId);
+      const logsToday = await storage.getMembersLogStatusToday(groupId, today);
+
+      // If streak is stale (lastStreakDate is not today and not yesterday), reset it for the response
+      let currentStreak = streak.currentStreak;
+      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+        currentStreak = 0;
+      }
+
+      res.json({
+        currentStreak,
+        longestStreak: streak.longestStreak,
+        memberCount: logsToday.length,
+        logsToday: logsToday.map(m => ({
+          userId: m.userId,
+          username: m.username || m.firstName || 'Unknown',
+          hasLogged: m.hasLogged,
+          profileImageUrl: m.profileImageUrl,
+        })),
+      });
+    } catch (error) {
+      console.error("Error fetching streak:", error);
+      res.status(500).json({ message: "Failed to fetch streak" });
+    }
+  });
+
+  app.post('/api/groups/:groupId/streak/check', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { groupId } = req.params;
+
+      const isInGroup = await storage.isUserInGroup(userId, groupId);
+      if (!isInGroup) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const result = await checkAndNotifyStreakRisk(groupId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error checking streak risk:", error);
+      res.status(500).json({ message: "Failed to check streak risk" });
+    }
+  });
+
+  // Deuce feed route
+  app.get('/api/deuces', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { groupId } = req.query;
+
+      let groupIds: string[];
+
+      if (groupId) {
+        // Single group — verify membership
+        const isInGroup = await storage.isUserInGroup(userId, groupId as string);
+        if (!isInGroup) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+        groupIds = [groupId as string];
+      } else {
+        // All groups the user belongs to
+        const userGroups = await storage.getUserGroups(userId);
+        groupIds = userGroups.map(g => g.id);
+      }
+
+      const entries = await storage.getFeedEntries(groupIds, 50);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching deuces feed:", error);
+      res.status(500).json({ message: "Failed to fetch deuces feed" });
+    }
+  });
+
   // Deuce entry routes
   app.post('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
@@ -431,7 +605,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: `Not authorized for group ${groupId}` });
         }
       }
-      
+
+      // Validate thought length
+      if (entryData.thoughts && entryData.thoughts.length > 500) {
+        return res.status(400).json({ message: "Thought must be 500 characters or less" });
+      }
+
       const entries = [];
       const loggedAt = new Date(entryData.loggedAt || new Date());
       
@@ -468,7 +647,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: userId, // Don't notify the user who logged the deuce
         });
       }
-      
+
+      // Recalculate streaks for all affected groups
+      for (const groupId of targetGroupIds) {
+        try {
+          await recalculateStreak(groupId);
+        } catch (err) {
+          console.error(`Error recalculating streak for group ${groupId}:`, err);
+        }
+      }
+
       res.json({ entries, count: entries.length });
     } catch (error) {
       console.error("Error creating deuce entry:", error);
@@ -490,6 +678,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching analytics:", error);
       res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Weekly Throne Report
+  app.get('/api/users/:userId/weekly-report', isAuthenticated, async (req: any, res) => {
+    try {
+      const targetUserId = req.params.userId === 'me' ? req.user.id : req.params.userId;
+      const report = await storage.getWeeklyReport(targetUserId);
+      res.json(report);
+    } catch (error) {
+      console.error("Error fetching weekly report:", error);
+      res.status(500).json({ message: "Failed to fetch weekly report" });
     }
   });
 
