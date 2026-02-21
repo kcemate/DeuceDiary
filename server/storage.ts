@@ -87,6 +87,22 @@ export interface IStorage {
   getGroupMemberCount(groupId: string): Promise<number>;
   getGroupDeuceCount(groupId: string): Promise<number>;
 
+  // Subscription operations
+  updateUserSubscription(userId: string, subscription: string, expiresAt: Date): Promise<User>;
+  getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }>;
+  useStreakInsurance(userId: string): Promise<void>;
+  resetStreakInsurance(userId: string): Promise<void>;
+
+  // Premium analytics
+  getPremiumAnalytics(userId: string): Promise<{
+    totalDeuces: number;
+    avgPerWeek: number;
+    longestStreak: number;
+    currentStreak: number;
+    bestDay: { day: string; count: number };
+    groupRankings: { groupId: string; groupName: string; rank: number; total: number }[];
+  }>;
+
   // Weekly report
   getWeeklyReport(userId: string): Promise<{
     totalDeuces: number;
@@ -529,6 +545,137 @@ export class DatabaseStorage implements IStorage {
   async createStreakAlert(alert: InsertStreakAlert): Promise<StreakAlert> {
     const [newAlert] = await db.insert(streakAlerts).values(alert).returning();
     return newAlert;
+  }
+
+  // Subscription operations
+  async updateUserSubscription(userId: string, subscription: string, expiresAt: Date): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ subscription, subscriptionExpiresAt: expiresAt, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }> {
+    const [user] = await db
+      .select({
+        subscription: users.subscription,
+        subscriptionExpiresAt: users.subscriptionExpiresAt,
+        streakInsuranceUsed: users.streakInsuranceUsed,
+      })
+      .from(users)
+      .where(eq(users.id, userId));
+    return user ?? { subscription: "free", subscriptionExpiresAt: null, streakInsuranceUsed: false };
+  }
+
+  async useStreakInsurance(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ streakInsuranceUsed: true, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async resetStreakInsurance(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ streakInsuranceUsed: false, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  // Premium analytics
+  async getPremiumAnalytics(userId: string): Promise<{
+    totalDeuces: number;
+    avgPerWeek: number;
+    longestStreak: number;
+    currentStreak: number;
+    bestDay: { day: string; count: number };
+    groupRankings: { groupId: string; groupName: string; rank: number; total: number }[];
+  }> {
+    // Total deuces (all time, deduplicated — count distinct loggedAt timestamps)
+    const [totalResult] = await db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.userId, userId));
+    const totalDeuces = totalResult?.total ?? 0;
+
+    // Avg per week: total / weeks since first entry (min 1 week)
+    const [firstEntry] = await db
+      .select({ earliest: sql<Date>`MIN(${deuceEntries.createdAt})` })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.userId, userId));
+    const weeks = firstEntry?.earliest
+      ? Math.max(1, (Date.now() - new Date(firstEntry.earliest).getTime()) / (7 * 24 * 60 * 60 * 1000))
+      : 1;
+    const avgPerWeek = Math.round((totalDeuces / weeks) * 10) / 10;
+
+    // Longest streak & current streak across user's groups
+    const userGroupIds = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+    let longestStreak = 0;
+    let currentStreak = 0;
+    if (userGroupIds.length > 0) {
+      const gids = userGroupIds.map(g => g.groupId);
+      const [streakResult] = await db
+        .select({
+          maxLongest: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int`,
+          maxCurrent: sql<number>`COALESCE(MAX(${groups.currentStreak}), 0)::int`,
+        })
+        .from(groups)
+        .where(inArray(groups.id, gids));
+      longestStreak = streakResult?.maxLongest ?? 0;
+      currentStreak = streakResult?.maxCurrent ?? 0;
+    }
+
+    // Best day of the week (0=Sunday … 6=Saturday)
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const bestDayRows = await db
+      .select({
+        dow: sql<number>`EXTRACT(DOW FROM ${deuceEntries.loggedAt})::int`,
+        cnt: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.userId, userId))
+      .groupBy(sql`EXTRACT(DOW FROM ${deuceEntries.loggedAt})`)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(1);
+    const bestDay = bestDayRows.length > 0
+      ? { day: dayNames[bestDayRows[0].dow] ?? "Unknown", count: bestDayRows[0].cnt }
+      : { day: "N/A", count: 0 };
+
+    // Group rankings — user's rank in each group by deuce count
+    const groupRankings: { groupId: string; groupName: string; rank: number; total: number }[] = [];
+    if (userGroupIds.length > 0) {
+      for (const { groupId } of userGroupIds) {
+        const group = await this.getGroupById(groupId);
+        if (!group) continue;
+
+        const rankRows = await db
+          .select({
+            memberId: groupMembers.userId,
+            cnt: sql<number>`COUNT(${deuceEntries.id})::int`,
+          })
+          .from(groupMembers)
+          .leftJoin(
+            deuceEntries,
+            and(
+              eq(deuceEntries.userId, groupMembers.userId),
+              eq(deuceEntries.groupId, groupMembers.groupId),
+            ),
+          )
+          .where(eq(groupMembers.groupId, groupId))
+          .groupBy(groupMembers.userId)
+          .orderBy(desc(sql<number>`COUNT(${deuceEntries.id})::int`));
+
+        const total = rankRows.length;
+        const rank = rankRows.findIndex(r => r.memberId === userId) + 1;
+        groupRankings.push({ groupId, groupName: group.name, rank: rank || total, total });
+      }
+    }
+
+    return { totalDeuces, avgPerWeek, longestStreak, currentStreak, bestDay, groupRankings };
   }
 
   // Weekly report

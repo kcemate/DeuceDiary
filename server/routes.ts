@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { Webhook } from "svix";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
+import { requiresPremium } from "./premiumAuth";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -170,6 +171,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   }
+
+  // --- RevenueCat webhook (no session auth, server-to-server) ---
+  app.post('/api/webhooks/revenuecat', express.json(), async (req, res) => {
+    try {
+      const { event } = req.body;
+      if (!event?.type || !event?.app_user_id) {
+        return res.status(400).json({ message: 'Invalid payload' });
+      }
+
+      const userId = event.app_user_id;
+      const expirationMs = event.expiration_at_ms;
+
+      switch (event.type) {
+        case 'INITIAL_PURCHASE':
+        case 'RENEWAL':
+        case 'PRODUCT_CHANGE': {
+          const expiresAt = expirationMs ? new Date(expirationMs) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+          await storage.updateUserSubscription(userId, 'premium', expiresAt);
+          console.log(`[REVENUECAT] ${event.type} — user ${userId} upgraded until ${expiresAt.toISOString()}`);
+          break;
+        }
+        case 'CANCELLATION':
+        case 'EXPIRATION': {
+          // Set expiration to now so the premium check fails immediately
+          await storage.updateUserSubscription(userId, 'free', new Date());
+          console.log(`[REVENUECAT] ${event.type} — user ${userId} downgraded`);
+          break;
+        }
+        default:
+          console.log(`[REVENUECAT] Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('[REVENUECAT] Webhook error:', error);
+      res.status(500).json({ message: 'Webhook processing failed' });
+    }
+  });
 
   // --- Public endpoints (no auth required) ---
 
@@ -664,6 +703,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Subscription routes ---
+
+  app.get('/api/subscription', isAuthenticated, async (req: any, res) => {
+    try {
+      const sub = await storage.getUserSubscription(req.user.id);
+      const isPremium = sub.subscription === 'premium' && sub.subscriptionExpiresAt && new Date(sub.subscriptionExpiresAt) > new Date();
+      res.json({
+        tier: isPremium ? 'premium' : 'free',
+        expiresAt: sub.subscriptionExpiresAt,
+        features: isPremium
+          ? ['custom_themes', 'streak_insurance', 'gold_badge', 'priority_support', 'detailed_analytics']
+          : [],
+      });
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.status(500).json({ message: "Failed to fetch subscription" });
+    }
+  });
+
+  app.post('/api/subscription/streak-insurance', isAuthenticated, requiresPremium, async (req: any, res) => {
+    try {
+      const sub = await storage.getUserSubscription(req.user.id);
+      if (sub.streakInsuranceUsed) {
+        return res.status(400).json({ message: "Streak insurance already used this month" });
+      }
+
+      // Find the user's groups and extend any at-risk streaks
+      const userGroups = await storage.getUserGroups(req.user.id);
+      const today = getTodayUTC();
+      const yesterday = getYesterdayUTC();
+      let extended = false;
+
+      for (const group of userGroups) {
+        const streak = await storage.getGroupStreak(group.id);
+        // If last streak date was yesterday and streak > 0, extend it through today
+        if (streak.lastStreakDate === yesterday && streak.currentStreak > 0) {
+          await storage.updateGroupStreak(group.id, streak.currentStreak, streak.longestStreak, today);
+          extended = true;
+        }
+      }
+
+      await storage.useStreakInsurance(req.user.id);
+      res.json({ used: true, extended, message: extended ? "Streak preserved!" : "Insurance activated (no at-risk streaks found)" });
+    } catch (error) {
+      console.error("Error using streak insurance:", error);
+      res.status(500).json({ message: "Failed to use streak insurance" });
+    }
+  });
+
+  // --- Premium analytics ---
+
+  app.get('/api/analytics/me', isAuthenticated, requiresPremium, async (req: any, res) => {
+    try {
+      const analytics = await storage.getPremiumAnalytics(req.user.id);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching premium analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   app.get('/api/analytics/most-deuces', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -690,6 +790,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching weekly report:", error);
       res.status(500).json({ message: "Failed to fetch weekly report" });
+    }
+  });
+
+  // Subscription upgrade (dev mode — no real payment)
+  app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { plan } = req.body; // 'monthly' | 'annual'
+
+      const expiresAt = new Date();
+      if (plan === 'annual') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
+
+      const updatedUser = await storage.updateUserSubscription(userId, 'premium', expiresAt);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error upgrading subscription:", error);
+      res.status(500).json({ message: "Failed to upgrade subscription" });
     }
   });
 

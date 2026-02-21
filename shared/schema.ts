@@ -36,6 +36,9 @@ export const users = pgTable("users", {
   username: varchar("username").unique(),
   profileImageUrl: varchar("profile_image_url"),
   deuceCount: integer("deuce_count").default(0),
+  subscription: varchar("subscription", { length: 10 }).default("free").notNull(), // 'free' | 'premium'
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  streakInsuranceUsed: boolean("streak_insurance_used").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
