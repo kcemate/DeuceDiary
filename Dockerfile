@@ -25,7 +25,6 @@ COPY --from=builder /app/dist ./dist
 
 # Uploads persist via volume
 RUN mkdir -p dist/public/uploads
-VOLUME ["/app/dist/public/uploads"]
 
 EXPOSE ${PORT:-10000}
 CMD ["node", "dist/index.js"]
