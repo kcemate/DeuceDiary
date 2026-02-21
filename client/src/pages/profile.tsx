@@ -9,6 +9,8 @@ import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { Edit2 } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
+import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
+import { useToast } from "@/hooks/use-toast";
 
 interface Analytics {
   date: string;
@@ -27,6 +29,7 @@ export default function Profile() {
   const { isDark, toggleDark } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [editUsernameOpen, setEditUsernameOpen] = useState(false);
+  const { toast } = useToast();
 
   const { data: analytics } = useQuery<Analytics>({
     queryKey: ["/api/analytics/most-deuces"],
@@ -36,7 +39,6 @@ export default function Profile() {
     queryKey: ["/api/groups"],
   });
 
-  const streak = user?.deuceCount || 0;
   const bestDayCount = analytics?.count || 0;
 
   return (
@@ -64,39 +66,51 @@ export default function Profile() {
             <Edit2 className="h-3 w-3" />
           </Button>
         </div>
-        <span className="inline-block mt-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+        <span className="inline-block mt-2 bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
           Throne Philosopher
         </span>
       </div>
 
-      {/* Stats Grid — 2x2 with gradient background */}
+      {/* Stats Row — 3 stat cards */}
       <div className="relative bg-gradient-to-b from-muted/50 to-transparent p-4 -mx-4 mb-6 rounded-2xl">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <p className="stat-number text-4xl text-primary">{user?.deuceCount || 0}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Total Deuces</p>
+            <p className="stat-number text-3xl text-primary">{user?.deuceCount || 0}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Deuces</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <p className="stat-number text-4xl text-blue-500">{groups.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Groups</p>
+            <p className="stat-number text-3xl text-secondary">{groups.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Squads</p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <p className="stat-number text-4xl text-amber-500">🔥 {streak}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Streak</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-4 text-center">
-            <p className="stat-number text-4xl text-purple-500">{bestDayCount}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Best Day</p>
+            <p className="stat-number text-3xl text-accent">{bestDayCount}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">Peak Day</p>
           </div>
         </div>
       </div>
 
+      {/* Weekly Report */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Weekly Report</h3>
+        <WeeklyThroneReport />
+        <Button
+          onClick={() =>
+            toast({
+              title: "Screenshot this and share with your squad! \uD83D\uDCF8",
+            })
+          }
+          variant="secondary"
+          className="w-full rounded-xl font-bold mt-3"
+        >
+          Share Report {"\uD83D\uDCE4"}
+        </Button>
+      </div>
+
       {/* Recent Activity */}
       <div className="bg-card border border-border rounded-2xl p-5 mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Recent Activity</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Your Squads</h3>
         <div className="space-y-3">
           {groups.length > 0 ? (
             groups.slice(0, 3).map((group) => (
@@ -106,14 +120,15 @@ export default function Profile() {
                   Member of {group.name}
                 </span>
                 <span className="text-xs text-muted-foreground font-bold">
-                  {group.entryCount} entries
+                  {group.entryCount} deuces
                 </span>
               </div>
             ))
           ) : (
             <div className="bg-muted rounded-xl p-8 text-center border border-border">
-              <p className="text-5xl mb-3">📜</p>
-              <p className="font-extrabold text-foreground text-lg">Your legacy begins here.</p>
+              <p className="text-5xl mb-3">🦗</p>
+              <p className="font-extrabold text-foreground text-lg">Nothing to see here yet.</p>
+              <p className="text-sm text-muted-foreground mt-1">Join a squad and start dropping wisdom.</p>
             </div>
           )}
         </div>

@@ -5,12 +5,23 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useParams, useLocation } from "wouter";
 import { useState } from "react";
-import { InviteModal } from "@/components/invite-modal";
 import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getUserDisplayName, getInitials, getUserSecondaryInfo } from "@/lib/userUtils";
+
+interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  memberCount: number;
+  logsToday: Array<{
+    userId: string;
+    username: string;
+    hasLogged: boolean;
+    profileImageUrl?: string;
+  }>;
+}
 
 interface GroupDetail {
   group: {
@@ -58,10 +69,15 @@ export default function GroupDetail() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
 
   const { data: groupDetail, isLoading } = useQuery<GroupDetail>({
     queryKey: ["/api/groups", groupId],
+    enabled: !!groupId,
+  });
+
+  const { data: streakData } = useQuery<StreakData>({
+    queryKey: [`/api/groups/${groupId}/streak`],
     enabled: !!groupId,
   });
 
@@ -78,8 +94,8 @@ export default function GroupDetail() {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "You have left the group",
+        title: "You're out",
+        description: "You left the squad. They'll miss your wisdom.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setLocation("/groups");
@@ -97,10 +113,38 @@ export default function GroupDetail() {
         return;
       }
       toast({
-        title: "Error",
-        description: "Failed to leave group",
+        title: "Couldn't leave",
+        description: "Something clogged up. Try again.",
         variant: "destructive",
       });
+    },
+  });
+
+  const inviteCrewMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/groups/${groupId}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to create invite");
+      return response.json();
+    },
+    onSuccess: async (response: any) => {
+      const code = response.id;
+      if (!code) return;
+      setInviteCode(code);
+      const link = `${window.location.origin}/invite/${code}`;
+      try {
+        await navigator.clipboard.writeText(link);
+        toast({ title: "Invite link copied! 🚽", description: "Send it to your crew." });
+      } catch {
+        toast({ title: "Invite ready", description: link });
+      }
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Couldn't generate invite. Try again.", variant: "destructive" });
     },
   });
 
@@ -125,6 +169,14 @@ export default function GroupDetail() {
   };
 
   // Remove old helper functions - now using utility functions
+
+  const getStreakTier = (streak: number) => {
+    if (streak >= 30) return { label: "Diamond", emoji: "💎" };
+    if (streak >= 14) return { label: "Gold", emoji: "🥇" };
+    if (streak >= 7) return { label: "Silver", emoji: "🥈" };
+    if (streak >= 3) return { label: "Bronze", emoji: "🥉" };
+    return null;
+  };
 
   const isAdmin = (member: any) => member.role === "admin";
   const isCurrentUserAdmin = groupDetail?.members.find(m => m.user.id === user?.id)?.role === "admin";
@@ -160,12 +212,13 @@ export default function GroupDetail() {
       <div className="pt-6 pb-24">
         <Card>
           <CardContent className="p-8 text-center">
-            <h3 className="text-lg font-semibold text-foreground mb-2">Group not found</h3>
+            <p className="text-5xl mb-3">🚫</p>
+            <h3 className="text-lg font-bold text-foreground mb-2">This squad doesn't exist.</h3>
             <p className="text-muted-foreground mb-4">
-              The group you're looking for doesn't exist or you don't have access to it.
+              Either it got flushed or you don't have a seat at this table.
             </p>
             <Button onClick={() => setLocation("/groups")}>
-              Back to Groups
+              Back to Squads
             </Button>
           </CardContent>
         </Card>
@@ -196,9 +249,93 @@ export default function GroupDetail() {
           onClick={() => leaveGroupMutation.mutate()}
           disabled={leaveGroupMutation.isPending}
         >
-          Leave Group
+          Dip Out
         </Button>
       </div>
+
+      {/* Streak Card */}
+      {streakData && (
+        <Card className="shadow-sm mb-6 border-orange-200 dark:border-orange-900">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-4xl">🔥</span>
+                <div>
+                  <p className="text-3xl font-extrabold text-foreground leading-none">
+                    {streakData.currentStreak}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {streakData.currentStreak > 0
+                      ? `${streakData.currentStreak}-day streak`
+                      : "Start a streak — log today!"}
+                  </p>
+                </div>
+              </div>
+              {(() => {
+                const tier = getStreakTier(streakData.currentStreak);
+                return tier ? (
+                  <Badge variant="secondary" className="text-sm px-3 py-1">
+                    {tier.emoji} {tier.label}
+                  </Badge>
+                ) : null;
+              })()}
+            </div>
+
+            {streakData.longestStreak > 0 && streakData.longestStreak > streakData.currentStreak && (
+              <p className="text-xs text-muted-foreground mb-3">
+                Best: {streakData.longestStreak}-day streak
+              </p>
+            )}
+
+            {/* Member checklist */}
+            <div className="border-t pt-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+                Today's Check-in
+              </p>
+              <div className="space-y-2">
+                {streakData.logsToday.map((member) => (
+                  <div key={member.userId} className="flex items-center gap-2">
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={member.profileImageUrl || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {(member.username || "?")[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-foreground flex-1 truncate">
+                      {member.username}
+                    </span>
+                    <span className="text-base">{member.hasLogged ? "✅" : "⏳"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Milestone roadmap */}
+            {streakData.currentStreak < 30 && (
+              <div className="border-t pt-3 mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span className={streakData.currentStreak >= 3 ? "text-foreground font-semibold" : ""}>🥉 3</span>
+                  <span className={streakData.currentStreak >= 7 ? "text-foreground font-semibold" : ""}>🥈 7</span>
+                  <span className={streakData.currentStreak >= 14 ? "text-foreground font-semibold" : ""}>🥇 14</span>
+                  <span className={streakData.currentStreak >= 30 ? "text-foreground font-semibold" : ""}>💎 30</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2 mt-1">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full transition-all"
+                    style={{ width: `${Math.min((streakData.currentStreak / 30) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {streakData.currentStreak === 0 && (
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                Start a streak — every member logs today to begin!
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Members */}
       <Card className="shadow-sm mb-6">
@@ -206,13 +343,19 @@ export default function GroupDetail() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-foreground">Members ({groupDetail.members.length})</h3>
             <Button
-              onClick={() => setShowInviteModal(true)}
+              onClick={() => inviteCrewMutation.mutate()}
+              disabled={inviteCrewMutation.isPending}
               size="sm"
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              Add a Dude
+              {inviteCrewMutation.isPending ? "Generating..." : "Invite Your Crew"}
             </Button>
           </div>
+          {inviteCode && (
+            <p className="text-xs text-muted-foreground mb-3 text-center font-mono break-all">
+              Invite code: {inviteCode}
+            </p>
+          )}
           <div className="space-y-3">
             {groupDetail.members.map((member) => (
               <div key={member.id} className="flex items-center justify-between">
@@ -249,7 +392,7 @@ export default function GroupDetail() {
       {/* Recent Entries */}
       <Card className="shadow-sm">
         <CardContent className="p-4">
-          <h3 className="font-semibold text-foreground mb-4">Recent Entries</h3>
+          <h3 className="font-semibold text-foreground mb-4">Recent Drops</h3>
           {groupDetail.entries.length > 0 ? (
             <div className="space-y-4">
               {groupDetail.entries.map((entry) => (
@@ -282,19 +425,15 @@ export default function GroupDetail() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No entries yet</p>
-              <p className="text-sm">Be the first to share your throne thoughts!</p>
+            <div className="text-center py-10">
+              <p className="text-5xl mb-3">🫥</p>
+              <p className="font-extrabold text-foreground text-lg">Dead air on the throne.</p>
+              <p className="text-sm text-muted-foreground mt-1">No deuces in this squad yet. Be the first to drop one.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <InviteModal
-        open={showInviteModal}
-        onOpenChange={setShowInviteModal}
-        groupId={groupId!}
-      />
     </div>
   );
 }

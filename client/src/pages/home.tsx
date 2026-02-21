@@ -122,7 +122,7 @@ export default function Home() {
 
       {/* Groups List */}
       <div className="mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Your Groups</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Your Squads</h3>
 
         {groupsLoading ? (
           <div className="space-y-3">
@@ -151,7 +151,7 @@ export default function Home() {
                       <div>
                         <h4 className="font-bold text-foreground">{group.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {group.memberCount} members • {group.entryCount} entries
+                          {group.memberCount} members • {group.entryCount} deuces
                         </p>
                       </div>
                     </div>
@@ -170,13 +170,13 @@ export default function Home() {
           </div>
         ) : (
           <div className="bg-card border border-border rounded-2xl p-10 text-center">
-            <p className="text-6xl mb-4">💩</p>
-            <h3 className="text-xl font-extrabold text-foreground mb-2">No squads yet — start a poop posse!</h3>
+            <p className="text-6xl mb-4">👻</p>
+            <h3 className="text-xl font-extrabold text-foreground mb-2">Nobody's dropped anything yet.</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              Gather your dudes. Your throne wisdom deserves an audience.
+              It's quiet... too quiet. Start a squad and get your crew on the throne.
             </p>
             <Link href="/groups">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl px-6 py-2">Create Group</Button>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl px-6 py-2">Start a Squad</Button>
             </Link>
           </div>
         )}

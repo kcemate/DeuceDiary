@@ -45,6 +45,9 @@ export const groups = pgTable("groups", {
   name: varchar("name").notNull(),
   description: text("description"),
   createdBy: varchar("created_by").notNull().references(() => users.id),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastStreakDate: varchar("last_streak_date"), // ISO date string YYYY-MM-DD
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -83,6 +86,15 @@ export const locations = pgTable("locations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const streakAlerts = pgTable("streak_alerts", {
+  id: serial("id").primaryKey(),
+  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  triggeredAt: timestamp("triggered_at").defaultNow(),
+  streakLength: integer("streak_length").notNull(),
+  missingMembers: text("missing_members").notNull(), // JSON array of names
+  notified: boolean("notified").default(false),
+});
+
 export const reactions = pgTable("reactions", {
   id: serial("id").primaryKey(),
   entryId: varchar("entry_id").notNull().references(() => deuceEntries.id, { onDelete: "cascade" }),
@@ -111,6 +123,14 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
   members: many(groupMembers),
   entries: many(deuceEntries),
   invites: many(invites),
+  streakAlerts: many(streakAlerts),
+}));
+
+export const streakAlertsRelations = relations(streakAlerts, ({ one }) => ({
+  group: one(groups, {
+    fields: [streakAlerts.groupId],
+    references: [groups.id],
+  }),
 }));
 
 export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
@@ -180,6 +200,8 @@ export type Location = typeof locations.$inferSelect;
 export type InsertLocation = typeof locations.$inferInsert;
 export type Reaction = typeof reactions.$inferSelect;
 export type InsertReaction = typeof reactions.$inferInsert;
+export type StreakAlert = typeof streakAlerts.$inferSelect;
+export type InsertStreakAlert = typeof streakAlerts.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

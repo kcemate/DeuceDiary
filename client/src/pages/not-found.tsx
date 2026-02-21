@@ -1,6 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 
@@ -18,24 +16,25 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-6 text-center">
-          <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-foreground mb-2">Page Not Found</h1>
-          <p className="text-muted-foreground mb-6">
-            {isLoading 
-              ? "Loading..." 
-              : isAuthenticated 
-                ? "The page you're looking for doesn't exist."
-                : "You may need to log in to access this page."
-            }
-          </p>
-          <Button onClick={handleGoHome} className="w-full">
-            <Home className="h-4 w-4 mr-2" />
-            {isAuthenticated ? "Go Home" : "Log In"}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-md text-center">
+        <p className="text-8xl mb-4">🧻</p>
+        <h1 className="text-5xl font-extrabold text-foreground mb-2">404</h1>
+        <h2 className="text-xl font-bold text-foreground mb-3">This throne is out of order.</h2>
+        <p className="text-muted-foreground mb-8">
+          {isLoading
+            ? "Checking the plumbing..."
+            : isAuthenticated
+              ? "Whatever you were looking for got flushed. It's gone. Let it go."
+              : "You need to log in before you can find a seat."
+          }
+        </p>
+        <Button
+          onClick={handleGoHome}
+          className="btn-shimmer text-white font-bold rounded-2xl px-8 py-4 text-lg shadow-lg shadow-primary/25"
+        >
+          {isAuthenticated ? "Back to the Throne Room" : "Log In"}
+        </Button>
+      </div>
     </div>
   );
 }

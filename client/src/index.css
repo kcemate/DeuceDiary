@@ -3,26 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 98%);
-  --foreground: hsl(0, 0%, 4%);
-  --muted: hsl(0, 0%, 93%);
-  --muted-foreground: hsl(0, 0%, 45%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(0, 0%, 4%);
-  --card: hsl(0, 0%, 96%);
-  --card-foreground: hsl(0, 0%, 4%);
-  --border: hsl(0, 0%, 88%);
-  --input: hsl(0, 0%, 88%);
-  --primary: hsl(142, 71%, 45%);
+  /* Porcelain Premium — warm cream base, espresso text, green CTAs, gold accents */
+  --background: hsl(38, 40%, 96%);       /* warm cream */
+  --foreground: hsl(25, 30%, 8%);        /* espresso near-black */
+  --muted: hsl(38, 22%, 90%);           /* warm muted surface */
+  --muted-foreground: hsl(25, 12%, 42%); /* warm mid-tone text */
+  --popover: hsl(38, 35%, 98%);          /* near-white cream */
+  --popover-foreground: hsl(25, 30%, 8%);
+  --card: hsl(38, 30%, 94%);            /* slightly warm card */
+  --card-foreground: hsl(25, 30%, 8%);
+  --border: hsl(38, 18%, 83%);          /* warm border */
+  --input: hsl(38, 18%, 83%);
+  --primary: hsl(142, 71%, 45%);        /* green — CTAs only */
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(30, 80%, 28%);
+  --secondary: hsl(25, 65%, 22%);       /* espresso brown */
   --secondary-foreground: hsl(0, 0%, 100%);
-  --accent: hsl(80, 80%, 50%);
-  --accent-foreground: hsl(0, 0%, 4%);
+  --accent: hsl(45, 88%, 48%);          /* gold — streak badges */
+  --accent-foreground: hsl(25, 30%, 8%);
   --destructive: hsl(0, 84%, 60%);
-  --destructive-foreground: hsl(0, 0%, 98%);
+  --destructive-foreground: hsl(38, 40%, 96%);
   --ring: hsl(142, 71%, 45%);
   --radius: 0.75rem;
+  --chart-1: hsl(142, 71%, 45%);
+  --chart-2: hsl(25, 65%, 22%);
+  --chart-3: hsl(45, 88%, 48%);
+  --chart-4: hsl(200, 70%, 50%);
+  --chart-5: hsl(0, 70%, 55%);
 }
 
 .dark {
@@ -41,11 +47,16 @@
   --secondary: hsl(30, 80%, 28%);
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(80, 80%, 50%);
-  --accent-foreground: hsl(0, 0%, 4%);
+  --accent-foreground: hsl(38, 40%, 96%);
   --destructive: hsl(0, 63%, 31%);
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(142, 71%, 45%);
   --radius: 0.75rem;
+  --chart-1: hsl(142, 71%, 52%);
+  --chart-2: hsl(25, 65%, 30%);
+  --chart-3: hsl(45, 88%, 55%);
+  --chart-4: hsl(200, 70%, 58%);
+  --chart-5: hsl(0, 70%, 62%);
 }
 
 @layer base {
@@ -217,4 +228,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(0, 0%, 40%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(0, 0%, 55%);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(0, 0%, 70%);
 }

@@ -49,7 +49,7 @@ export default function Groups() {
   return (
     <div className="pt-6 pb-24">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-extrabold text-foreground">Groups</h2>
+        <h2 className="text-2xl font-extrabold text-foreground">Squads</h2>
       </div>
 
       {/* Create Group — always-visible CTA */}
@@ -58,7 +58,7 @@ export default function Groups() {
           onClick={() => setShowCreateModal(true)}
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-base font-bold rounded-2xl shadow-lg shadow-primary/20"
         >
-          <span className="mr-2">+</span> Create Group
+          <span className="mr-2">+</span> Start a Squad
         </Button>
       </div>
 
@@ -114,11 +114,11 @@ export default function Groups() {
 
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  {group.entryCount} entries • {getActivityTime(group.lastActivity)}
+                  {group.entryCount} deuces • {getActivityTime(group.lastActivity)}
                 </p>
                 <Link href={`/groups/${group.id}`}>
                   <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs border-border hover:border-primary/50">
-                    View Details
+                    Open
                   </Button>
                 </Link>
               </div>
@@ -127,16 +127,16 @@ export default function Groups() {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl p-10 text-center">
-          <p className="text-6xl mb-4">💩</p>
-          <h3 className="text-xl font-extrabold text-foreground mb-2">No squads yet.</h3>
+          <p className="text-6xl mb-4">🪑</p>
+          <h3 className="text-xl font-extrabold text-foreground mb-2">No squads yet. Lonely throne vibes.</h3>
           <p className="text-sm text-muted-foreground mb-6">
-            Create a group and invite your dudes
+            Every great movement starts with one person. Start a squad and rally your crew.
           </p>
           <Button
             onClick={() => setShowCreateModal(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl px-8 py-2"
           >
-            Create Group
+            Start a Squad
           </Button>
         </div>
       )}

@@ -6,6 +6,7 @@ import {
   invites,
   locations,
   reactions,
+  streakAlerts,
   type User,
   type UpsertUser,
   type Group,
@@ -20,9 +21,11 @@ import {
   type InsertLocation,
   type Reaction,
   type InsertReaction,
+  type StreakAlert,
+  type InsertStreakAlert,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, count, sql, inArray, gte } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -67,6 +70,33 @@ export interface IStorage {
   addReaction(reaction: InsertReaction): Promise<Reaction>;
   removeReaction(userId: string, entryId: string, emoji: string): Promise<void>;
   getEntryReactions(entryId: string): Promise<(Reaction & { user: User })[]>;
+
+  // Feed operations
+  getFeedEntries(groupIds: string[], limit: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]>;
+
+  // Streak operations
+  getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
+  updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void>;
+  getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
+
+  // Streak alert operations
+  getAllGroupsWithActiveStreaks(minStreak: number): Promise<Group[]>;
+  createStreakAlert(alert: InsertStreakAlert): Promise<StreakAlert>;
+
+  // Group preview (for invite landing — no auth needed)
+  getGroupMemberCount(groupId: string): Promise<number>;
+  getGroupDeuceCount(groupId: string): Promise<number>;
+
+  // Weekly report
+  getWeeklyReport(userId: string): Promise<{
+    totalDeuces: number;
+    peakDay: { date: string; count: number };
+    mostActiveSquad: { name: string; count: number };
+    longestStreak: number;
+    funniestEntry: { thought: string; reactions: number } | null;
+    totalReactionsReceived: number;
+    weekOf: string;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -310,6 +340,23 @@ export class DatabaseStorage implements IStorage {
     await db.delete(invites).where(sql`${invites.expiresAt} < NOW()`);
   }
 
+  // Group preview helpers
+  async getGroupMemberCount(groupId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+    return Number(result?.count ?? 0);
+  }
+
+  async getGroupDeuceCount(groupId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.groupId, groupId));
+    return Number(result?.count ?? 0);
+  }
+
   // Location operations
   async getLocations(): Promise<Location[]> {
     return await db.select().from(locations).orderBy(locations.isDefault, locations.name);
@@ -369,11 +416,220 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(reactions.userId, users.id))
       .where(eq(reactions.entryId, entryId))
       .orderBy(reactions.createdAt);
-    
+
     return entryReactions.map(row => ({
       ...row.reactions,
       user: row.users!,
     }));
+  }
+
+  // Feed operations
+  async getFeedEntries(groupIds: string[], limit: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]> {
+    if (groupIds.length === 0) return [];
+
+    const entries = await db
+      .select({
+        entry: deuceEntries,
+        user: {
+          id: users.id,
+          username: users.username,
+          profileImageUrl: users.profileImageUrl,
+        },
+      })
+      .from(deuceEntries)
+      .innerJoin(users, eq(deuceEntries.userId, users.id))
+      .where(inArray(deuceEntries.groupId, groupIds))
+      .orderBy(desc(deuceEntries.createdAt))
+      .limit(limit);
+
+    // Batch-fetch reactions for all returned entries
+    const entryIds = entries.map(r => r.entry.id);
+    const allReactions = entryIds.length > 0
+      ? await db.select().from(reactions).where(inArray(reactions.entryId, entryIds))
+      : [];
+
+    const reactionsByEntry = new Map<string, Reaction[]>();
+    for (const r of allReactions) {
+      const arr = reactionsByEntry.get(r.entryId) ?? [];
+      arr.push(r);
+      reactionsByEntry.set(r.entryId, arr);
+    }
+
+    return entries.map(row => ({
+      ...row.entry,
+      user: row.user,
+      reactions: reactionsByEntry.get(row.entry.id) ?? [],
+    }));
+  }
+
+  // Streak operations
+  async getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }> {
+    const [group] = await db
+      .select({
+        currentStreak: groups.currentStreak,
+        longestStreak: groups.longestStreak,
+        lastStreakDate: groups.lastStreakDate,
+      })
+      .from(groups)
+      .where(eq(groups.id, groupId));
+    return group ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
+  }
+
+  async updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void> {
+    await db
+      .update(groups)
+      .set({ currentStreak, longestStreak, lastStreakDate, updatedAt: new Date() })
+      .where(eq(groups.id, groupId));
+  }
+
+  async getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; profileImageUrl: string | null; hasLogged: boolean }[]> {
+    // Get all members of the group
+    const members = await db
+      .select({
+        userId: groupMembers.userId,
+        username: users.username,
+        firstName: users.firstName,
+        profileImageUrl: users.profileImageUrl,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(eq(groupMembers.groupId, groupId));
+
+    // Get user IDs who logged today in this group
+    const loggedToday = await db
+      .select({ userId: deuceEntries.userId })
+      .from(deuceEntries)
+      .where(
+        and(
+          eq(deuceEntries.groupId, groupId),
+          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${todayUTC}`
+        )
+      )
+      .groupBy(deuceEntries.userId);
+
+    const loggedUserIds = new Set(loggedToday.map(r => r.userId));
+
+    return members.map(m => ({
+      userId: m.userId,
+      username: m.username,
+      firstName: m.firstName,
+      profileImageUrl: m.profileImageUrl,
+      hasLogged: loggedUserIds.has(m.userId),
+    }));
+  }
+
+  // Streak alert operations
+  async getAllGroupsWithActiveStreaks(minStreak: number): Promise<Group[]> {
+    return await db
+      .select()
+      .from(groups)
+      .where(gte(groups.currentStreak, minStreak));
+  }
+
+  async createStreakAlert(alert: InsertStreakAlert): Promise<StreakAlert> {
+    const [newAlert] = await db.insert(streakAlerts).values(alert).returning();
+    return newAlert;
+  }
+
+  // Weekly report
+  async getWeeklyReport(userId: string): Promise<{
+    totalDeuces: number;
+    peakDay: { date: string; count: number };
+    mostActiveSquad: { name: string; count: number };
+    longestStreak: number;
+    funniestEntry: { thought: string; reactions: number } | null;
+    totalReactionsReceived: number;
+    weekOf: string;
+  }> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+    const weekOf = sevenDaysAgo.toISOString().slice(0, 10);
+
+    // 1. Total deuces in last 7 days
+    const [totalResult] = await db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)));
+    const totalDeuces = totalResult?.total ?? 0;
+
+    // 2. Peak day (day with most deuces)
+    const peakDayRows = await db
+      .select({
+        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
+      .groupBy(sql`DATE(${deuceEntries.createdAt})`)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(1);
+    const peakDay = peakDayRows.length > 0
+      ? { date: peakDayRows[0].date, count: peakDayRows[0].count }
+      : { date: weekOf, count: 0 };
+
+    // 3. Most active squad (group with most deuces this week)
+    const squadRows = await db
+      .select({
+        name: groups.name,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
+      .groupBy(groups.name)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(1);
+    const mostActiveSquad = squadRows.length > 0
+      ? { name: squadRows[0].name, count: squadRows[0].count }
+      : { name: "None", count: 0 };
+
+    // 4. Longest streak across user's groups
+    const userGroupIds = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+    let longestStreak = 0;
+    if (userGroupIds.length > 0) {
+      const [streakResult] = await db
+        .select({ maxStreak: sql<number>`MAX(${groups.longestStreak})::int` })
+        .from(groups)
+        .where(inArray(groups.id, userGroupIds.map(g => g.groupId)));
+      longestStreak = streakResult?.maxStreak ?? 0;
+    }
+
+    // 5. Funniest entry (most reacted entry this week)
+    const funnyRows = await db
+      .select({
+        thought: deuceEntries.thoughts,
+        reactionCount: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
+      .groupBy(deuceEntries.id, deuceEntries.thoughts)
+      .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
+      .limit(1);
+    const funniestEntry = funnyRows.length > 0
+      ? { thought: funnyRows[0].thought, reactions: funnyRows[0].reactionCount }
+      : null;
+
+    // 6. Total reactions received this week
+    const [reactionsResult] = await db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(reactions)
+      .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)));
+    const totalReactionsReceived = reactionsResult?.total ?? 0;
+
+    return {
+      totalDeuces,
+      peakDay,
+      mostActiveSquad,
+      longestStreak,
+      funniestEntry,
+      totalReactionsReceived,
+      weekOf,
+    };
   }
 }
 

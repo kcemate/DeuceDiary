@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { startCronJobs } from "./cron";
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -56,6 +57,9 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+
+  // Start cron jobs for streak notifications
+  startCronJobs();
 
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(port, "0.0.0.0", () => {
