@@ -8,15 +8,27 @@ import { nanoid } from "nanoid";
 export { log, serveStatic } from "./utils.js";
 
 export async function setupVite(app: Express, server: Server) {
-  // Dynamic import so vite is never loaded in production
+  // All vite imports are dynamic — never loaded in production
   const { createServer: createViteServer, createLogger } = await import("vite");
-  const { default: viteConfig } = await import("../vite.config.js");
+  const { default: react } = await import("@vitejs/plugin-react");
+  const { default: runtimeErrorOverlay } = await import("@replit/vite-plugin-runtime-error-modal");
 
   const viteLogger = createLogger();
 
   const vite = await createViteServer({
-    ...viteConfig,
     configFile: false,
+    plugins: [react(), runtimeErrorOverlay()],
+    resolve: {
+      alias: {
+        "@": path.resolve(import.meta.dirname, "..", "client", "src"),
+        "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+      },
+    },
+    root: path.resolve(import.meta.dirname, "..", "client"),
+    build: {
+      outDir: path.resolve(import.meta.dirname, "..", "dist/public"),
+      emptyOutDir: true,
+    },
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
@@ -28,6 +40,7 @@ export async function setupVite(app: Express, server: Server) {
       middlewareMode: true,
       hmr: { server },
       allowedHosts: true as const,
+      fs: { strict: true, deny: ["**/.*"] },
     },
     appType: "custom",
   });
