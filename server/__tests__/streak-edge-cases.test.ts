@@ -30,6 +30,7 @@ const memStore = vi.hoisted(() => {
         username: existing?.username ?? null,
         profileImageUrl: data.profileImageUrl ?? existing?.profileImageUrl ?? null,
         deuceCount: existing?.deuceCount ?? 0,
+        theme: existing?.theme ?? "default",
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
       };
@@ -50,6 +51,15 @@ const memStore = vi.hoisted(() => {
       const user = _users.get(userId);
       if (!user) throw new Error("User not found");
       user.profileImageUrl = profileImageUrl; user.updatedAt = new Date(); return user;
+    },
+
+    /* ---- Theme ops ---- */
+    async updateUserTheme(userId: string, theme: string) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.theme = theme;
+      user.updatedAt = new Date();
+      return user;
     },
 
     async createGroup(group: any) {

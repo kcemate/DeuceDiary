@@ -90,6 +90,9 @@ export interface IStorage {
   getGroupMemberCount(groupId: string): Promise<number>;
   getGroupDeuceCount(groupId: string): Promise<number>;
 
+  // Theme operations
+  updateUserTheme(userId: string, theme: string): Promise<User>;
+
   // Subscription operations
   updateUserSubscription(userId: string, subscription: string, expiresAt: Date): Promise<User>;
   getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }>;
@@ -564,6 +567,16 @@ export class DatabaseStorage implements IStorage {
     if (existing) return existing;
     const [newToken] = await db.insert(pushTokens).values(token).returning();
     return newToken;
+  }
+
+  // Theme operations
+  async updateUserTheme(userId: string, theme: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ theme, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   // Subscription operations

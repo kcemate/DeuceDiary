@@ -300,6 +300,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Theme routes
+  const VALID_THEMES = ['default', 'dark', 'cream', 'midnight'] as const;
+
+  app.get('/api/user/theme', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      res.json({ theme: user?.theme ?? 'default' });
+    } catch (error) {
+      console.error("Error fetching theme:", error);
+      res.status(500).json({ message: "Failed to fetch theme" });
+    }
+  });
+
+  app.put('/api/user/theme', isAuthenticated, async (req: any, res) => {
+    try {
+      const { theme } = req.body;
+      if (!theme || !VALID_THEMES.includes(theme)) {
+        return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
+      }
+      const user = await storage.updateUserTheme(req.user.id, theme);
+      res.json({ theme: user.theme });
+    } catch (error) {
+      console.error("Error updating theme:", error);
+      res.status(500).json({ message: "Failed to update theme" });
+    }
+  });
+
   // Group routes
   app.post('/api/groups', isAuthenticated, async (req: any, res) => {
     try {

@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   subscription: varchar("subscription", { length: 10 }).default("free").notNull(), // 'free' | 'premium'
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   streakInsuranceUsed: boolean("streak_insurance_used").default(false).notNull(),
+  theme: text("theme").default("default").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
