@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getUserDisplayName, getInitials, getUserSecondaryInfo } from "@/lib/userUtils";
+import { StreakFrame } from "@/components/streak-frame";
 
 interface StreakData {
   currentStreak: number;
@@ -360,12 +361,14 @@ export default function GroupDetail() {
             {groupDetail.members.map((member) => (
               <div key={member.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={member.user.profileImageUrl || undefined} />
-                    <AvatarFallback>
-                      {getInitials(member.user)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <StreakFrame currentStreak={streakData?.currentStreak ?? 0}>
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={member.user.profileImageUrl || undefined} />
+                      <AvatarFallback>
+                        {getInitials(member.user)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </StreakFrame>
                   <div>
                     <p className="font-medium text-foreground">
                       {getUserDisplayName(member.user)}
@@ -398,12 +401,14 @@ export default function GroupDetail() {
               {groupDetail.entries.map((entry) => (
                 <div key={entry.id} className="border-l-4 border-primary pl-4 py-2">
                   <div className="flex items-center mb-2">
-                    <Avatar className="w-6 h-6 mr-2">
-                      <AvatarImage src={entry.user.profileImageUrl || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {getInitials(entry.user)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="mr-2">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={entry.user.profileImageUrl || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {getInitials(entry.user)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </StreakFrame>
                     <span className="text-sm font-medium text-foreground">
                       {getUserDisplayName(entry.user)}
                     </span>

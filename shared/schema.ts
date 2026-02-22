@@ -40,6 +40,8 @@ export const users = pgTable("users", {
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   streakInsuranceUsed: boolean("streak_insurance_used").default(false).notNull(),
   theme: text("theme").default("default").notNull(),
+  reminderHour: integer("reminder_hour"),
+  reminderMinute: integer("reminder_minute"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -70,6 +72,7 @@ export const deuceEntries = pgTable("deuce_entries", {
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
   location: varchar("location").notNull(),
   thoughts: text("thoughts").notNull(),
+  ghost: boolean("ghost").default(false).notNull(),
   loggedAt: timestamp("logged_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -116,6 +119,21 @@ export const reactions = pgTable("reactions", {
 }, (table) => ({
   uniqueUserEntryEmoji: unique().on(table.entryId, table.userId, table.emoji),
 }));
+
+export const broadcasts = pgTable("broadcasts", {
+  id: serial("id").primaryKey(),
+  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  milestone: text("milestone").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const dailyChallengeCompletions = pgTable("daily_challenge_completions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  challengeDate: varchar("challenge_date", { length: 10 }).notNull(), // YYYY-MM-DD
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -205,6 +223,24 @@ export const reactionsRelations = relations(reactions, ({ one }) => ({
   }),
 }));
 
+export const broadcastsRelations = relations(broadcasts, ({ one }) => ({
+  group: one(groups, {
+    fields: [broadcasts.groupId],
+    references: [groups.id],
+  }),
+  user: one(users, {
+    fields: [broadcasts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dailyChallengeCompletionsRelations = relations(dailyChallengeCompletions, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyChallengeCompletions.userId],
+    references: [users.id],
+  }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -224,6 +260,10 @@ export type StreakAlert = typeof streakAlerts.$inferSelect;
 export type InsertStreakAlert = typeof streakAlerts.$inferInsert;
 export type PushToken = typeof pushTokens.$inferSelect;
 export type InsertPushToken = typeof pushTokens.$inferInsert;
+export type Broadcast = typeof broadcasts.$inferSelect;
+export type InsertBroadcast = typeof broadcasts.$inferInsert;
+export type DailyChallengeCompletion = typeof dailyChallengeCompletions.$inferSelect;
+export type InsertDailyChallengeCompletion = typeof dailyChallengeCompletions.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

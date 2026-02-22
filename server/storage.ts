@@ -7,6 +7,8 @@ import {
   locations,
   reactions,
   streakAlerts,
+  broadcasts,
+  dailyChallengeCompletions,
   type User,
   type UpsertUser,
   type Group,
@@ -26,6 +28,10 @@ import {
   pushTokens,
   type PushToken,
   type InsertPushToken,
+  type Broadcast,
+  type InsertBroadcast,
+  type DailyChallengeCompletion,
+  type InsertDailyChallengeCompletion,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sql, inArray, gte } from "drizzle-orm";
@@ -102,6 +108,22 @@ export interface IStorage {
 
   // Push token operations
   upsertPushToken(token: InsertPushToken): Promise<PushToken>;
+  getGroupPushTokens(groupId: string): Promise<PushToken[]>;
+
+  // Broadcast operations
+  createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast>;
+
+  // Daily challenge operations
+  getDailyChallengeCompletion(userId: string, challengeDate: string): Promise<DailyChallengeCompletion | undefined>;
+  completeDailyChallenge(completion: InsertDailyChallengeCompletion): Promise<DailyChallengeCompletion>;
+
+  // Reminder operations
+  updateUserReminder(userId: string, hour: number, minute: number): Promise<User>;
+
+  // Legacy wall
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserLongestStreak(userId: string): Promise<number>;
+  getUserBestDay(userId: string): Promise<{ date: string; count: number } | undefined>;
 
   // Premium analytics
   getPremiumAnalytics(userId: string): Promise<{
@@ -123,6 +145,9 @@ export interface IStorage {
     totalReactionsReceived: number;
     weekOf: string;
   }>;
+
+  // Squad spy mode — modal log hour per member
+  getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -569,6 +594,85 @@ export class DatabaseStorage implements IStorage {
     return newToken;
   }
 
+  async getGroupPushTokens(groupId: string): Promise<PushToken[]> {
+    const members = await db
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+    if (members.length === 0) return [];
+    const memberIds = members.map(m => m.userId);
+    return await db
+      .select()
+      .from(pushTokens)
+      .where(inArray(pushTokens.userId, memberIds));
+  }
+
+  // Broadcast operations
+  async createBroadcast(broadcast: InsertBroadcast): Promise<Broadcast> {
+    const [newBroadcast] = await db.insert(broadcasts).values(broadcast).returning();
+    return newBroadcast;
+  }
+
+  // Daily challenge operations
+  async getDailyChallengeCompletion(userId: string, challengeDate: string): Promise<DailyChallengeCompletion | undefined> {
+    const [completion] = await db
+      .select()
+      .from(dailyChallengeCompletions)
+      .where(and(
+        eq(dailyChallengeCompletions.userId, userId),
+        eq(dailyChallengeCompletions.challengeDate, challengeDate),
+      ));
+    return completion;
+  }
+
+  async completeDailyChallenge(completion: InsertDailyChallengeCompletion): Promise<DailyChallengeCompletion> {
+    const [newCompletion] = await db.insert(dailyChallengeCompletions).values(completion).returning();
+    return newCompletion;
+  }
+
+  // Reminder operations
+  async updateUserReminder(userId: string, hour: number, minute: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ reminderHour: hour, reminderMinute: minute, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // Legacy wall
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserLongestStreak(userId: string): Promise<number> {
+    const userGroupIds = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+    if (userGroupIds.length === 0) return 0;
+    const [result] = await db
+      .select({ maxStreak: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int` })
+      .from(groups)
+      .where(inArray(groups.id, userGroupIds.map(g => g.groupId)));
+    return result?.maxStreak ?? 0;
+  }
+
+  async getUserBestDay(userId: string): Promise<{ date: string; count: number } | undefined> {
+    const rows = await db
+      .select({
+        date: sql<string>`DATE(${deuceEntries.loggedAt})`,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.userId, userId))
+      .groupBy(sql`DATE(${deuceEntries.loggedAt})`)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(1);
+    return rows.length > 0 ? rows[0] : undefined;
+  }
+
   // Theme operations
   async updateUserTheme(userId: string, theme: string): Promise<User> {
     const [user] = await db
@@ -818,6 +922,53 @@ export class DatabaseStorage implements IStorage {
       totalReactionsReceived,
       weekOf,
     };
+  }
+
+  // Squad spy mode — find the modal (most common) hour each member logs
+  async getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]> {
+    // Get all members
+    const members = await db
+      .select({
+        userId: groupMembers.userId,
+        username: users.username,
+        firstName: users.firstName,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(eq(groupMembers.groupId, groupId));
+
+    const results: { username: string; typicalHour: number | null }[] = [];
+
+    for (const member of members) {
+      const displayName = member.username || member.firstName || "Unknown";
+
+      // Count logs per hour for this user across all their entries
+      const hourRows = await db
+        .select({
+          hour: sql<number>`EXTRACT(HOUR FROM ${deuceEntries.loggedAt})::int`,
+          cnt: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries)
+        .where(eq(deuceEntries.userId, member.userId))
+        .groupBy(sql`EXTRACT(HOUR FROM ${deuceEntries.loggedAt})`)
+        .orderBy(desc(sql<number>`COUNT(*)::int`))
+        .limit(1);
+
+      // If user has < 3 total logs, return null
+      const [totalResult] = await db
+        .select({ total: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries)
+        .where(eq(deuceEntries.userId, member.userId));
+      const totalLogs = totalResult?.total ?? 0;
+
+      if (totalLogs < 3 || hourRows.length === 0) {
+        results.push({ username: displayName, typicalHour: null });
+      } else {
+        results.push({ username: displayName, typicalHour: hourRows[0].hour });
+      }
+    }
+
+    return results;
   }
 }
 

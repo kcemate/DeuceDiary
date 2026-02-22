@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
+import { StreakFrame } from "@/components/streak-frame";
 import { Edit2 } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
@@ -22,6 +23,7 @@ interface Group {
   name: string;
   memberCount: number;
   entryCount: number;
+  currentStreak?: number;
 }
 
 export default function Profile() {
@@ -40,15 +42,16 @@ export default function Profile() {
   });
 
   const bestDayCount = analytics?.count || 0;
+  const maxStreak = Math.max(0, ...groups.map(g => g.currentStreak ?? 0));
 
   return (
     <div className="pt-6 pb-24">
       {/* Profile Header */}
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
-          <div className="ring-[3px] ring-primary ring-offset-2 ring-offset-background rounded-full">
+          <StreakFrame currentStreak={maxStreak} className="ring-[3px] ring-primary ring-offset-2 ring-offset-background rounded-full">
             <ProfilePictureUpload user={user} size="lg" />
-          </div>
+          </StreakFrame>
         </div>
         <h2 className="text-2xl font-extrabold text-foreground">
           {user ? getUserDisplayName(user) : "User"}
