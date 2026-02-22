@@ -98,6 +98,14 @@ export const streakAlerts = pgTable("streak_alerts", {
   notified: boolean("notified").default(false),
 });
 
+export const pushTokens = pgTable("push_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull(),
+  platform: varchar("platform", { length: 10 }).notNull(), // 'ios' | 'android'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const reactions = pgTable("reactions", {
   id: serial("id").primaryKey(),
   entryId: varchar("entry_id").notNull().references(() => deuceEntries.id, { onDelete: "cascade" }),
@@ -116,6 +124,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdInvites: many(invites),
   createdLocations: many(locations),
   reactions: many(reactions),
+  pushTokens: many(pushTokens),
 }));
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({
@@ -177,6 +186,13 @@ export const locationsRelations = relations(locations, ({ one }) => ({
   }),
 }));
 
+export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [pushTokens.userId],
+    references: [users.id],
+  }),
+}));
+
 export const reactionsRelations = relations(reactions, ({ one }) => ({
   entry: one(deuceEntries, {
     fields: [reactions.entryId],
@@ -205,6 +221,8 @@ export type Reaction = typeof reactions.$inferSelect;
 export type InsertReaction = typeof reactions.$inferInsert;
 export type StreakAlert = typeof streakAlerts.$inferSelect;
 export type InsertStreakAlert = typeof streakAlerts.$inferInsert;
+export type PushToken = typeof pushTokens.$inferSelect;
+export type InsertPushToken = typeof pushTokens.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

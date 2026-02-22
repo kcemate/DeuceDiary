@@ -244,7 +244,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
-      res.json(user);
+      res.json({
+        ...user,
+        subscription: user?.subscription ?? 'free',
+        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -811,6 +816,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error upgrading subscription:", error);
       res.status(500).json({ message: "Failed to upgrade subscription" });
+    }
+  });
+
+  // --- Push notification token registration ---
+  app.post('/api/notifications/register', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { token, platform } = req.body;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'token is required' });
+      }
+      if (platform !== 'ios' && platform !== 'android') {
+        return res.status(400).json({ message: "platform must be 'ios' or 'android'" });
+      }
+
+      await storage.upsertPushToken({ userId, token, platform });
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Error registering push token:', error);
+      res.status(500).json({ message: 'Failed to register push token' });
     }
   });
 

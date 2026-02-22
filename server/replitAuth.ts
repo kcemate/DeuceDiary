@@ -10,18 +10,24 @@
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
-import { createClerkClient } from "@clerk/clerk-sdk-node";
 import { storage } from "./storage";
 import { v4 as uuidv4 } from "uuid";
 
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 
 /** True when Clerk keys are configured and should be used for auth. */
-export const clerkEnabled = !!CLERK_SECRET_KEY;
+export let clerkEnabled = !!CLERK_SECRET_KEY;
 
-const clerk = clerkEnabled
-  ? createClerkClient({ secretKey: CLERK_SECRET_KEY! })
-  : null;
+let clerk: any = null;
+if (clerkEnabled) {
+  try {
+    const { createClerkClient } = require("@clerk/clerk-sdk-node");
+    clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
+  } catch (err) {
+    console.warn("[AUTH] Clerk SDK failed to initialise — falling back to session auth:", (err as Error).message);
+    clerkEnabled = false;
+  }
+}
 
 // --------------- session setup (dev mode) ---------------
 

@@ -23,6 +23,9 @@ import {
   type InsertReaction,
   type StreakAlert,
   type InsertStreakAlert,
+  pushTokens,
+  type PushToken,
+  type InsertPushToken,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sql, inArray, gte } from "drizzle-orm";
@@ -92,6 +95,10 @@ export interface IStorage {
   getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }>;
   useStreakInsurance(userId: string): Promise<void>;
   resetStreakInsurance(userId: string): Promise<void>;
+  resetAllStreakInsurance(): Promise<number>;
+
+  // Push token operations
+  upsertPushToken(token: InsertPushToken): Promise<PushToken>;
 
   // Premium analytics
   getPremiumAnalytics(userId: string): Promise<{
@@ -547,6 +554,18 @@ export class DatabaseStorage implements IStorage {
     return newAlert;
   }
 
+  // Push token operations
+  async upsertPushToken(token: InsertPushToken): Promise<PushToken> {
+    // If this exact token already exists for this user, return it; otherwise insert
+    const [existing] = await db
+      .select()
+      .from(pushTokens)
+      .where(and(eq(pushTokens.userId, token.userId), eq(pushTokens.token, token.token)));
+    if (existing) return existing;
+    const [newToken] = await db.insert(pushTokens).values(token).returning();
+    return newToken;
+  }
+
   // Subscription operations
   async updateUserSubscription(userId: string, subscription: string, expiresAt: Date): Promise<User> {
     const [user] = await db
@@ -581,6 +600,15 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ streakInsuranceUsed: false, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async resetAllStreakInsurance(): Promise<number> {
+    const result = await db
+      .update(users)
+      .set({ streakInsuranceUsed: false, updatedAt: new Date() })
+      .where(eq(users.streakInsuranceUsed, true))
+      .returning({ id: users.id });
+    return result.length;
   }
 
   // Premium analytics

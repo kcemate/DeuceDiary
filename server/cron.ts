@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
+import { storage } from "./storage";
 
 export function startCronJobs(): void {
   // Evening check — 8 PM UTC every day
@@ -24,5 +25,16 @@ export function startCronJobs(): void {
     }
   });
 
-  console.log("[CRON] Streak check jobs scheduled — noon & 8 PM UTC");
+  // Monthly streak insurance reset — 1st of each month at midnight UTC
+  cron.schedule("0 0 1 * *", async () => {
+    console.log("[CRON] Running monthly streak insurance reset...");
+    try {
+      const resetCount = await storage.resetAllStreakInsurance();
+      console.log(`[CRON] Monthly streak insurance reset done: ${resetCount} users reset`);
+    } catch (err) {
+      console.error("[CRON] Monthly streak insurance reset failed:", err);
+    }
+  });
+
+  console.log("[CRON] Streak check jobs scheduled — noon & 8 PM UTC, insurance reset 1st of month");
 }
