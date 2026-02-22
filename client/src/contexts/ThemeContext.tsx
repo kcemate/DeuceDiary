@@ -1,30 +1,73 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { apiRequest } from "@/lib/queryClient";
+
+export type ThemeName = "default" | "dark" | "cream" | "midnight";
 
 interface ThemeContextValue {
-  isDark: boolean;
-  toggleDark: () => void;
+  theme: ThemeName;
+  setTheme: (theme: ThemeName) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function getInitialTheme(): boolean {
-  const stored = localStorage.getItem("deuce-theme");
-  if (stored !== null) return stored === "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+const STORAGE_KEY = "deuce-theme";
+const VALID_THEMES: ThemeName[] = ["default", "dark", "cream", "midnight"];
+
+function getStoredTheme(): ThemeName {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored && VALID_THEMES.includes(stored as ThemeName))
+    return stored as ThemeName;
+  return "default";
 }
 
+function applyThemeToDOM(theme: ThemeName) {
+  document.documentElement.setAttribute("data-theme", theme);
+}
+
+// Apply immediately on module load to prevent flash of wrong theme
+applyThemeToDOM(getStoredTheme());
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(getInitialTheme);
+  const [theme, setThemeState] = useState<ThemeName>(getStoredTheme);
 
+  // Apply to DOM whenever state changes
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-    localStorage.setItem("deuce-theme", isDark ? "dark" : "light");
-  }, [isDark]);
+    applyThemeToDOM(theme);
+    localStorage.setItem(STORAGE_KEY, theme);
+  }, [theme]);
 
-  const toggleDark = () => setIsDark((prev) => !prev);
+  // Sync with server on mount
+  useEffect(() => {
+    apiRequest("/api/user/theme")
+      .then((res) => {
+        if (res.theme && VALID_THEMES.includes(res.theme)) {
+          setThemeState(res.theme);
+        }
+      })
+      .catch(() => {
+        // Not authenticated or error — keep localStorage value
+      });
+  }, []);
+
+  const setTheme = useCallback((newTheme: ThemeName) => {
+    setThemeState(newTheme);
+    apiRequest("/api/user/theme", {
+      method: "PUT",
+      body: JSON.stringify({ theme: newTheme }),
+    }).catch(() => {
+      // Optimistic — local state already updated
+    });
+  }, []);
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleDark }}>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

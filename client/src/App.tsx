@@ -23,6 +23,7 @@ import NotFound from "@/pages/not-found";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Premium from "@/pages/premium";
+import Settings from "@/pages/settings";
 
 function AppRoutes({
   isLoading,
@@ -76,6 +77,7 @@ function AppRoutes({
       <Route path="/terms" component={Terms} />
       <Route path="/profile" component={Profile} />
       <Route path="/premium" component={Premium} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

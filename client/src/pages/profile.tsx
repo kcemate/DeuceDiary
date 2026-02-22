@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { Edit2 } from "lucide-react";
@@ -26,10 +26,10 @@ interface Group {
 
 export default function Profile() {
   const { user } = useAuth();
-  const { isDark, toggleDark } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [editUsernameOpen, setEditUsernameOpen] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: analytics } = useQuery<Analytics>({
     queryKey: ["/api/analytics/most-deuces"],
@@ -148,16 +148,13 @@ export default function Profile() {
               onCheckedChange={setPushNotifications}
             />
           </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="dark-mode" className="text-sm font-medium text-foreground">
-              Dark Mode
-            </Label>
-            <Switch
-              id="dark-mode"
-              checked={isDark}
-              onCheckedChange={toggleDark}
-            />
-          </div>
+          <button
+            onClick={() => setLocation("/settings")}
+            className="flex items-center justify-between w-full"
+          >
+            <span className="text-sm font-medium text-foreground">Theme</span>
+            <span className="text-sm text-muted-foreground">Customize →</span>
+          </button>
         </div>
       </div>
 

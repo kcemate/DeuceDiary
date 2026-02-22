@@ -31,32 +31,76 @@
   --chart-5: hsl(0, 70%, 55%);
 }
 
-.dark {
-  --background: hsl(0, 0%, 4%);
-  --foreground: hsl(0, 0%, 95%);
-  --muted: hsl(0, 0%, 10%);
+/* ── Theme: Default — dark (#141414 bg, white text) ─────────────────── */
+[data-theme="default"] {
+  --background: hsl(0, 0%, 8%);
+  --foreground: hsl(0, 0%, 100%);
+  --muted: hsl(0, 0%, 12%);
   --muted-foreground: hsl(0, 0%, 55%);
-  --popover: hsl(0, 0%, 5%);
-  --popover-foreground: hsl(0, 0%, 95%);
-  --card: hsl(0, 0%, 7%);
-  --card-foreground: hsl(0, 0%, 95%);
-  --border: hsl(0, 0%, 12%);
-  --input: hsl(0, 0%, 12%);
+  --popover: hsl(0, 0%, 10%);
+  --popover-foreground: hsl(0, 0%, 100%);
+  --card: hsl(0, 0%, 11%);
+  --card-foreground: hsl(0, 0%, 100%);
+  --border: hsl(0, 0%, 16%);
+  --input: hsl(0, 0%, 16%);
   --primary: hsl(142, 71%, 45%);
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(30, 80%, 28%);
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(80, 80%, 50%);
-  --accent-foreground: hsl(38, 40%, 96%);
+  --accent-foreground: hsl(0, 0%, 8%);
   --destructive: hsl(0, 63%, 31%);
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(142, 71%, 45%);
-  --radius: 0.75rem;
-  --chart-1: hsl(142, 71%, 52%);
-  --chart-2: hsl(25, 65%, 30%);
-  --chart-3: hsl(45, 88%, 55%);
-  --chart-4: hsl(200, 70%, 58%);
-  --chart-5: hsl(0, 70%, 62%);
+}
+
+/* ── Theme: Cream — warm Porcelain Premium (same as :root) ─────────── */
+/* [data-theme="cream"] inherits :root values — no overrides needed */
+
+/* ── Theme: Dark — deep navy ────────────────────────────────────────── */
+[data-theme="dark"] {
+  --background: hsl(220, 20%, 10%);
+  --foreground: hsl(220, 15%, 90%);
+  --muted: hsl(220, 18%, 14%);
+  --muted-foreground: hsl(220, 10%, 55%);
+  --popover: hsl(220, 20%, 12%);
+  --popover-foreground: hsl(220, 15%, 90%);
+  --card: hsl(220, 18%, 13%);
+  --card-foreground: hsl(220, 15%, 90%);
+  --border: hsl(220, 15%, 18%);
+  --input: hsl(220, 15%, 18%);
+  --primary: hsl(142, 71%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(220, 30%, 25%);
+  --secondary-foreground: hsl(220, 15%, 90%);
+  --accent: hsl(45, 88%, 48%);
+  --accent-foreground: hsl(220, 20%, 10%);
+  --destructive: hsl(0, 63%, 35%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(142, 71%, 45%);
+}
+
+/* ── Theme: Midnight — purple dark ──────────────────────────────────── */
+[data-theme="midnight"] {
+  --background: hsl(270, 30%, 8%);
+  --foreground: hsl(270, 20%, 90%);
+  --muted: hsl(270, 25%, 12%);
+  --muted-foreground: hsl(270, 15%, 55%);
+  --popover: hsl(270, 28%, 10%);
+  --popover-foreground: hsl(270, 20%, 90%);
+  --card: hsl(270, 25%, 11%);
+  --card-foreground: hsl(270, 20%, 90%);
+  --border: hsl(270, 20%, 16%);
+  --input: hsl(270, 20%, 16%);
+  --primary: hsl(142, 71%, 45%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(270, 30%, 25%);
+  --secondary-foreground: hsl(270, 20%, 90%);
+  --accent: hsl(45, 88%, 55%);
+  --accent-foreground: hsl(270, 30%, 8%);
+  --destructive: hsl(0, 63%, 35%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(142, 71%, 45%);
 }
 
 @layer base {
@@ -230,10 +274,14 @@
   background: hsl(0, 0%, 40%);
 }
 
-.dark ::-webkit-scrollbar-thumb {
+[data-theme="default"] ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+[data-theme="midnight"] ::-webkit-scrollbar-thumb {
   background: hsl(0, 0%, 55%);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
+[data-theme="default"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover {
   background: hsl(0, 0%, 70%);
 }
