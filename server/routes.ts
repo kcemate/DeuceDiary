@@ -431,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/join/:inviteId', isAuthenticated, async (req: any, res) => {
+  app.post('/api/join/:inviteId', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { inviteId } = req.params;
@@ -638,8 +638,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group Leaderboard — member rankings by deuce count (premium)
+  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { groupId } = req.params;
+
+      const isInGroup = await storage.isUserInGroup(userId, groupId);
+      if (!isInGroup) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const members = await storage.getGroupMembers(groupId);
+      const ranked = members
+        .map(m => ({
+          userId: m.userId,
+          username: m.user?.username ?? null,
+          profileImageUrl: m.user?.profileImageUrl ?? null,
+          deuceCount: m.user?.deuceCount ?? 0,
+        }))
+        .sort((a, b) => b.deuceCount - a.deuceCount);
+
+      res.json(ranked);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  });
+
   // Squad Spy Mode — typical log hour per member (premium)
-  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremium, async (req: any, res) => {
+  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
