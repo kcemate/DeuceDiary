@@ -32,6 +32,9 @@ const memStore = vi.hoisted(() => {
         username: existing?.username ?? null,
         profileImageUrl: data.profileImageUrl ?? existing?.profileImageUrl ?? null,
         deuceCount: existing?.deuceCount ?? 0,
+        subscription: existing?.subscription ?? "free",
+        subscriptionExpiresAt: existing?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: existing?.streakInsuranceUsed ?? false,
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
       };
@@ -62,6 +65,38 @@ const memStore = vi.hoisted(() => {
       user.profileImageUrl = profileImageUrl;
       user.updatedAt = new Date();
       return user;
+    },
+
+    /* ---- Subscription ops (stubs for routes that reference storage) ---- */
+    async getUserSubscription(userId: string) {
+      const user = _users.get(userId);
+      return {
+        subscription: user?.subscription ?? "free",
+        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+      };
+    },
+    async updateUserSubscription(userId: string, subscription: string, expiresAt: Date) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.subscription = subscription;
+      user.subscriptionExpiresAt = expiresAt;
+      user.updatedAt = new Date();
+      return user;
+    },
+    async useStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) { user.streakInsuranceUsed = true; user.updatedAt = new Date(); }
+    },
+    async resetStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) { user.streakInsuranceUsed = false; user.updatedAt = new Date(); }
+    },
+    async resetAllStreakInsurance() { return 0; },
+
+    /* ---- Premium analytics (stub) ---- */
+    async getPremiumAnalytics(_userId: string) {
+      return { totalDeuces: 0, avgPerWeek: 0, longestStreak: 0, currentStreak: 0, bestDay: { day: "Monday", count: 0 }, groupRankings: [] };
     },
 
     /* ---- Group ops ---- */
@@ -481,6 +516,10 @@ describe("Auth", () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("id", "dev-casey");
     expect(res.body).toHaveProperty("firstName", "casey");
+    // Subscription fields are always present in user response
+    expect(res.body).toHaveProperty("subscription", "free");
+    expect(res.body).toHaveProperty("subscriptionExpiresAt", null);
+    expect(res.body).toHaveProperty("streakInsuranceUsed", false);
   });
 
   it("GET /api/auth/user when not authenticated returns 401", async () => {
