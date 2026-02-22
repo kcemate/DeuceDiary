@@ -9,6 +9,7 @@ import {
   streakAlerts,
   broadcasts,
   dailyChallengeCompletions,
+  referrals,
   type User,
   type UpsertUser,
   type Group,
@@ -32,6 +33,7 @@ import {
   type InsertBroadcast,
   type DailyChallengeCompletion,
   type InsertDailyChallengeCompletion,
+  type Referral,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sql, inArray, gte } from "drizzle-orm";
@@ -148,6 +150,22 @@ export interface IStorage {
 
   // Squad spy mode — modal log hour per member
   getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]>;
+
+  // Referral operations
+  getUserByReferralCode(code: string): Promise<User | undefined>;
+  applyReferral(refereeId: string, referrerId: string): Promise<Referral>;
+  getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }>;
+
+  // Admin stats
+  getAdminStats(): Promise<{
+    totalUsers: number;
+    premiumUsers: number;
+    dauToday: number;
+    totalLogsToday: number;
+    totalLogsAllTime: number;
+    activeGroups: number;
+    avgStreakLength: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -169,6 +187,18 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+
+    // Generate referral code if missing
+    if (!user.referralCode) {
+      const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const [updated] = await db
+        .update(users)
+        .set({ referralCode: code })
+        .where(eq(users.id, user.id))
+        .returning();
+      return updated;
+    }
+
     return user;
   }
 
@@ -969,6 +999,94 @@ export class DatabaseStorage implements IStorage {
     }
 
     return results;
+  }
+
+  // Referral operations
+  async getUserByReferralCode(code: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.referralCode, code));
+    return user;
+  }
+
+  async applyReferral(refereeId: string, referrerId: string): Promise<Referral> {
+    // Set referredBy on referee
+    await db
+      .update(users)
+      .set({ referredBy: referrerId, updatedAt: new Date() })
+      .where(eq(users.id, refereeId));
+
+    // Increment referrer's referralCount
+    await db
+      .update(users)
+      .set({ referralCount: sql`${users.referralCount} + 1`, updatedAt: new Date() })
+      .where(eq(users.id, referrerId));
+
+    // Insert referral row
+    const [referral] = await db
+      .insert(referrals)
+      .values({ referrerId, refereeId })
+      .returning();
+    return referral;
+  }
+
+  async getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }> {
+    const [user] = await db
+      .select({ referralCount: users.referralCount })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    const rows = await db
+      .select({
+        username: users.username,
+        joinedAt: referrals.createdAt,
+      })
+      .from(referrals)
+      .innerJoin(users, eq(referrals.refereeId, users.id))
+      .where(eq(referrals.referrerId, userId))
+      .orderBy(desc(referrals.createdAt));
+
+    return {
+      referralCount: user?.referralCount ?? 0,
+      referrals: rows,
+    };
+  }
+
+  // Admin stats
+  async getAdminStats(): Promise<{
+    totalUsers: number;
+    premiumUsers: number;
+    dauToday: number;
+    totalLogsToday: number;
+    totalLogsAllTime: number;
+    activeGroups: number;
+    avgStreakLength: number;
+  }> {
+    const today = new Date().toISOString().slice(0, 10);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+
+    const [[totalUsersRow], [premiumUsersRow], [dauRow], [logsToday], [logsAll], [activeGroupsRow], [avgStreakRow]] = await Promise.all([
+      db.select({ count: sql<number>`COUNT(*)::int` }).from(users),
+      db.select({ count: sql<number>`COUNT(*)::int` }).from(users)
+        .where(and(eq(users.subscription, 'premium'), sql`${users.subscriptionExpiresAt} > NOW()`)),
+      db.select({ count: sql<number>`COUNT(DISTINCT ${deuceEntries.userId})::int` }).from(deuceEntries)
+        .where(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`),
+      db.select({ count: sql<number>`COUNT(*)::int` }).from(deuceEntries)
+        .where(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`),
+      db.select({ count: sql<number>`COUNT(*)::int` }).from(deuceEntries),
+      db.select({ count: sql<number>`COUNT(DISTINCT ${deuceEntries.groupId})::int` }).from(deuceEntries)
+        .where(gte(deuceEntries.createdAt, sevenDaysAgo)),
+      db.select({ avg: sql<number>`COALESCE(AVG(${groups.currentStreak}), 0)` }).from(groups),
+    ]);
+
+    return {
+      totalUsers: totalUsersRow?.count ?? 0,
+      premiumUsers: premiumUsersRow?.count ?? 0,
+      dauToday: dauRow?.count ?? 0,
+      totalLogsToday: logsToday?.count ?? 0,
+      totalLogsAllTime: logsAll?.count ?? 0,
+      activeGroups: activeGroupsRow?.count ?? 0,
+      avgStreakLength: Math.round((avgStreakRow?.avg ?? 0) * 10) / 10,
+    };
   }
 }
 

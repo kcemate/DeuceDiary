@@ -42,6 +42,9 @@ export const users = pgTable("users", {
   theme: text("theme").default("default").notNull(),
   reminderHour: integer("reminder_hour"),
   reminderMinute: integer("reminder_minute"),
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
+  referralCount: integer("referral_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -132,6 +135,14 @@ export const dailyChallengeCompletions = pgTable("daily_challenge_completions", 
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   challengeDate: varchar("challenge_date", { length: 10 }).notNull(), // YYYY-MM-DD
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  referrerId: varchar("referrer_id").notNull().references(() => users.id),
+  refereeId: varchar("referee_id").notNull().references(() => users.id),
+  discountApplied: boolean("discount_applied").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -241,6 +252,17 @@ export const dailyChallengeCompletionsRelations = relations(dailyChallengeComple
   }),
 }));
 
+export const referralsRelations = relations(referrals, ({ one }) => ({
+  referrer: one(users, {
+    fields: [referrals.referrerId],
+    references: [users.id],
+  }),
+  referee: one(users, {
+    fields: [referrals.refereeId],
+    references: [users.id],
+  }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -264,6 +286,8 @@ export type Broadcast = typeof broadcasts.$inferSelect;
 export type InsertBroadcast = typeof broadcasts.$inferInsert;
 export type DailyChallengeCompletion = typeof dailyChallengeCompletions.$inferSelect;
 export type InsertDailyChallengeCompletion = typeof dailyChallengeCompletions.$inferInsert;
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

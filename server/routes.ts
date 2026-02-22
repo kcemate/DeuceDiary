@@ -14,6 +14,10 @@ import path from "path";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
 
+// In-memory per-user daily log rate limit (max 10 logs per user per UTC day)
+const dailyLogCounts = new Map<string, number>();
+const MAX_LOGS_PER_DAY = 10;
+
 /** Get today's date as YYYY-MM-DD in UTC */
 function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -96,6 +100,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check (no auth required)
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // --- Admin stats endpoint (no session auth, X-Admin-Key header) ---
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'dev-admin-key';
+  app.get('/api/admin/stats', async (req, res) => {
+    const key = req.headers['x-admin-key'];
+    if (key !== ADMIN_KEY) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('[ADMIN STATS ERROR]', error);
+      res.status(500).json({ message: 'Failed to fetch admin stats' });
+    }
   });
 
   // Internal streak check endpoint (cron / manual trigger, no session auth)
@@ -470,6 +490,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Referral landing: /join?ref=CODE → store code in session, redirect to /
+  app.get('/join', (req: any, res) => {
+    const ref = req.query.ref;
+    if (ref && req.session) {
+      req.session.referralCode = ref;
+    }
+    res.redirect('/');
+  });
+
   // Legacy /join/:inviteId redirect → new client-side /invite/:code page
   app.get('/join/:inviteId', async (req: any, res) => {
     res.redirect(`/invite/${req.params.inviteId}`);
@@ -718,8 +747,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+
+      // Per-user daily rate limit (10 logs per UTC day)
+      const today = getTodayUTC();
+      const rateKey = `${userId}:${today}`;
+      const currentCount = dailyLogCounts.get(rateKey) ?? 0;
+      if (currentCount >= MAX_LOGS_PER_DAY) {
+        return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.' });
+      }
+
       const { groupIds, ...entryData } = req.body;
-      
+
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || [req.body.groupId];
       
@@ -790,10 +828,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Increment daily rate limit counter
+      dailyLogCounts.set(rateKey, currentCount + 1);
+
       res.json({ entries, count: entries.length });
     } catch (error) {
       console.error("Error creating deuce entry:", error);
       res.status(500).json({ message: "Failed to create deuce entry" });
+    }
+  });
+
+  // --- Referral routes ---
+
+  app.get('/api/referral', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+
+      res.json({
+        code: user.referralCode,
+        referralCount: user.referralCount ?? 0,
+        referralLink: `https://deuce-diary-web-production.up.railway.app/join?ref=${user.referralCode}`,
+      });
+    } catch (error) {
+      console.error('Error fetching referral info:', error);
+      res.status(500).json({ message: 'Failed to fetch referral info' });
+    }
+  });
+
+  app.post('/api/referral/apply', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { code } = req.body;
+
+      if (!code || typeof code !== 'string') {
+        return res.status(400).json({ message: 'Referral code is required' });
+      }
+
+      const referrer = await storage.getUserByReferralCode(code.toUpperCase());
+      if (!referrer) {
+        return res.status(400).json({ message: 'Invalid referral code' });
+      }
+
+      if (referrer.id === userId) {
+        return res.status(400).json({ message: 'Cannot use your own referral code' });
+      }
+
+      const currentUser = await storage.getUser(userId);
+      if (currentUser?.referredBy) {
+        return res.status(400).json({ message: 'You have already used a referral code' });
+      }
+
+      await storage.applyReferral(userId, referrer.id);
+
+      res.json({ ok: true, referrerUsername: referrer.username });
+    } catch (error) {
+      console.error('Error applying referral:', error);
+      res.status(500).json({ message: 'Failed to apply referral' });
+    }
+  });
+
+  app.get('/api/referral/stats', isAuthenticated, requiresPremium, async (req: any, res) => {
+    try {
+      const stats = await storage.getReferralStats(req.user.id);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching referral stats:', error);
+      res.status(500).json({ message: 'Failed to fetch referral stats' });
     }
   });
 
