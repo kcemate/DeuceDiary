@@ -13,9 +13,13 @@ const memStore = vi.hoisted(() => {
   const _invites = new Map<string, any>();
   let _locations: any[] = [];
   let _reactions: any[] = [];
+  let _broadcasts: any[] = [];
+  let _challengeCompletions: any[] = [];
   let _memberId = 1;
   let _locationId = 1;
   let _reactionId = 1;
+  let _broadcastId = 1;
+  let _challengeId = 1;
 
   return {
     /* ---- User ops ---- */
@@ -36,6 +40,8 @@ const memStore = vi.hoisted(() => {
         subscriptionExpiresAt: existing?.subscriptionExpiresAt ?? null,
         streakInsuranceUsed: existing?.streakInsuranceUsed ?? false,
         theme: existing?.theme ?? "default",
+        reminderHour: existing?.reminderHour ?? null,
+        reminderMinute: existing?.reminderMinute ?? null,
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
       };
@@ -77,7 +83,7 @@ const memStore = vi.hoisted(() => {
       return user;
     },
 
-    /* ---- Subscription ops (stubs for routes that reference storage) ---- */
+    /* ---- Subscription ops ---- */
     async getUserSubscription(userId: string) {
       const user = _users.get(userId);
       return {
@@ -107,6 +113,11 @@ const memStore = vi.hoisted(() => {
     /* ---- Premium analytics (stub) ---- */
     async getPremiumAnalytics(_userId: string) {
       return { totalDeuces: 0, avgPerWeek: 0, longestStreak: 0, currentStreak: 0, bestDay: { day: "Monday", count: 0 }, groupRankings: [] };
+    },
+
+    /* ---- Weekly report (stub) ---- */
+    async getWeeklyReport(_userId: string) {
+      return { totalDeuces: 0, peakDay: { date: "2026-01-01", count: 0 }, mostActiveSquad: { name: "None", count: 0 }, longestStreak: 0, funniestEntry: null, totalReactionsReceived: 0, weekOf: "2026-01-01" };
     },
 
     /* ---- Group ops ---- */
@@ -179,6 +190,7 @@ const memStore = vi.hoisted(() => {
         groupId: entry.groupId,
         location: entry.location,
         thoughts: entry.thoughts,
+        ghost: entry.ghost ?? false,
         loggedAt: entry.loggedAt,
         createdAt: new Date(),
       };
@@ -307,6 +319,18 @@ const memStore = vi.hoisted(() => {
       }));
     },
 
+    /* ---- Streak alert ops ---- */
+    async getAllGroupsWithActiveStreaks(_minStreak: number) { return []; },
+    async createStreakAlert(_alert: any) { return { id: 1 }; },
+
+    /* ---- Group preview ops ---- */
+    async getGroupMemberCount(groupId: string) {
+      return _members.filter((m) => m.groupId === groupId).length;
+    },
+    async getGroupDeuceCount(groupId: string) {
+      return [..._entries.values()].filter((e) => e.groupId === groupId).length;
+    },
+
     /* ---- Reaction ops ---- */
     async addReaction(reaction: any) {
       const exists = _reactions.find(
@@ -335,6 +359,62 @@ const memStore = vi.hoisted(() => {
         .map((r) => ({ ...r, user: _users.get(r.userId)! }));
     },
 
+    /* ---- Push token ops ---- */
+    async upsertPushToken(token: any) {
+      return { id: 1, ...token, createdAt: new Date() };
+    },
+    async getGroupPushTokens(groupId: string) {
+      const memberIds = _members.filter((m) => m.groupId === groupId).map((m) => m.userId);
+      // Return empty array — no real tokens in test
+      return memberIds.map((uid) => ({ id: 1, userId: uid, token: `mock-token-${uid}`, platform: "ios", createdAt: new Date() }));
+    },
+
+    /* ---- Broadcast ops ---- */
+    async createBroadcast(broadcast: any) {
+      const b = { id: _broadcastId++, ...broadcast, createdAt: new Date() };
+      _broadcasts.push(b);
+      return b;
+    },
+
+    /* ---- Daily challenge ops ---- */
+    async getDailyChallengeCompletion(userId: string, challengeDate: string) {
+      return _challengeCompletions.find((c) => c.userId === userId && c.challengeDate === challengeDate);
+    },
+    async completeDailyChallenge(completion: any) {
+      const c = { id: _challengeId++, ...completion, createdAt: new Date() };
+      _challengeCompletions.push(c);
+      return c;
+    },
+
+    /* ---- Reminder ops ---- */
+    async updateUserReminder(userId: string, hour: number, minute: number) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.reminderHour = hour;
+      user.reminderMinute = minute;
+      user.updatedAt = new Date();
+      return user;
+    },
+
+    /* ---- Legacy wall ops ---- */
+    async getUserByUsername(username: string) {
+      for (const [, u] of _users) {
+        if (u.username === username) return u;
+      }
+      return undefined;
+    },
+    async getUserLongestStreak(_userId: string) {
+      return 0;
+    },
+    async getUserBestDay(_userId: string) {
+      return undefined;
+    },
+
+    /* ---- Squad spy mode ---- */
+    async getGroupMemberTypicalHours(_groupId: string) {
+      return [];
+    },
+
     /* ---- test helper ---- */
     _reset() {
       _users.clear();
@@ -344,9 +424,13 @@ const memStore = vi.hoisted(() => {
       _invites.clear();
       _locations = [];
       _reactions = [];
+      _broadcasts = [];
+      _challengeCompletions = [];
       _memberId = 1;
       _locationId = 1;
       _reactionId = 1;
+      _broadcastId = 1;
+      _challengeId = 1;
     },
   };
 });
@@ -478,6 +562,14 @@ async function loginAs(username: string) {
   return agent;
 }
 
+/** Create an authenticated premium supertest agent. */
+async function loginAsPremium(username: string) {
+  const agent = await loginAs(username);
+  const userId = `dev-${username.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  await memStore.updateUserSubscription(userId, "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
+  return agent;
+}
+
 /* ================================================================
  *  AUTH TESTS
  * ================================================================ */
@@ -520,13 +612,13 @@ describe("Auth", () => {
     expect(res.status).toBe(400);
   });
 
-  it("GET /api/auth/user when authenticated returns user object", async () => {
+  it("GET /api/auth/user when authenticated returns user object with title", async () => {
     const agent = await loginAs("casey");
     const res = await agent.get("/api/auth/user");
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("id", "dev-casey");
     expect(res.body).toHaveProperty("firstName", "casey");
-    // Subscription fields are always present in user response
+    expect(res.body).toHaveProperty("title", "Rookie");
     expect(res.body).toHaveProperty("subscription", "free");
     expect(res.body).toHaveProperty("subscriptionExpiresAt", null);
     expect(res.body).toHaveProperty("streakInsuranceUsed", false);
@@ -538,7 +630,7 @@ describe("Auth", () => {
   });
 
   it("POST /api/login auto-creates Solo Deuces group for new users", async () => {
-    const agent = await loginAs("newuser");
+    const agent = await loginAsPremium("newuser");
     const groupsRes = await agent.get("/api/groups");
     expect(groupsRes.status).toBe(200);
     expect(groupsRes.body.length).toBe(1);
@@ -557,49 +649,107 @@ describe("Auth", () => {
     expect(afterRes.status).toBe(401);
   });
 
-  it("GET /api/auth/user does NOT auto-create groups (pure read)", async () => {
-    // Login creates the Solo Deuces group, then we clear groups manually
-    const agent = await loginAs("pureread");
-    // Reset store to remove the auto-created group, but keep the user
-    const user = await memStore.getUser("dev-pureread");
-    memStore._reset();
-    await memStore.upsertUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: null, profileImageUrl: null });
-    // Re-login to get a fresh session pointing to the existing user
-    await agent.post("/api/login").send({ username: "pureread" });
-
-    // Now user has Solo Deuces from re-login. Clear groups again for the real test.
-    // We need to test that GET /api/auth/user itself doesn't create groups.
-    // So let's use a different approach: create user directly, set session, check GET.
-    // Actually the simplest test: after login (which creates Solo Deuces), GET /api/auth/user
-    // shouldn't create a SECOND group.
-    const groupsBefore = await agent.get("/api/groups");
-    await agent.get("/api/auth/user");
-    const groupsAfter = await agent.get("/api/groups");
-    expect(groupsAfter.body.length).toBe(groupsBefore.body.length);
-  });
-
   it("GET /api/logout clears session — subsequent auth/user returns 401", async () => {
     const agent = await loginAs("dave");
 
-    // Confirm authenticated
     const authRes = await agent.get("/api/auth/user");
     expect(authRes.status).toBe(200);
 
-    // Logout (follows redirect automatically)
     await agent.get("/api/logout");
 
-    // Session destroyed — should be 401
     const afterRes = await agent.get("/api/auth/user");
     expect(afterRes.status).toBe(401);
   });
 });
 
 /* ================================================================
- *  GROUP TESTS
+ *  PREMIUM GATING TESTS
+ * ================================================================ */
+describe("Premium gating", () => {
+  it("free user cannot access GET /api/groups", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/groups");
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: "Premium required", upgrade: true, feature: "groups" });
+  });
+
+  it("free user cannot access GET /api/deuces (feed)", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/deuces");
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("feed");
+  });
+
+  it("free user CAN POST /api/deuces (log a deuce)", async () => {
+    const agent = await loginAs("freebie");
+    // Get the Solo Deuces group ID from the store
+    const userId = "dev-freebie";
+    const groups = await memStore.getUserGroups(userId);
+    const soloGroupId = groups[0].id;
+
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [soloGroupId],
+      location: "Home",
+      thoughts: "Free log",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.entries).toHaveLength(1);
+  });
+
+  it("free user cannot create groups", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.post("/api/groups").send({ name: "Nope" });
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("groups");
+  });
+
+  it("free user cannot access reactions", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.post("/api/entries/fake/reactions").send({ emoji: "💩" });
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("reactions");
+  });
+
+  it("free user cannot access analytics", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/analytics/me");
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("analytics");
+  });
+
+  it("free user cannot access themes", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/user/theme");
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("custom_themes");
+  });
+
+  it("free user CAN access POST /api/subscription/upgrade", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.post("/api/subscription/upgrade").send({ plan: "monthly" });
+    expect(res.status).toBe(200);
+  });
+
+  it("free user CAN access GET /api/auth/user", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/auth/user");
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe("dev-freebie");
+  });
+
+  it("premium user CAN access gated endpoints", async () => {
+    const agent = await loginAsPremium("premiumguy");
+    const groupsRes = await agent.get("/api/groups");
+    expect(groupsRes.status).toBe(200);
+  });
+});
+
+/* ================================================================
+ *  GROUP TESTS (all require premium)
  * ================================================================ */
 describe("Groups", () => {
-  it("POST /api/groups (authenticated) creates group with id", async () => {
-    const agent = await loginAs("alice");
+  it("POST /api/groups (premium) creates group with id", async () => {
+    const agent = await loginAsPremium("alice");
     const res = await agent.post("/api/groups").send({ name: "Throne Room", description: "Royal flush zone" });
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("id");
@@ -613,20 +763,19 @@ describe("Groups", () => {
   });
 
   it("GET /api/groups returns user groups array", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     await agent.post("/api/groups").send({ name: "Group A" });
     await agent.post("/api/groups").send({ name: "Group B" });
 
     const res = await agent.get("/api/groups");
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(3); // Solo Deuces (auto-created) + Group A + Group B
+    expect(res.body.length).toBe(3); // Solo Deuces + Group A + Group B
     expect(res.body.map((g: any) => g.name).sort()).toEqual(["Group A", "Group B", "Solo Deuces"]);
   });
 
-  it("POST /api/join/:inviteId with valid invite joins group", async () => {
-    // Alice creates a group and generates an invite
-    const alice = await loginAs("alice");
+  it("POST /api/join/:inviteId with valid invite joins group (premium)", async () => {
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Party Throne" });
     const groupId = groupRes.body.id;
 
@@ -634,27 +783,25 @@ describe("Groups", () => {
     expect(inviteRes.status).toBe(200);
     const inviteId = inviteRes.body.id;
 
-    // Bob joins via the invite
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const joinRes = await bob.post(`/api/join/${inviteId}`);
     expect(joinRes.status).toBe(200);
     expect(joinRes.body.group).toBeDefined();
     expect(joinRes.body.group.id).toBe(groupId);
 
-    // Verify Bob is now a member
     const detailRes = await bob.get(`/api/groups/${groupId}`);
     expect(detailRes.status).toBe(200);
   });
 
   it("POST /api/join/:inviteId with invalid inviteId returns 400", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const res = await agent.post("/api/join/nonexistent-invite-id");
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/invalid|expired/i);
   });
 
   it("GET /api/groups/:id (member) returns group, members, entries", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Detail Test" });
     const groupId = groupRes.body.id;
 
@@ -667,14 +814,12 @@ describe("Groups", () => {
     expect(res.body.members.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("GET /api/groups/:id (non-member) returns 403", async () => {
-    // Alice creates a group
-    const alice = await loginAs("alice");
+  it("GET /api/groups/:id (non-member premium) returns 403", async () => {
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Private" });
     const groupId = groupRes.body.id;
 
-    // Bob (not invited) tries to view it
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const res = await bob.get(`/api/groups/${groupId}`);
     expect(res.status).toBe(403);
   });
@@ -685,7 +830,7 @@ describe("Groups", () => {
  * ================================================================ */
 describe("Deuces", () => {
   it("POST /api/deuces (authenticated, valid group) creates entry", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Deuce Test" });
     const groupId = groupRes.body.id;
 
@@ -711,7 +856,7 @@ describe("Deuces", () => {
   });
 
   it("deuce appears in group detail entries", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Feed Test" });
     const groupId = groupRes.body.id;
 
@@ -728,8 +873,8 @@ describe("Deuces", () => {
     expect(detailRes.body.entries[0].user).toBeDefined();
   });
 
-  it("POST /api/entries/:id/reactions adds reaction", async () => {
-    const agent = await loginAs("alice");
+  it("POST /api/entries/:id/reactions adds reaction (premium)", async () => {
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "React Test" });
     const groupId = groupRes.body.id;
 
@@ -750,8 +895,8 @@ describe("Deuces", () => {
     expect(res.status).toBe(401);
   });
 
-  it("GET /api/deuces returns entries across all user groups", async () => {
-    const agent = await loginAs("alice");
+  it("GET /api/deuces returns entries across all user groups (premium)", async () => {
+    const agent = await loginAsPremium("alice");
     const g1 = await agent.post("/api/groups").send({ name: "Group 1" });
     const g2 = await agent.post("/api/groups").send({ name: "Group 2" });
 
@@ -769,15 +914,13 @@ describe("Deuces", () => {
     const res = await agent.get("/api/deuces");
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
-    // 2 entries across groups (solo deuces auto-created has none)
     expect(res.body.length).toBe(2);
-    // Each entry should have user and reactions
     expect(res.body[0]).toHaveProperty("user");
     expect(res.body[0]).toHaveProperty("reactions");
   });
 
   it("GET /api/deuces?groupId=x filters to single group", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const g1 = await agent.post("/api/groups").send({ name: "Target" });
     const g2 = await agent.post("/api/groups").send({ name: "Other" });
 
@@ -798,17 +941,8 @@ describe("Deuces", () => {
     expect(res.body[0].thoughts).toBe("In target");
   });
 
-  it("GET /api/deuces?groupId=x returns 403 for non-member", async () => {
-    const alice = await loginAs("alice");
-    const groupRes = await alice.post("/api/groups").send({ name: "Private" });
-
-    const bob = await loginAs("bob");
-    const res = await bob.get(`/api/deuces?groupId=${groupRes.body.id}`);
-    expect(res.status).toBe(403);
-  });
-
-  it("GET /api/entries/:id/reactions returns reactions array", async () => {
-    const agent = await loginAs("alice");
+  it("GET /api/entries/:id/reactions returns reactions array (premium)", async () => {
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Rxn List" });
     const groupId = groupRes.body.id;
 
@@ -831,17 +965,244 @@ describe("Deuces", () => {
 });
 
 /* ================================================================
+ *  GHOST LOG TESTS
+ * ================================================================ */
+describe("Ghost Logs", () => {
+  it("POST /api/deuces with ghost:true creates ghost entry", async () => {
+    const agent = await loginAs("ghost");
+    const userId = "dev-ghost";
+    const groups = await memStore.getUserGroups(userId);
+    const groupId = groups[0].id;
+
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "Home",
+      thoughts: "Stealth mode",
+      ghost: true,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.entries[0].ghost).toBe(true);
+  });
+
+  it("POST /api/deuces without ghost defaults to false", async () => {
+    const agent = await loginAs("visible");
+    const userId = "dev-visible";
+    const groups = await memStore.getUserGroups(userId);
+    const groupId = groups[0].id;
+
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "Home",
+      thoughts: "Public log",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.entries[0].ghost).toBe(false);
+  });
+});
+
+/* ================================================================
+ *  THRONE BROADCAST TESTS
+ * ================================================================ */
+describe("Throne Broadcast", () => {
+  it("POST /api/squads/:id/broadcast creates broadcast (premium)", async () => {
+    const agent = await loginAsPremium("alice");
+    const groupRes = await agent.post("/api/groups").send({ name: "Broadcast Squad" });
+    const groupId = groupRes.body.id;
+
+    const res = await agent.post(`/api/squads/${groupId}/broadcast`).send({ milestone: "30-day streak" });
+    expect(res.status).toBe(200);
+    expect(res.body.broadcast).toBeDefined();
+    expect(res.body.broadcast.milestone).toBe("30-day streak");
+    expect(res.body.tokenCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("POST /api/squads/:id/broadcast fails without premium", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.post("/api/squads/fake-id/broadcast").send({ milestone: "nope" });
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("throne_broadcast");
+  });
+
+  it("POST /api/squads/:id/broadcast requires milestone", async () => {
+    const agent = await loginAsPremium("alice");
+    const groupRes = await agent.post("/api/groups").send({ name: "No Milestone" });
+    const groupId = groupRes.body.id;
+
+    const res = await agent.post(`/api/squads/${groupId}/broadcast`).send({});
+    expect(res.status).toBe(400);
+  });
+});
+
+/* ================================================================
+ *  DAILY CHALLENGES TESTS
+ * ================================================================ */
+describe("Daily Challenges", () => {
+  it("GET /api/challenges/today returns today's challenge (premium)", async () => {
+    const agent = await loginAsPremium("alice");
+    const res = await agent.get("/api/challenges/today");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("challenge");
+    expect(res.body).toHaveProperty("date");
+    expect(res.body).toHaveProperty("completed", false);
+  });
+
+  it("POST /api/challenges/complete marks challenge done (premium)", async () => {
+    const agent = await loginAsPremium("alice");
+    const res = await agent.post("/api/challenges/complete");
+    expect(res.status).toBe(200);
+    expect(res.body.bonusAwarded).toBe(true);
+  });
+
+  it("POST /api/challenges/complete fails if already completed today", async () => {
+    const agent = await loginAsPremium("alice");
+    await agent.post("/api/challenges/complete");
+    const res = await agent.post("/api/challenges/complete");
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/already completed/i);
+  });
+
+  it("GET /api/challenges/today fails without premium", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.get("/api/challenges/today");
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("daily_challenges");
+  });
+});
+
+/* ================================================================
+ *  CUSTOM REMINDER TESTS
+ * ================================================================ */
+describe("Custom Reminder", () => {
+  it("PUT /api/notifications/reminder sets reminder (premium)", async () => {
+    const agent = await loginAsPremium("alice");
+    const res = await agent.put("/api/notifications/reminder").send({ hour: 8, minute: 30 });
+    expect(res.status).toBe(200);
+    expect(res.body.reminderHour).toBe(8);
+    expect(res.body.reminderMinute).toBe(30);
+  });
+
+  it("PUT /api/notifications/reminder validates hour range", async () => {
+    const agent = await loginAsPremium("alice");
+    const res = await agent.put("/api/notifications/reminder").send({ hour: 25, minute: 0 });
+    expect(res.status).toBe(400);
+  });
+
+  it("PUT /api/notifications/reminder validates minute range", async () => {
+    const agent = await loginAsPremium("alice");
+    const res = await agent.put("/api/notifications/reminder").send({ hour: 8, minute: 61 });
+    expect(res.status).toBe(400);
+  });
+
+  it("PUT /api/notifications/reminder fails without premium", async () => {
+    const agent = await loginAs("freebie");
+    const res = await agent.put("/api/notifications/reminder").send({ hour: 8, minute: 0 });
+    expect(res.status).toBe(403);
+    expect(res.body.feature).toBe("custom_reminder");
+  });
+});
+
+/* ================================================================
+ *  LEGACY WALL TESTS
+ * ================================================================ */
+describe("Legacy Wall", () => {
+  it("GET /api/users/:username/legacy returns public profile", async () => {
+    // Create a user with a username
+    await memStore.upsertUser({
+      id: "dev-legend",
+      email: "legend@test.dev",
+      firstName: "Legend",
+      lastName: null,
+      profileImageUrl: null,
+    });
+    const user = await memStore.getUser("dev-legend");
+    user.username = "legend";
+    user.deuceCount = 150;
+
+    const res = await supertest(app).get("/api/users/legend/legacy");
+    expect(res.status).toBe(200);
+    expect(res.body.totalLogs).toBe(150);
+    expect(res.body.title).toBe("Elite");
+    expect(res.body).toHaveProperty("longestStreak");
+    expect(res.body).toHaveProperty("memberSince");
+  });
+
+  it("GET /api/users/:username/legacy returns 404 for unknown user", async () => {
+    const res = await supertest(app).get("/api/users/nobody/legacy");
+    expect(res.status).toBe(404);
+  });
+
+  it("legacy wall is public — no auth required", async () => {
+    await memStore.upsertUser({
+      id: "dev-pub",
+      email: "pub@test.dev",
+      firstName: "Public",
+      lastName: null,
+      profileImageUrl: null,
+    });
+    const user = await memStore.getUser("dev-pub");
+    user.username = "publicuser";
+    user.deuceCount = 5;
+
+    const res = await supertest(app).get("/api/users/publicuser/legacy");
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("Rookie");
+  });
+});
+
+/* ================================================================
+ *  TITLE SYSTEM TESTS
+ * ================================================================ */
+describe("Title system", () => {
+  it("Rookie for < 10 logs", async () => {
+    const agent = await loginAs("newbie");
+    const res = await agent.get("/api/auth/user");
+    expect(res.body.title).toBe("Rookie");
+  });
+
+  it("Regular for 10-49 logs", async () => {
+    const agent = await loginAs("regular");
+    const user = await memStore.getUser("dev-regular");
+    user.deuceCount = 25;
+    const res = await agent.get("/api/auth/user");
+    expect(res.body.title).toBe("Regular");
+  });
+
+  it("Veteran for 50-99 logs", async () => {
+    const agent = await loginAs("vet");
+    const user = await memStore.getUser("dev-vet");
+    user.deuceCount = 75;
+    const res = await agent.get("/api/auth/user");
+    expect(res.body.title).toBe("Veteran");
+  });
+
+  it("Elite for 100-499 logs", async () => {
+    const agent = await loginAs("elite");
+    const user = await memStore.getUser("dev-elite");
+    user.deuceCount = 200;
+    const res = await agent.get("/api/auth/user");
+    expect(res.body.title).toBe("Elite");
+  });
+
+  it("Legend for 500+ logs", async () => {
+    const agent = await loginAs("legend");
+    const user = await memStore.getUser("dev-legend");
+    user.deuceCount = 500;
+    const res = await agent.get("/api/auth/user");
+    expect(res.body.title).toBe("Legend");
+  });
+});
+
+/* ================================================================
  *  EDGE CASE TESTS
  * ================================================================ */
 describe("Edge cases", () => {
   it("logging deuce to a group you're not a member of returns 403", async () => {
-    // Alice creates a group
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Alice Only" });
     const groupId = groupRes.body.id;
 
-    // Bob (not a member) tries to log a deuce
-    const bob = await loginAs("bob");
+    // Bob is premium but not a member
+    const bob = await loginAsPremium("bob");
     const res = await bob.post("/api/deuces").send({
       groupIds: [groupId],
       location: "Home",
@@ -851,7 +1212,7 @@ describe("Edge cases", () => {
   });
 
   it("duplicate reaction by same user returns 400", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Dup Rxn" });
     const groupId = groupRes.body.id;
 
@@ -862,18 +1223,16 @@ describe("Edge cases", () => {
     });
     const entryId = deuceRes.body.entries[0].id;
 
-    // First reaction succeeds
     const first = await agent.post(`/api/entries/${entryId}/reactions`).send({ emoji: "💩" });
     expect(first.status).toBe(200);
 
-    // Duplicate reaction should return 400
     const second = await agent.post(`/api/entries/${entryId}/reactions`).send({ emoji: "💩" });
     expect(second.status).toBe(400);
     expect(second.body.message).toMatch(/already/i);
   });
 
   it("rejects thoughts exceeding 500 characters", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Long Text" });
     const groupId = groupRes.body.id;
 

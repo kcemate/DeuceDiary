@@ -34,6 +34,9 @@ const memStore = vi.hoisted(() => {
         profileImageUrl: data.profileImageUrl ?? existing?.profileImageUrl ?? null,
         deuceCount: existing?.deuceCount ?? 0,
         theme: existing?.theme ?? "default",
+        subscription: data.subscription ?? existing?.subscription ?? "free",
+        subscriptionExpiresAt: data.subscriptionExpiresAt ?? existing?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: data.streakInsuranceUsed ?? existing?.streakInsuranceUsed ?? false,
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
       };
@@ -73,6 +76,49 @@ const memStore = vi.hoisted(() => {
       user.theme = theme;
       user.updatedAt = new Date();
       return user;
+    },
+
+    /* ---- Subscription ops ---- */
+    async updateUserSubscription(userId: string, subscription: string, expiresAt: Date) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.subscription = subscription;
+      user.subscriptionExpiresAt = expiresAt;
+      user.updatedAt = new Date();
+      return user;
+    },
+    async getUserSubscription(userId: string) {
+      const user = _users.get(userId);
+      return {
+        subscription: user?.subscription ?? "free",
+        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+      };
+    },
+    async useStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) {
+        user.streakInsuranceUsed = true;
+        user.updatedAt = new Date();
+      }
+    },
+    async resetStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) {
+        user.streakInsuranceUsed = false;
+        user.updatedAt = new Date();
+      }
+    },
+    async resetAllStreakInsurance() {
+      let count = 0;
+      for (const [, user] of _users) {
+        if (user.streakInsuranceUsed) {
+          user.streakInsuranceUsed = false;
+          user.updatedAt = new Date();
+          count++;
+        }
+      }
+      return count;
     },
 
     /* ---- Group ops ---- */
@@ -330,6 +376,51 @@ const memStore = vi.hoisted(() => {
         weekOf: "",
       };
     },
+    async getPremiumAnalytics(_userId: string) {
+      return {
+        totalDeuces: 0,
+        avgPerWeek: 0,
+        longestStreak: 0,
+        currentStreak: 0,
+        bestDay: { day: "", count: 0 },
+        groupRankings: [],
+      };
+    },
+    async getGroupPushTokens(_groupId: string) {
+      return [];
+    },
+    async createBroadcast(_broadcast: any) {
+      return _broadcast;
+    },
+    async getDailyChallengeCompletion(_userId: string, _challengeDate: string) {
+      return undefined;
+    },
+    async completeDailyChallenge(_completion: any) {
+      return _completion;
+    },
+    async updateUserReminder(_userId: string, _hour: number, _minute: number) {
+      const user = _users.get(_userId);
+      if (!user) throw new Error("User not found");
+      return user;
+    },
+    async getUserByUsername(username: string) {
+      for (const [, u] of _users) {
+        if (u.username === username) return u;
+      }
+      return undefined;
+    },
+    async getUserLongestStreak(_userId: string) {
+      return 0;
+    },
+    async getUserBestDay(_userId: string) {
+      return undefined;
+    },
+    async getGroupMemberTypicalHours(_groupId: string) {
+      return [];
+    },
+    async upsertPushToken(_token: any) {
+      return _token;
+    },
 
     /* ---- test helper ---- */
     _reset() {
@@ -501,12 +592,22 @@ async function loginAs(username: string) {
   return agent;
 }
 
+/** Create an authenticated supertest agent with an active premium subscription. */
+async function loginAsPremium(username: string) {
+  const agent = await loginAs(username);
+  const userId = `dev-${username.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  const expiresAt = new Date();
+  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  await memStore.updateUserSubscription(userId, "premium", expiresAt);
+  return agent;
+}
+
 /* ================================================================
- *  GET /api/deuces
+ *  GET /api/deuces  (premium-gated: feed)
  * ================================================================ */
 describe("GET /api/deuces", () => {
   it("returns array of all deuces", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Test Group" });
     const groupId = groupRes.body.id;
 
@@ -529,7 +630,7 @@ describe("GET /api/deuces", () => {
   });
 
   it("returns empty array when no deuces exist", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
 
     const response = await agent.get("/api/deuces");
     expect(response.status).toBe(200);
@@ -537,14 +638,21 @@ describe("GET /api/deuces", () => {
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(0);
   });
+
+  it("returns 403 for non-premium user", async () => {
+    const agent = await loginAs("alice");
+    const response = await agent.get("/api/deuces");
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("feed");
+  });
 });
 
 /* ================================================================
- *  GET /api/deuces?groupId=
+ *  GET /api/deuces?groupId=  (premium-gated: feed)
  * ================================================================ */
 describe("GET /api/deuces?groupId=", () => {
   it("filters deuces by valid group ID", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const g1 = await agent.post("/api/groups").send({ name: "Group 1" });
     const g2 = await agent.post("/api/groups").send({ name: "Group 2" });
 
@@ -578,16 +686,16 @@ describe("GET /api/deuces?groupId=", () => {
   });
 
   it("returns 403 for group user is not a member of", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Alice Only" });
 
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const response = await bob.get(`/api/deuces?groupId=${groupRes.body.id}`);
     expect(response.status).toBe(403);
   });
 
   it("returns empty array when group has no deuces", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Empty Group" });
 
     const response = await agent.get(`/api/deuces?groupId=${groupRes.body.id}`);
@@ -598,7 +706,7 @@ describe("GET /api/deuces?groupId=", () => {
 });
 
 /* ================================================================
- *  POST /api/auth/logout
+ *  POST /api/auth/logout  (NOT gated)
  * ================================================================ */
 describe("POST /api/auth/logout", () => {
   it("returns { ok: true }", async () => {
@@ -621,7 +729,7 @@ describe("POST /api/auth/logout", () => {
 });
 
 /* ================================================================
- *  POST /api/login
+ *  POST /api/login  (NOT gated)
  * ================================================================ */
 describe("POST /api/login", () => {
   it("returns user object", async () => {
@@ -649,7 +757,7 @@ describe("POST /api/login", () => {
 });
 
 /* ================================================================
- *  GET /api/auth/user
+ *  GET /api/auth/user  (NOT gated)
  * ================================================================ */
 describe("GET /api/auth/user", () => {
   it("fetches authenticated user", async () => {
@@ -669,11 +777,11 @@ describe("GET /api/auth/user", () => {
 });
 
 /* ================================================================
- *  GET /api/groups/:id/streak
+ *  GET /api/groups/:id/streak  (premium-gated: groups)
  * ================================================================ */
 describe("GET /api/groups/:id/streak", () => {
   it("returns current and longest streak", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Streak Test" });
     const groupId = groupRes.body.id;
 
@@ -695,7 +803,7 @@ describe("GET /api/groups/:id/streak", () => {
   });
 
   it("returns 0 for current streak when no recent deuces", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Empty Streak" });
     const groupId = groupRes.body.id;
 
@@ -705,14 +813,30 @@ describe("GET /api/groups/:id/streak", () => {
     expect(data.currentStreak).toBe(0);
     expect(data.longestStreak).toBe(0);
   });
+
+  it("returns 403 for non-premium user", async () => {
+    const premium = await loginAsPremium("alice");
+    const groupRes = await premium.post("/api/groups").send({ name: "Streak Gate" });
+    const groupId = groupRes.body.id;
+
+    // Add a free user to the group so they pass the membership check
+    const free = await loginAs("bob");
+    const inviteRes = await premium.post(`/api/groups/${groupId}/invite`);
+    // bob can't join via /api/join because that's also gated, so add directly
+    await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
+
+    const response = await free.get(`/api/groups/${groupId}/streak`);
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("groups");
+  });
 });
 
 /* ================================================================
- *  POST /api/groups/:id/streak/check
+ *  POST /api/groups/:id/streak/check  (premium-gated: groups)
  * ================================================================ */
 describe("POST /api/groups/:id/streak/check", () => {
   it("returns at-risk status", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Risk Test" });
     const groupId = groupRes.body.id;
 
@@ -725,7 +849,7 @@ describe("POST /api/groups/:id/streak/check", () => {
   });
 
   it("returns no at-risk members", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Safe Test" });
     const groupId = groupRes.body.id;
 
@@ -743,14 +867,27 @@ describe("POST /api/groups/:id/streak/check", () => {
     expect(data.atRisk).toBe(false);
     expect(data.missingMembers).toEqual([]);
   });
+
+  it("returns 403 for non-premium user", async () => {
+    const premium = await loginAsPremium("alice");
+    const groupRes = await premium.post("/api/groups").send({ name: "Check Gate" });
+    const groupId = groupRes.body.id;
+
+    const free = await loginAs("bob");
+    await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
+
+    const response = await free.post(`/api/groups/${groupId}/streak/check`);
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("groups");
+  });
 });
 
 /* ================================================================
- *  GET /api/groups
+ *  GET /api/groups  (premium-gated: groups)
  * ================================================================ */
 describe("GET /api/groups", () => {
   it("returns list of groups", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
 
     const response = await agent.get("/api/groups");
     expect(response.status).toBe(200);
@@ -758,14 +895,21 @@ describe("GET /api/groups", () => {
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBeGreaterThan(0);
   });
+
+  it("returns 403 for non-premium user", async () => {
+    const agent = await loginAs("alice");
+    const response = await agent.get("/api/groups");
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("groups");
+  });
 });
 
 /* ================================================================
- *  GET /api/groups/:id
+ *  GET /api/groups/:id  (premium-gated: groups)
  * ================================================================ */
 describe("GET /api/groups/:id", () => {
   it("returns group details", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Detail Test" });
     const groupId = groupRes.body.id;
 
@@ -778,22 +922,29 @@ describe("GET /api/groups/:id", () => {
   });
 
   it("returns 403 when not a member of group", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Private" });
     const groupId = groupRes.body.id;
 
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const response = await bob.get(`/api/groups/${groupId}`);
     expect(response.status).toBe(403);
+  });
+
+  it("returns 403 for non-premium user", async () => {
+    const agent = await loginAs("alice");
+    const response = await agent.get("/api/groups/some-group-id");
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("groups");
   });
 });
 
 /* ================================================================
- *  GET /api/users/:userId/weekly-report
+ *  GET /api/users/:userId/weekly-report  (premium-gated: analytics)
  * ================================================================ */
 describe("GET /api/users/:userId/weekly-report", () => {
   it("returns weekly report for 'me'", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const response = await agent.get("/api/users/me/weekly-report");
     expect(response.status).toBe(200);
     const data = response.body;
@@ -804,10 +955,17 @@ describe("GET /api/users/:userId/weekly-report", () => {
     expect(data).toHaveProperty("totalReactionsReceived");
     expect(data).toHaveProperty("weekOf");
   });
+
+  it("returns 403 for non-premium user", async () => {
+    const agent = await loginAs("alice");
+    const response = await agent.get("/api/users/me/weekly-report");
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("analytics");
+  });
 });
 
 /* ================================================================
- *  POST /api/internal/streak-check
+ *  POST /api/internal/streak-check  (NOT gated — internal)
  * ================================================================ */
 describe("POST /api/internal/streak-check", () => {
   it("returns 401 without valid internal key", async () => {
@@ -830,11 +988,11 @@ describe("POST /api/internal/streak-check", () => {
 });
 
 /* ================================================================
- *  GET /api/groups/preview/:inviteCode
+ *  GET /api/groups/preview/:inviteCode  (NOT gated — public)
  * ================================================================ */
 describe("GET /api/groups/preview/:inviteCode", () => {
   it("returns group preview for valid invite", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Preview Test" });
     const groupId = groupRes.body.id;
     const inviteRes = await agent.post(`/api/groups/${groupId}/invite`);
@@ -856,11 +1014,11 @@ describe("GET /api/groups/preview/:inviteCode", () => {
 });
 
 /* ================================================================
- *  POST /api/deuces
+ *  POST /api/deuces  (NOT gated)
  * ================================================================ */
 describe("POST /api/deuces", () => {
   it("creates a new deuce", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Deuce Test" });
     const groupId = groupRes.body.id;
 
@@ -890,7 +1048,7 @@ describe("POST /api/deuces", () => {
   });
 
   it("requires user to be member of group", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Alice Only" });
     const groupId = groupRes.body.id;
 
@@ -902,14 +1060,31 @@ describe("POST /api/deuces", () => {
     });
     expect(response.status).toBe(403);
   });
+
+  it("works for non-premium users (not gated)", async () => {
+    // Free user needs a group — loginAs auto-creates Solo Deuces
+    const agent = await loginAs("freealice");
+    // Get the auto-created Solo Deuces group via direct storage query
+    const groups = await memStore.getUserGroups("dev-freealice");
+    const soloGroup = groups[0];
+
+    const response = await agent.post("/api/deuces").send({
+      groupIds: [soloGroup.id],
+      location: "Home",
+      thoughts: "Free user deuce",
+      loggedAt: new Date().toISOString(),
+    });
+    expect(response.status).toBe(200);
+    expect(response.body.entries).toBeDefined();
+  });
 });
 
 /* ================================================================
- *  POST /api/login with inviteCode (auto-join)
+ *  POST /api/login with inviteCode (auto-join)  (NOT gated)
  * ================================================================ */
 describe("POST /api/login with inviteCode", () => {
   it("auto-joins group when inviteCode is provided", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Invite Join" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
@@ -932,7 +1107,7 @@ describe("POST /api/login with inviteCode", () => {
   });
 
   it("skips join if already a member", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Already In" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
@@ -949,17 +1124,17 @@ describe("POST /api/login with inviteCode", () => {
 });
 
 /* ================================================================
- *  POST /api/join/:inviteId
+ *  POST /api/join/:inviteId  (premium-gated: groups)
  * ================================================================ */
 describe("POST /api/join/:inviteId", () => {
   it("joins a group via valid invite", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Join Test" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
     const inviteId = inviteRes.body.id;
 
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const joinRes = await bob.post(`/api/join/${inviteId}`);
     expect(joinRes.status).toBe(200);
     expect(joinRes.body.group).toBeDefined();
@@ -967,18 +1142,31 @@ describe("POST /api/join/:inviteId", () => {
   });
 
   it("returns error for invalid or expired invite", async () => {
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const joinRes = await bob.post("/api/join/nonexistent-invite");
     expect(joinRes.status).toBe(400);
+  });
+
+  it("returns 403 for non-premium user", async () => {
+    const alice = await loginAsPremium("alice");
+    const groupRes = await alice.post("/api/groups").send({ name: "Gate Test" });
+    const groupId = groupRes.body.id;
+    const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
+    const inviteId = inviteRes.body.id;
+
+    const free = await loginAs("charlie");
+    const joinRes = await free.post(`/api/join/${inviteId}`);
+    expect(joinRes.status).toBe(403);
+    expect(joinRes.body.feature).toBe("groups");
   });
 });
 
 /* ================================================================
- *  GET /api/analytics/most-deuces
+ *  GET /api/analytics/most-deuces  (premium-gated: analytics)
  * ================================================================ */
 describe("GET /api/analytics/most-deuces", () => {
   it("returns top deuce day", async () => {
-    const agent = await loginAs("alice");
+    const agent = await loginAsPremium("alice");
     const groupRes = await agent.post("/api/groups").send({ name: "Analytics Test" });
     const groupId = groupRes.body.id;
 
@@ -994,5 +1182,12 @@ describe("GET /api/analytics/most-deuces", () => {
     const data = response.body;
     expect(data).toHaveProperty("date");
     expect(data).toHaveProperty("count");
+  });
+
+  it("returns 403 for non-premium user", async () => {
+    const agent = await loginAs("alice");
+    const response = await agent.get("/api/analytics/most-deuces");
+    expect(response.status).toBe(403);
+    expect(response.body.feature).toBe("analytics");
   });
 });

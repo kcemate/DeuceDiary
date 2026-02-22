@@ -30,6 +30,9 @@ const memStore = vi.hoisted(() => {
         username: existing?.username ?? null,
         profileImageUrl: data.profileImageUrl ?? existing?.profileImageUrl ?? null,
         deuceCount: existing?.deuceCount ?? 0,
+        subscription: existing?.subscription ?? "free",
+        subscriptionExpiresAt: existing?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: existing?.streakInsuranceUsed ?? false,
         theme: existing?.theme ?? "default",
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
@@ -60,6 +63,60 @@ const memStore = vi.hoisted(() => {
       user.theme = theme;
       user.updatedAt = new Date();
       return user;
+    },
+
+    /* ---- Subscription ops ---- */
+    async getUserSubscription(userId: string) {
+      const user = _users.get(userId);
+      return {
+        subscription: user?.subscription ?? "free",
+        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+      };
+    },
+    async updateUserSubscription(userId: string, subscription: string, expiresAt: Date) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.subscription = subscription;
+      user.subscriptionExpiresAt = expiresAt;
+      user.updatedAt = new Date();
+      return user;
+    },
+    async useStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) { user.streakInsuranceUsed = true; user.updatedAt = new Date(); }
+    },
+    async resetStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) { user.streakInsuranceUsed = false; user.updatedAt = new Date(); }
+    },
+    async resetAllStreakInsurance() {
+      let count = 0;
+      for (const [, user] of _users) {
+        if (user.streakInsuranceUsed) { user.streakInsuranceUsed = false; user.updatedAt = new Date(); count++; }
+      }
+      return count;
+    },
+
+    /* ---- Premium analytics ---- */
+    async getPremiumAnalytics(userId: string) {
+      const userEntries = [..._entries.values()].filter((e) => e.userId === userId);
+      const groupIds = _members.filter((m) => m.userId === userId).map((m) => m.groupId);
+      let longestStreak = 0;
+      let currentStreak = 0;
+      for (const gid of groupIds) {
+        const s = _streaks.get(gid);
+        if (s) { longestStreak = Math.max(longestStreak, s.longestStreak); currentStreak = Math.max(currentStreak, s.currentStreak); }
+      }
+      return {
+        totalDeuces: userEntries.length, avgPerWeek: userEntries.length,
+        longestStreak, currentStreak,
+        bestDay: { day: "Monday", count: userEntries.length },
+        groupRankings: groupIds.map((gid) => {
+          const g = _groups.get(gid);
+          return { groupId: gid, groupName: g?.name ?? "Unknown", rank: 1, total: 1 };
+        }),
+      };
     },
 
     async createGroup(group: any) {
@@ -159,6 +216,27 @@ const memStore = vi.hoisted(() => {
     async getEntryReactions(entryId: string) {
       return _reactions.filter((r) => r.entryId === entryId).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0)).map((r) => ({ ...r, user: _users.get(r.userId)! }));
     },
+
+    /* ---- Daily challenge ops ---- */
+    async getDailyChallengeCompletion(_userId: string, _challengeDate: string) { return undefined; },
+    async completeDailyChallenge(completion: any) { return { id: 1, ...completion, createdAt: new Date() }; },
+
+    /* ---- Push / broadcast / reminder stubs ---- */
+    async upsertPushToken(token: any) { return token; },
+    async getGroupPushTokens(_gid: string) { return []; },
+    async createBroadcast(b: any) { return b; },
+    async updateUserReminder(_userId: string, _h: number, _m: number) { return _users.get(_userId); },
+
+    /* ---- Legacy wall ops ---- */
+    async getUserByUsername(username: string) {
+      for (const [, u] of _users) { if (u.username === username) return u; }
+      return undefined;
+    },
+    async getUserLongestStreak(_userId: string) { return 0; },
+    async getUserBestDay(_userId: string) { return undefined; },
+
+    /* ---- Squad spy mode ---- */
+    async getGroupMemberTypicalHours(_groupId: string) { return []; },
 
     async getAllGroupsWithActiveStreaks(_minStreak: number) { return []; },
     async createStreakAlert(_alert: any) { return _alert; },
@@ -277,6 +355,14 @@ async function loginAs(username: string) {
   return agent;
 }
 
+/** Create an authenticated premium supertest agent. */
+async function loginAsPremium(username: string) {
+  const agent = await loginAs(username);
+  const userId = `dev-${username.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  await memStore.updateUserSubscription(userId, "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
+  return agent;
+}
+
 /* ================================================================
  *  INVITE FLOW INTEGRATION
  * ================================================================ */
@@ -284,7 +370,7 @@ describe("Invite flow integration", () => {
 
   it("full lifecycle: create group → invite → preview → join → verify → streak", async () => {
     // 1) User A creates a group and gets an invite code
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Test Squad" });
     expect(groupRes.status).toBe(200);
     const groupId = groupRes.body.id;
@@ -310,14 +396,17 @@ describe("Invite flow integration", () => {
     expect(bobLogin.body.joinedGroup).toBeDefined();
     expect(bobLogin.body.joinedGroup.name).toBe("Test Squad");
 
-    // 4) GET /api/groups → User B sees the group
+    // Upgrade Bob to premium so he can access premium-gated endpoints
+    await memStore.updateUserSubscription("dev-bob", "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
+
+    // 4) GET /api/groups → User B sees the group (premium-gated)
     const bobGroups = await bob.get("/api/groups");
     expect(bobGroups.status).toBe(200);
     const groupNames = bobGroups.body.map((g: any) => g.name);
     expect(groupNames).toContain("Test Squad");
     expect(groupNames).toContain("Solo Deuces");
 
-    // 5) GET /api/groups/:id/streak → streak is 0 (no entries yet)
+    // 5) GET /api/groups/:id/streak → streak is 0 (no entries yet, premium-gated)
     const streakRes = await bob.get(`/api/groups/${groupId}/streak`);
     expect(streakRes.status).toBe(200);
     expect(streakRes.body.currentStreak).toBe(0);
@@ -348,20 +437,20 @@ describe("Invite flow integration", () => {
 
   it("rejects already-consumed invite code", async () => {
     // 8) Alice creates group + invite, Bob consumes it, Charlie tries same code
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "One-Use Invite" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
     const inviteCode = inviteRes.body.id;
 
-    // Bob joins via invite (consumes it)
-    const bob = await loginAs("bob");
+    // Bob joins via invite (consumes it) — premium-gated endpoint
+    const bob = await loginAsPremium("bob");
     const bobJoin = await bob.post(`/api/join/${inviteCode}`);
     expect(bobJoin.status).toBe(200);
     expect(bobJoin.body.group).toBeDefined();
 
     // Charlie tries the same code → fails (invite was deleted)
-    const charlie = await loginAs("charlie");
+    const charlie = await loginAsPremium("charlie");
     const charlieJoin = await charlie.post(`/api/join/${inviteCode}`);
     expect(charlieJoin.status).toBe(400);
     expect(charlieJoin.body.message).toMatch(/invalid|expired/i);
@@ -375,7 +464,7 @@ describe("Invite flow integration", () => {
 
   it("returns 404 for expired invite code on preview", async () => {
     // 9b) Create an expired invite and try preview
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Expired Group" });
     const groupId = groupRes.body.id;
 
@@ -392,7 +481,7 @@ describe("Invite flow integration", () => {
   });
 
   it("returns 400 for expired invite code on join", async () => {
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Expired Join" });
     const groupId = groupRes.body.id;
 
@@ -403,14 +492,14 @@ describe("Invite flow integration", () => {
       expiresAt: new Date(Date.now() - 1000),
     });
 
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const joinRes = await bob.post("/api/join/expired-join-code");
     expect(joinRes.status).toBe(400);
     expect(joinRes.body.message).toMatch(/invalid|expired/i);
   });
 
   it("returns 400 for completely nonexistent invite on join", async () => {
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     const joinRes = await bob.post("/api/join/totally-fake-id");
     expect(joinRes.status).toBe(400);
   });

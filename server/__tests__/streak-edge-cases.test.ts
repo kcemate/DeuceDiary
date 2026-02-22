@@ -30,6 +30,9 @@ const memStore = vi.hoisted(() => {
         username: existing?.username ?? null,
         profileImageUrl: data.profileImageUrl ?? existing?.profileImageUrl ?? null,
         deuceCount: existing?.deuceCount ?? 0,
+        subscription: existing?.subscription ?? "free",
+        subscriptionExpiresAt: existing?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: existing?.streakInsuranceUsed ?? false,
         theme: existing?.theme ?? "default",
         createdAt: existing?.createdAt ?? new Date(),
         updatedAt: new Date(),
@@ -60,6 +63,75 @@ const memStore = vi.hoisted(() => {
       user.theme = theme;
       user.updatedAt = new Date();
       return user;
+    },
+
+    /* ---- Subscription ops ---- */
+    async getUserSubscription(userId: string) {
+      const user = _users.get(userId);
+      return {
+        subscription: user?.subscription ?? "free",
+        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+      };
+    },
+    async updateUserSubscription(userId: string, subscription: string, expiresAt: Date) {
+      const user = _users.get(userId);
+      if (!user) throw new Error("User not found");
+      user.subscription = subscription;
+      user.subscriptionExpiresAt = expiresAt;
+      user.updatedAt = new Date();
+      return user;
+    },
+    async useStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) {
+        user.streakInsuranceUsed = true;
+        user.updatedAt = new Date();
+      }
+    },
+    async resetStreakInsurance(userId: string) {
+      const user = _users.get(userId);
+      if (user) {
+        user.streakInsuranceUsed = false;
+        user.updatedAt = new Date();
+      }
+    },
+    async resetAllStreakInsurance() {
+      let count = 0;
+      for (const [, user] of _users) {
+        if (user.streakInsuranceUsed) {
+          user.streakInsuranceUsed = false;
+          user.updatedAt = new Date();
+          count++;
+        }
+      }
+      return count;
+    },
+
+    /* ---- Premium analytics ---- */
+    async getPremiumAnalytics(userId: string) {
+      const userEntries = [..._entries.values()].filter((e) => e.userId === userId);
+      const groupIds = _members.filter((m) => m.userId === userId).map((m) => m.groupId);
+      let longestStreak = 0;
+      let currentStreak = 0;
+      for (const gid of groupIds) {
+        const s = _streaks.get(gid);
+        if (s) {
+          longestStreak = Math.max(longestStreak, s.longestStreak);
+          currentStreak = Math.max(currentStreak, s.currentStreak);
+        }
+      }
+      return {
+        totalDeuces: userEntries.length,
+        avgPerWeek: userEntries.length,
+        longestStreak,
+        currentStreak,
+        bestDay: { day: "Monday", count: userEntries.length },
+        groupRankings: groupIds.map((gid) => {
+          const g = _groups.get(gid);
+          return { groupId: gid, groupName: g?.name ?? "Unknown", rank: 1, total: 1 };
+        }),
+      };
     },
 
     async createGroup(group: any) {
@@ -174,6 +246,21 @@ const memStore = vi.hoisted(() => {
       return { totalDeuces: 0, peakDay: { date: "", count: 0 }, mostActiveSquad: { name: "None", count: 0 }, longestStreak: 0, funniestEntry: null, totalReactionsReceived: 0, weekOf: "" };
     },
 
+    /* ---- Stubs ---- */
+    async getGroupPushTokens(_gid: string) { return []; },
+    async createBroadcast(b: any) { return b; },
+    async getDailyChallengeCompletion(_userId: string, _challengeDate: string) { return undefined; },
+    async completeDailyChallenge(completion: any) { return { id: 1, ...completion }; },
+    async updateUserReminder(_userId: string, _h: number, _m: number) { return _users.get(_userId); },
+    async getUserByUsername(username: string) {
+      for (const [, user] of _users) { if (user.username === username) return user; }
+      return undefined;
+    },
+    async getUserLongestStreak(_userId: string) { return 0; },
+    async getUserBestDay(_userId: string) { return undefined; },
+    async getGroupMemberTypicalHours(_groupId: string) { return []; },
+    async upsertPushToken(token: any) { return token; },
+
     _reset() {
       _users.clear(); _groups.clear(); _members = []; _entries.clear();
       _invites.clear(); _locations = []; _reactions = []; _streaks.clear();
@@ -280,6 +367,14 @@ async function loginAs(username: string) {
   return agent;
 }
 
+/** Create an authenticated premium supertest agent. */
+async function loginAsPremium(username: string) {
+  const agent = await loginAs(username);
+  const userId = `dev-${username.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+  await memStore.updateUserSubscription(userId, "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
+  return agent;
+}
+
 /** Helper: POST a deuce for a given agent + group */
 async function logDeuce(agent: any, groupId: string, thoughts = "test") {
   return agent.post("/api/deuces").send({
@@ -302,7 +397,7 @@ describe("Streak edge cases", () => {
 
   it("single member group: streak increments daily on solo logs", async () => {
     setDay(0);
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Solo Streak" });
     const groupId = groupRes.body.id;
 
@@ -327,13 +422,13 @@ describe("Streak edge cases", () => {
 
   it("multi-member group: streak only advances when ALL members log that day", async () => {
     setDay(0);
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Team Streak" });
     const groupId = groupRes.body.id;
 
     // Bob joins
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     await bob.post(`/api/join/${inviteRes.body.id}`);
 
     // Only Alice logs → streak stays 0
@@ -349,7 +444,7 @@ describe("Streak edge cases", () => {
 
   it("missing a day breaks streak back to 0", async () => {
     setDay(0);
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Break Streak" });
     const groupId = groupRes.body.id;
 
@@ -375,13 +470,13 @@ describe("Streak edge cases", () => {
 
   it("POST /api/groups/:id/streak/check correctly identifies at-risk members", async () => {
     setDay(0);
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Risk Check" });
     const groupId = groupRes.body.id;
 
     // Bob joins
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
-    const bob = await loginAs("bob");
+    const bob = await loginAsPremium("bob");
     await bob.post(`/api/join/${inviteRes.body.id}`);
 
     // Nobody logged → both at risk
@@ -405,7 +500,7 @@ describe("Streak edge cases", () => {
 
   it("longest streak tracking persists correctly across multiple days", async () => {
     setDay(0);
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Longest Streak" });
     const groupId = groupRes.body.id;
 
