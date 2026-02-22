@@ -24,6 +24,7 @@ import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
 import Premium from "@/pages/premium";
 import Settings from "@/pages/settings";
+import Legacy from "@/pages/legacy";
 
 function AppRoutes({
   isLoading,
@@ -49,6 +50,7 @@ function AppRoutes({
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
         <Route path="/invite/:code" component={InviteLanding} />
+        <Route path="/legacy/:username" component={Legacy} />
         <Route path="*">
           {error?.message?.includes("401") ? (
             <div className="flex flex-col items-center justify-center min-h-96 space-y-4">
@@ -78,6 +80,7 @@ function AppRoutes({
       <Route path="/profile" component={Profile} />
       <Route path="/premium" component={Premium} />
       <Route path="/settings" component={Settings} />
+      <Route path="/legacy/:username" component={Legacy} />
       <Route component={NotFound} />
     </Switch>
   );

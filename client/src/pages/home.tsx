@@ -25,9 +25,11 @@ export default function Home() {
   const { user } = useAuth();
   const { joinGroup } = useWebSocket();
   const [showLogModal, setShowLogModal] = useState(false);
+  const isFree = (user as any)?.subscription !== "premium";
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
+    enabled: !isFree,
   });
 
   // Join WebSocket channels for all user's groups
@@ -41,6 +43,7 @@ export default function Home() {
 
   const { data: analytics } = useQuery<Analytics>({
     queryKey: ["/api/analytics/most-deuces"],
+    enabled: !isFree,
   });
 
   const formatDate = (dateString: string) => {
@@ -65,6 +68,70 @@ export default function Home() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
+  // ── Free tier: stripped-down home ──
+  if (isFree) {
+    return (
+      <div className="pt-6 pb-24 flex flex-col items-center">
+        {/* Log Deuce — the one free action */}
+        <div className="w-full mb-10">
+          <Button
+            onClick={() => setShowLogModal(true)}
+            className="btn-shimmer w-full text-white py-6 text-xl font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          >
+            <span className="text-3xl mr-3">🚽</span>
+            Log a Deuce
+          </Button>
+        </div>
+
+        {/* Total Deuces — still visible for free */}
+        <div className="w-full relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-2xl mb-10 border border-border">
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Total Deuces</p>
+              <p className="stat-number text-5xl text-foreground">{(user as any)?.deuceCount || 0}</p>
+            </div>
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <span className="text-3xl">💩</span>
+            </div>
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        </div>
+
+        {/* Premium upsell card */}
+        <div className="w-full bg-card border border-border rounded-2xl p-6">
+          <div className="text-center mb-4">
+            <span className="text-4xl">👑</span>
+            <h3 className="text-xl font-extrabold text-foreground mt-2">Unlock the Full Throne Experience</h3>
+          </div>
+
+          <ul className="space-y-3 mb-6">
+            <li className="flex items-center gap-3 text-foreground">
+              <span className="text-lg">🏆</span>
+              <span className="font-medium">Compete with your squad</span>
+            </li>
+            <li className="flex items-center gap-3 text-foreground">
+              <span className="text-lg">🔥</span>
+              <span className="font-medium">Track your streaks</span>
+            </li>
+            <li className="flex items-center gap-3 text-foreground">
+              <span className="text-lg">🎨</span>
+              <span className="font-medium">Custom themes</span>
+            </li>
+          </ul>
+
+          <Link href="/premium">
+            <Button className="btn-shimmer w-full text-white py-4 text-base font-bold rounded-xl">
+              Go Premium
+            </Button>
+          </Link>
+        </div>
+
+        <LogDeuceModal open={showLogModal} onOpenChange={setShowLogModal} />
+      </div>
+    );
+  }
+
+  // ── Premium tier: full home ──
   return (
     <div className="pt-6 pb-24">
       {/* Log Deuce Button — THE main CTA */}

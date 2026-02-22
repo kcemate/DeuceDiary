@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { CreateGroupModal } from "@/components/create-group-modal";
+import { PremiumGate } from "@/components/premium-gate";
 
 interface Group {
   id: string;
@@ -17,8 +19,10 @@ interface Group {
 }
 
 export default function Groups() {
+  const { user } = useAuth();
   const { joinGroup } = useWebSocket();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const isFree = (user as any)?.subscription !== "premium";
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
@@ -45,6 +49,30 @@ export default function Groups() {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
+
+  if (isFree) {
+    return (
+      <div className="pt-6 pb-24">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-extrabold text-foreground">Squads</h2>
+        </div>
+        <PremiumGate featureName="Squad Mode">
+          {/* Placeholder content shown blurred behind the gate */}
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-card border border-border rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-5 bg-muted rounded w-1/3"></div>
+                  <div className="h-6 bg-muted rounded-full w-16"></div>
+                </div>
+                <div className="h-4 bg-muted rounded w-full"></div>
+              </div>
+            ))}
+          </div>
+        </PremiumGate>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-6 pb-24">
