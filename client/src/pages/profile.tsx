@@ -158,6 +158,13 @@ export default function Profile() {
             <span className="text-sm font-medium text-foreground">Theme</span>
             <span className="text-sm text-muted-foreground">Customize →</span>
           </button>
+          <button
+            onClick={() => setLocation("/referral")}
+            className="flex items-center justify-between w-full"
+          >
+            <span className="text-sm font-medium text-foreground">Refer Friends 🎁</span>
+            <span className="text-sm text-muted-foreground">Share →</span>
+          </button>
         </div>
       </div>
 
