@@ -1,9 +1,9 @@
 [build]
 builder = 'nixpacks'
-buildCommand = 'npm ci && npm run build'
+buildCommand = 'npm ci && npm run build && npx esbuild scripts/db-migrate.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/migrate.js'
 
 [deploy]
-startCommand = 'npm run db:push -- --force && node dist/index.js'
+startCommand = 'node dist/migrate.js && node dist/index.js'
 healthcheckPath = '/api/health'
 healthcheckTimeout = 120
 restartPolicyType = 'on_failure'
