@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { sendGroupPushNotification } from "./notifications";
 
 /** Get today's date as YYYY-MM-DD in UTC */
 function getTodayUTC(): string {
@@ -49,12 +50,25 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
 
     console.log(`[STREAK NOTIFICATION]`, payload);
 
+    // Send push notification to all group members
+    try {
+      const result = await sendGroupPushNotification(
+        group.id,
+        payload.title,
+        payload.body,
+        { type: "streak_at_risk", groupId: group.id },
+      );
+      console.log(`[STREAK PUSH] Group ${group.name}: sent=${result.sent}, failed=${result.failed}`);
+    } catch (pushErr) {
+      console.error(`[STREAK PUSH] Failed for group ${group.name}:`, pushErr);
+    }
+
     // Persist alert to DB
     await storage.createStreakAlert({
       groupId: group.id,
       streakLength: group.currentStreak,
       missingMembers: JSON.stringify(missingNames),
-      notified: false,
+      notified: true,
     });
 
     notificationsSent++;

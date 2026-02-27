@@ -110,6 +110,8 @@ export interface IStorage {
 
   // Push token operations
   upsertPushToken(token: InsertPushToken): Promise<PushToken>;
+  getUserPushTokens(userId: string): Promise<PushToken[]>;
+  deletePushToken(userId: string, token: string): Promise<void>;
   getGroupPushTokens(groupId: string): Promise<PushToken[]>;
 
   // Broadcast operations
@@ -622,6 +624,19 @@ export class DatabaseStorage implements IStorage {
     if (existing) return existing;
     const [newToken] = await db.insert(pushTokens).values(token).returning();
     return newToken;
+  }
+
+  async getUserPushTokens(userId: string): Promise<PushToken[]> {
+    return await db
+      .select()
+      .from(pushTokens)
+      .where(eq(pushTokens.userId, userId));
+  }
+
+  async deletePushToken(userId: string, token: string): Promise<void> {
+    await db
+      .delete(pushTokens)
+      .where(and(eq(pushTokens.userId, userId), eq(pushTokens.token, token)));
   }
 
   async getGroupPushTokens(groupId: string): Promise<PushToken[]> {

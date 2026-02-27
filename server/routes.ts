@@ -1030,6 +1030,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Push notification token unregister ---
+  app.delete('/api/push/unregister', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { token } = req.body;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: 'token is required' });
+      }
+
+      await storage.deletePushToken(userId, token);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Error unregistering push token:', error);
+      res.status(500).json({ message: 'Failed to unregister push token' });
+    }
+  });
+
   // --- Throne Broadcast (premium) ---
   app.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), async (req: any, res) => {
     try {
