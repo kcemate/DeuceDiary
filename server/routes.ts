@@ -13,6 +13,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
+import { track } from "./lib/analytics";
 
 // In-memory per-user daily log rate limit (max 10 logs per user per UTC day)
 const dailyLogCounts = new Map<string, number>();
@@ -192,6 +193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             profileImageUrl: image_url ?? null,
           });
           console.log(`Clerk webhook: synced user ${id} (${event.type})`);
+          if (event.type === "user.created") {
+            track("user_registered", id);
+          }
         }
 
         res.json({ received: true });
@@ -273,6 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      track("user_login", userId);
       const user = await storage.getUser(userId);
       res.json({
         ...user,
@@ -371,7 +376,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...groupData,
         id: uuidv4(),
       });
-      
+
+      track("group_created", userId);
+
       res.json(group);
     } catch (error) {
       console.error("Error creating group:", error);
@@ -443,6 +450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt,
       });
       
+      track("invite_sent", userId);
+
       const inviteLink = `${req.protocol}://${req.get('host')}/join/${inviteId}`;
       res.json({ inviteLink, id: inviteId });
     } catch (error) {
@@ -480,7 +489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       await storage.deleteInvite(inviteId);
-      
+
+      track("group_joined", userId);
+
       const group = await storage.getGroupById(invite.groupId);
       console.log("User successfully joined group:", group);
       res.json({ group });
@@ -797,6 +808,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update user's deuce count (only increment once, not per group)
       await storage.updateUserDeuceCount(userId, 1);
+
+      track("log_created", userId, { has_notes: !!entryData.thoughts });
       
       // Get user info for WebSocket notification
       const user = await storage.getUser(userId);

@@ -96,6 +96,17 @@ const migrations: { name: string; sql: string }[] = [
       created_at timestamp DEFAULT now()
     )`,
   },
+  // analytics_events table
+  {
+    name: "table.analytics_events",
+    sql: `CREATE TABLE IF NOT EXISTS analytics_events (
+      id serial PRIMARY KEY NOT NULL,
+      user_id text,
+      event text NOT NULL,
+      properties text,
+      created_at timestamp DEFAULT now()
+    )`,
+  },
   // broadcasts table
   {
     name: "table.broadcasts",

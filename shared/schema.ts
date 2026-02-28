@@ -138,6 +138,14 @@ export const dailyChallengeCompletions = pgTable("daily_challenge_completions", 
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const analyticsEvents = pgTable("analytics_events", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  event: text("event").notNull(),
+  properties: text("properties"),  // JSON string
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const referrals = pgTable("referrals", {
   id: serial("id").primaryKey(),
   referrerId: varchar("referrer_id").notNull().references(() => users.id),
