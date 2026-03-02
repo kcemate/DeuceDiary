@@ -80,7 +80,7 @@ export default function Privacy() {
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">8. Contact</h2>
             <p>
-              Questions or concerns? Reach out at <strong>support@deucediary.app</strong>. We promise to read your email — even if we're on the throne.
+              Questions or concerns? Reach out at <strong>giovannilabs@icloud.com</strong>. We promise to read your email — even if we're on the throne.
             </p>
           </section>
         </div>

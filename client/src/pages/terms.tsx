@@ -93,7 +93,7 @@ export default function Terms() {
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">11. Contact</h2>
             <p>
-              Questions about these terms? Email us at <strong>support@deucediary.app</strong>. We read every message — sometimes from the throne itself.
+              Questions about these terms? Email us at <strong>giovannilabs@icloud.com</strong>. We read every message — sometimes from the throne itself.
             </p>
           </section>
         </div>
