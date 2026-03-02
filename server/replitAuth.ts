@@ -10,8 +10,14 @@
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
+import { z } from "zod";
 import { storage } from "./storage";
 import { v4 as uuidv4 } from "uuid";
+
+const loginSchema = z.object({
+  username: z.string().min(1).max(50),
+  inviteCode: z.string().optional(),
+});
 
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 
@@ -62,8 +68,12 @@ export async function setupAuth(app: Express) {
     // Dev-only login/logout routes
     app.post("/api/login", async (req: any, res) => {
       try {
-        const { username, inviteCode } = req.body;
-        if (!username || typeof username !== "string" || !username.trim()) {
+        const parsed = loginSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Username is required" });
+        }
+        const { username, inviteCode } = parsed.data;
+        if (!username.trim()) {
           return res.status(400).json({ message: "Username is required" });
         }
         const name = username.trim();

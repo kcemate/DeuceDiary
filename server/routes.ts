@@ -2,7 +2,9 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { Webhook } from "svix";
+import { z } from "zod";
 import { storage } from "./storage";
+import { pool } from "./db";
 import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
 import { requiresPremium, requiresPremiumFor } from "./premiumAuth";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
@@ -14,6 +16,68 @@ import path from "path";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
+
+// --- Zod Validation Schemas ---
+const loginSchema = z.object({
+  username: z.string().min(1).max(50),
+  inviteCode: z.string().optional(),
+});
+
+const createGroupSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(500).optional(),
+});
+
+const createLocationSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+const createDeuceSchema = z.object({
+  groupIds: z.array(z.string()).optional(),
+  groupId: z.string().optional(),
+  location: z.string().min(1).max(200),
+  thoughts: z.string().optional(),
+  loggedAt: z.union([z.string(), z.null()]).optional(),
+  ghost: z.boolean().optional(),
+});
+
+const reactionSchema = z.object({
+  emoji: z.string().min(1).max(10),
+});
+
+const referralApplySchema = z.object({
+  code: z.string().min(1).max(20),
+});
+
+const subscriptionUpgradeSchema = z.object({
+  plan: z.enum(["monthly", "annual"]),
+});
+
+const pushTokenSchema = z.object({
+  token: z.string().min(1).max(500),
+  platform: z.enum(["ios", "android"]),
+});
+
+const reminderSchema = z.object({
+  hour: z.number().int().min(0).max(23),
+  minute: z.number().int().min(0).max(59),
+});
+
+const themeSchema = z.object({
+  theme: z.enum(["default", "dark", "cream", "midnight"]),
+});
+
+const broadcastSchema = z.object({
+  milestone: z.string().min(1).max(200),
+});
+
+const deleteReactionSchema = z.object({
+  emoji: z.string().min(1).max(10),
+});
+
+const unregisterPushSchema = z.object({
+  token: z.string().min(1).max(500),
+});
 
 // In-memory per-user daily log rate limit (max 10 logs per user per UTC day)
 const dailyLogCounts = new Map<string, number>();
@@ -98,9 +162,24 @@ function getTitle(totalLogs: number): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check (no auth required)
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  // Health check (no auth required) — checks DB connectivity + returns uptime
+  app.get('/api/health', async (_req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        db: 'connected',
+      });
+    } catch (err) {
+      res.status(503).json({
+        status: 'degraded',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        db: 'disconnected',
+      });
+    }
   });
 
   // --- Admin stats endpoint (no session auth, X-Admin-Key header) ---
@@ -351,11 +430,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/user/theme', isAuthenticated, requiresPremiumFor('custom_themes'), async (req: any, res) => {
     try {
-      const { theme } = req.body;
-      if (!theme || !VALID_THEMES.includes(theme)) {
+      const parsed = themeSchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
       }
-      const user = await storage.updateUserTheme(req.user.id, theme);
+      const user = await storage.updateUserTheme(req.user.id, parsed.data.theme);
       res.json({ theme: user.theme });
     } catch (error) {
       console.error("Error updating theme:", error);
@@ -367,8 +446,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/groups', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const parsed = createGroupSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
+      }
       const groupData = insertGroupSchema.parse({
-        ...req.body,
+        ...parsed.data,
         createdBy: userId,
       });
       
@@ -529,9 +612,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/locations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { name } = req.body;
-      
-      if (!name || !name.trim()) {
+      const parsed = createLocationSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Location name is required" });
+      }
+      const name = parsed.data.name;
+
+      if (!name.trim()) {
         return res.status(400).json({ message: "Location name is required" });
       }
       
@@ -559,11 +646,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
-      const { emoji } = req.body;
-      
-      if (!emoji || typeof emoji !== 'string') {
+      const parsed = reactionSchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: "Emoji is required" });
       }
+      const { emoji } = parsed.data;
       
       // Check if entry exists and user can access it
       const entry = await storage.getEntryById(entryId);
@@ -596,11 +683,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
-      const { emoji } = req.body;
-      
-      if (!emoji || typeof emoji !== 'string') {
+      const parsed = deleteReactionSchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: "Emoji is required" });
       }
+      const { emoji } = parsed.data;
       
       await storage.removeReaction(userId, entryId, emoji);
       res.json({ message: "Reaction removed" });
@@ -767,26 +854,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.' });
       }
 
-      const { groupIds, ...entryData } = req.body;
+      const parsed = createDeuceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid deuce entry data" });
+      }
+
+      const { groupIds, groupId, ...entryData } = parsed.data;
 
       // Handle both single group (backward compatibility) and multiple groups
-      const targetGroupIds = groupIds || [req.body.groupId];
-      
-      if (!targetGroupIds || targetGroupIds.length === 0) {
+      const targetGroupIds = groupIds || (groupId ? [groupId] : []);
+
+      if (targetGroupIds.length === 0) {
         return res.status(400).json({ message: "At least one group must be selected" });
-      }
-      
-      // Check if user is in all selected groups
-      for (const groupId of targetGroupIds) {
-        const isInGroup = await storage.isUserInGroup(userId, groupId);
-        if (!isInGroup) {
-          return res.status(403).json({ message: `Not authorized for group ${groupId}` });
-        }
       }
 
       // Validate thought length
       if (entryData.thoughts && entryData.thoughts.length > 500) {
         return res.status(400).json({ message: "Thought must be 500 characters or less" });
+      }
+
+      // Check if user is in all selected groups
+      for (const gid of targetGroupIds) {
+        const isInGroup = await storage.isUserInGroup(userId, gid);
+        if (!isInGroup) {
+          return res.status(403).json({ message: `Not authorized for group ${gid}` });
+        }
       }
 
       const entries = [];
@@ -872,11 +964,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/referral/apply', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { code } = req.body;
-
-      if (!code || typeof code !== 'string') {
+      const parsed = referralApplySchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: 'Referral code is required' });
       }
+      const { code } = parsed.data;
 
       const referrer = await storage.getUserByReferralCode(code.toUpperCase());
       if (!referrer) {
@@ -1005,7 +1097,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { plan } = req.body; // 'monthly' | 'annual'
+      const parsed = subscriptionUpgradeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid plan. Must be 'monthly' or 'annual'" });
+      }
+      const { plan } = parsed.data;
 
       const expiresAt = new Date();
       if (plan === 'annual') {
@@ -1026,14 +1122,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/notifications/register', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { token, platform } = req.body;
-
-      if (!token || typeof token !== 'string') {
-        return res.status(400).json({ message: 'token is required' });
+      const parsed = pushTokenSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "token and platform ('ios' or 'android') are required" });
       }
-      if (platform !== 'ios' && platform !== 'android') {
-        return res.status(400).json({ message: "platform must be 'ios' or 'android'" });
-      }
+      const { token, platform } = parsed.data;
 
       await storage.upsertPushToken({ userId, token, platform });
       res.json({ ok: true });
@@ -1047,11 +1140,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/push/unregister', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { token } = req.body;
-
-      if (!token || typeof token !== 'string') {
+      const parsed = unregisterPushSchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: 'token is required' });
       }
+      const { token } = parsed.data;
 
       await storage.deletePushToken(userId, token);
       res.json({ ok: true });
@@ -1066,11 +1159,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const groupId = req.params.id;
-      const { milestone } = req.body;
-
-      if (!milestone || typeof milestone !== 'string') {
+      const parsed = broadcastSchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({ message: 'milestone is required' });
       }
+      const { milestone } = parsed.data;
 
       const isInGroup = await storage.isUserInGroup(userId, groupId);
       if (!isInGroup) {
@@ -1131,14 +1224,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/notifications/reminder', isAuthenticated, requiresPremiumFor('custom_reminder'), async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { hour, minute } = req.body;
-
-      if (typeof hour !== 'number' || hour < 0 || hour > 23) {
-        return res.status(400).json({ message: 'hour must be 0-23' });
+      const parsed = reminderSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: 'hour (0-23) and minute (0-59) are required' });
       }
-      if (typeof minute !== 'number' || minute < 0 || minute > 59) {
-        return res.status(400).json({ message: 'minute must be 0-59' });
-      }
+      const { hour, minute } = parsed.data;
 
       const user = await storage.updateUserReminder(userId, hour, minute);
       res.json({ reminderHour: user.reminderHour, reminderMinute: user.reminderMinute });
