@@ -639,11 +639,11 @@ describe("GET /api/deuces", () => {
     expect(data.length).toBe(0);
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns 200 for free user (feed is now free)", async () => {
     const agent = await loginAs("alice");
     const response = await agent.get("/api/deuces");
-    expect(response.status).toBe(403);
-    expect(response.body.feature).toBe("feed");
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
   });
 });
 
@@ -814,20 +814,19 @@ describe("GET /api/groups/:id/streak", () => {
     expect(data.longestStreak).toBe(0);
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns 200 for free user (groups are now free)", async () => {
     const premium = await loginAsPremium("alice");
     const groupRes = await premium.post("/api/groups").send({ name: "Streak Gate" });
     const groupId = groupRes.body.id;
 
     // Add a free user to the group so they pass the membership check
     const free = await loginAs("bob");
-    const inviteRes = await premium.post(`/api/groups/${groupId}/invite`);
-    // bob can't join via /api/join because that's also gated, so add directly
     await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
 
     const response = await free.get(`/api/groups/${groupId}/streak`);
-    expect(response.status).toBe(403);
-    expect(response.body.feature).toBe("groups");
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty("currentStreak");
+    expect(response.body).toHaveProperty("longestStreak");
   });
 });
 
@@ -868,7 +867,7 @@ describe("POST /api/groups/:id/streak/check", () => {
     expect(data.missingMembers).toEqual([]);
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns 200 for free user (groups are now free)", async () => {
     const premium = await loginAsPremium("alice");
     const groupRes = await premium.post("/api/groups").send({ name: "Check Gate" });
     const groupId = groupRes.body.id;
@@ -877,8 +876,8 @@ describe("POST /api/groups/:id/streak/check", () => {
     await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
 
     const response = await free.post(`/api/groups/${groupId}/streak/check`);
-    expect(response.status).toBe(403);
-    expect(response.body.feature).toBe("groups");
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty("atRisk");
   });
 });
 
@@ -896,11 +895,11 @@ describe("GET /api/groups", () => {
     expect(data.length).toBeGreaterThan(0);
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns 200 for free user (groups are now free)", async () => {
     const agent = await loginAs("alice");
     const response = await agent.get("/api/groups");
-    expect(response.status).toBe(403);
-    expect(response.body.feature).toBe("groups");
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
   });
 });
 
@@ -931,11 +930,18 @@ describe("GET /api/groups/:id", () => {
     expect(response.status).toBe(403);
   });
 
-  it("returns 403 for non-premium user", async () => {
-    const agent = await loginAs("alice");
-    const response = await agent.get("/api/groups/some-group-id");
-    expect(response.status).toBe(403);
-    expect(response.body.feature).toBe("groups");
+  it("returns 200 for free user who is a member (groups are now free)", async () => {
+    const premium = await loginAsPremium("alice");
+    const groupRes = await premium.post("/api/groups").send({ name: "Free Detail" });
+    const groupId = groupRes.body.id;
+
+    const free = await loginAs("bob");
+    await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
+
+    const response = await free.get(`/api/groups/${groupId}`);
+    expect(response.status).toBe(200);
+    expect(response.body.group.id).toBe(groupId);
+    expect(response.body.members).toBeDefined();
   });
 });
 
@@ -1147,7 +1153,7 @@ describe("POST /api/join/:inviteId", () => {
     expect(joinRes.status).toBe(400);
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns 200 for free user (join is now free)", async () => {
     const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Gate Test" });
     const groupId = groupRes.body.id;
@@ -1156,8 +1162,9 @@ describe("POST /api/join/:inviteId", () => {
 
     const free = await loginAs("charlie");
     const joinRes = await free.post(`/api/join/${inviteId}`);
-    expect(joinRes.status).toBe(403);
-    expect(joinRes.body.feature).toBe("groups");
+    expect(joinRes.status).toBe(200);
+    expect(joinRes.body.group).toBeDefined();
+    expect(joinRes.body.group.name).toBe("Gate Test");
   });
 });
 

@@ -661,43 +661,65 @@ describe("Free tier — allowed endpoints", () => {
 });
 
 /* ================================================================
- *  FREE TIER — GETS 403 WITH { upgrade: true }
+ *  FREE TIER — SOCIAL CORE IS FREE
  * ================================================================ */
-describe("Free tier — gets 403 with { upgrade: true }", () => {
-  it("GET /api/groups → 403", async () => {
+describe("Free tier — social core is free", () => {
+  it("GET /api/groups → 200", async () => {
     const agent = await loginAs("freebird");
     const res = await agent.get("/api/groups");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
-  it("POST /api/groups → 403", async () => {
+  it("POST /api/groups → 200 (under 3 squads)", async () => {
     const agent = await loginAs("freebird");
     const res = await agent.post("/api/groups").send({
       name: "My Squad",
       description: "Testing",
     });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("My Squad");
   });
 
-  it("GET /api/groups/:id/leaderboard → 403", async () => {
+  it("GET /api/groups/:id/leaderboard → 200", async () => {
     const agent = await loginAs("freebird");
     const groupId = await getSoloGroupId("freebird");
     const res = await agent.get(`/api/groups/${groupId}/leaderboard`);
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
-  it("POST /api/entries/:entryId/reactions → 403", async () => {
+  it("POST /api/entries/:entryId/reactions → 200", async () => {
     const agent = await loginAs("freebird");
+    const groupId = await getSoloGroupId("freebird");
+    const entry = await logDeuce(agent, groupId);
     const res = await agent
-      .post("/api/entries/some-entry-id/reactions")
+      .post(`/api/entries/${entry.id}/reactions`)
       .send({ emoji: "💩" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.body.emoji).toBe("💩");
   });
 
+  it("GET /api/deuces (feed) → 200", async () => {
+    const agent = await loginAs("freebird");
+    const res = await agent.get("/api/deuces");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  it("GET /api/groups/:id/streak → 200", async () => {
+    const agent = await loginAs("freebird");
+    const groupId = await getSoloGroupId("freebird");
+    const res = await agent.get(`/api/groups/${groupId}/streak`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("currentStreak");
+  });
+});
+
+/* ================================================================
+ *  FREE TIER — POWER FEATURES GET 403 WITH { upgrade: true }
+ * ================================================================ */
+describe("Free tier — power features get 403 with { upgrade: true }", () => {
   it("GET /api/analytics/me → 403", async () => {
     const agent = await loginAs("freebird");
     const res = await agent.get("/api/analytics/me");
@@ -710,6 +732,64 @@ describe("Free tier — gets 403 with { upgrade: true }", () => {
     const res = await agent.get("/api/challenges/today");
     expect(res.status).toBe(403);
     expect(res.body.upgrade).toBe(true);
+  });
+
+  it("GET /api/groups/:id/spy → 403", async () => {
+    const agent = await loginAs("freebird");
+    const groupId = await getSoloGroupId("freebird");
+    const res = await agent.get(`/api/groups/${groupId}/spy`);
+    expect(res.status).toBe(403);
+    expect(res.body.upgrade).toBe(true);
+    expect(res.body.feature).toBe("squad_spy");
+  });
+});
+
+/* ================================================================
+ *  FREE TIER — 3-SQUAD LIMIT
+ * ================================================================ */
+describe("Free tier — 3-squad limit", () => {
+  it("POST /api/groups → 403 when free user already in 3 groups", async () => {
+    const agent = await loginAs("limituser");
+    // Already in 1 group (Solo Deuces from login). Create 2 more to reach 3.
+    await agent.post("/api/groups").send({ name: "Squad 2" });
+    await agent.post("/api/groups").send({ name: "Squad 3" });
+
+    // 4th should be blocked
+    const res = await agent.post("/api/groups").send({ name: "Squad 4" });
+    expect(res.status).toBe(403);
+    expect(res.body.upgrade).toBe(true);
+    expect(res.body.feature).toBe("unlimited_squads");
+  });
+
+  it("POST /api/join/:inviteId → 403 when free user already in 3 groups", async () => {
+    // Premium user creates a group and invite
+    const premium = await loginAs("inviter");
+    await upgradeToPremium(premium);
+    const groupRes = await premium.post("/api/groups").send({ name: "Invite Squad" });
+    const inviteRes = await premium.post(`/api/groups/${groupRes.body.id}/invite`);
+    const inviteId = inviteRes.body.id;
+
+    // Free user already in 3 groups
+    const free = await loginAs("limitjoin");
+    await free.post("/api/groups").send({ name: "Squad 2" });
+    await free.post("/api/groups").send({ name: "Squad 3" });
+
+    const joinRes = await free.post(`/api/join/${inviteId}`);
+    expect(joinRes.status).toBe(403);
+    expect(joinRes.body.upgrade).toBe(true);
+    expect(joinRes.body.feature).toBe("unlimited_squads");
+  });
+
+  it("premium users have no squad limit", async () => {
+    const agent = await loginAs("unlimitedking");
+    await upgradeToPremium(agent);
+
+    // Create groups beyond the free limit
+    await agent.post("/api/groups").send({ name: "Squad 2" });
+    await agent.post("/api/groups").send({ name: "Squad 3" });
+    const res = await agent.post("/api/groups").send({ name: "Squad 4" });
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Squad 4");
   });
 });
 
@@ -812,7 +892,6 @@ describe("Ghost log", () => {
   it("GET /api/deuces (as squad member) → ghost log NOT in feed", async () => {
     // Ghost user sets up a group and logs entries
     const ghostAgent = await loginAs("ghoster");
-    await upgradeToPremium(ghostAgent);
     const groupId = await getSoloGroupId("ghoster");
 
     // Create invite so another user can join the same group
@@ -824,9 +903,8 @@ describe("Ghost log", () => {
     await logDeuce(ghostAgent, groupId, { thoughts: "visible log" });
     await logDeuce(ghostAgent, groupId, { ghost: true, thoughts: "invisible log" });
 
-    // Squad member joins (needs premium to access groups + feed)
+    // Squad member joins (groups + feed are free now)
     const memberAgent = await loginAs("squadmate");
-    await upgradeToPremium(memberAgent);
     const joinRes = await memberAgent.post(`/api/join/${inviteId}`);
     expect(joinRes.status).toBe(200);
 
@@ -840,7 +918,6 @@ describe("Ghost log", () => {
 
   it("user's own streak still counts the ghost log", async () => {
     const agent = await loginAs("ghoststreak");
-    await upgradeToPremium(agent);
     const groupId = await getSoloGroupId("ghoststreak");
 
     // Log a ghost deuce (only member, so all members have logged → streak advances)

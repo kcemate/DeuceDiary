@@ -666,18 +666,16 @@ describe("Auth", () => {
  *  PREMIUM GATING TESTS
  * ================================================================ */
 describe("Premium gating", () => {
-  it("free user cannot access GET /api/groups", async () => {
+  it("free user CAN access GET /api/groups", async () => {
     const agent = await loginAs("freebie");
     const res = await agent.get("/api/groups");
-    expect(res.status).toBe(403);
-    expect(res.body).toEqual({ message: "Premium required", upgrade: true, feature: "groups" });
+    expect(res.status).toBe(200);
   });
 
-  it("free user cannot access GET /api/deuces (feed)", async () => {
+  it("free user CAN access GET /api/deuces (feed)", async () => {
     const agent = await loginAs("freebie");
     const res = await agent.get("/api/deuces");
-    expect(res.status).toBe(403);
-    expect(res.body.feature).toBe("feed");
+    expect(res.status).toBe(200);
   });
 
   it("free user CAN POST /api/deuces (log a deuce)", async () => {
@@ -696,18 +694,18 @@ describe("Premium gating", () => {
     expect(res.body.entries).toHaveLength(1);
   });
 
-  it("free user cannot create groups", async () => {
+  it("free user CAN create groups", async () => {
     const agent = await loginAs("freebie");
     const res = await agent.post("/api/groups").send({ name: "Nope" });
-    expect(res.status).toBe(403);
-    expect(res.body.feature).toBe("groups");
+    expect(res.status).toBe(200);
   });
 
-  it("free user cannot access reactions", async () => {
+  it("free user CAN access reactions (not 403 premium gate)", async () => {
     const agent = await loginAs("freebie");
     const res = await agent.post("/api/entries/fake/reactions").send({ emoji: "💩" });
-    expect(res.status).toBe(403);
-    expect(res.body.feature).toBe("reactions");
+    // 404 = entry not found (not a premium gate), 200 = success — both are fine
+    expect([200, 404]).toContain(res.status);
+    if (res.status === 403) throw new Error("Reactions should not be premium-gated");
   });
 
   it("free user cannot access analytics", async () => {

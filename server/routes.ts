@@ -6,7 +6,7 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
-import { requiresPremium, requiresPremiumFor } from "./premiumAuth";
+import { requiresPremiumFor } from "./premiumAuth";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -78,6 +78,15 @@ const deleteReactionSchema = z.object({
 const unregisterPushSchema = z.object({
   token: z.string().min(1).max(500),
 });
+
+/** Check if a user has an active premium subscription */
+function isPremiumUser(user: any): boolean {
+  return (
+    user?.subscription === "premium" &&
+    user.subscriptionExpiresAt &&
+    new Date(user.subscriptionExpiresAt) > new Date()
+  );
+}
 
 // In-memory per-user daily log rate limit (max 10 logs per user per UTC day)
 const dailyLogCounts = new Map<string, number>();
@@ -442,10 +451,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Group routes (all premium-gated)
-  app.post('/api/groups', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  // Group routes (free — squad limit for free users)
+  app.post('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+
+      // Free users limited to 3 squads
+      if (!isPremiumUser(req.user)) {
+        const userGroups = await storage.getUserGroups(userId);
+        if (userGroups.length >= 3) {
+          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+        }
+      }
+
       const parsed = createGroupSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
@@ -454,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsed.data,
         createdBy: userId,
       });
-      
+
       const group = await storage.createGroup({
         ...groupData,
         id: uuidv4(),
@@ -469,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/groups', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  app.get('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       console.log("Fetching groups for user:", userId);
@@ -482,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/groups/:groupId', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  app.get('/api/groups/:groupId', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -512,8 +530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Invite routes (premium-gated)
-  app.post('/api/groups/:groupId/invite', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  // Invite routes (free)
+  app.post('/api/groups/:groupId/invite', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -543,18 +561,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/join/:inviteId', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  app.post('/api/join/:inviteId', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { inviteId } = req.params;
-      
+
       console.log("User attempting to join group:", userId, "invite:", inviteId);
-      
+
       const invite = await storage.getInviteById(inviteId);
       if (!invite || invite.expiresAt < new Date()) {
         return res.status(400).json({ message: "Invalid or expired invite" });
       }
-      
+
       const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
       if (isAlreadyMember) {
         console.log("User is already a member of group:", invite.groupId);
@@ -562,9 +580,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ group, message: "Already a member of this group" });
       }
       
+      // Free users limited to 3 squads
+      if (!isPremiumUser(req.user)) {
+        const userGroups = await storage.getUserGroups(userId);
+        if (userGroups.length >= 3) {
+          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+        }
+      }
+
       console.log("Adding user to group:", userId, "group:", invite.groupId);
       // User already exists (isAuthenticated ensures this), just add to group
-      
+
       await storage.addGroupMember({
         groupId: invite.groupId,
         userId,
@@ -641,8 +667,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reaction routes (premium-gated)
-  app.post('/api/entries/:entryId/reactions', isAuthenticated, requiresPremiumFor('reactions'), async (req: any, res) => {
+  // Reaction routes (free)
+  app.post('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -679,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/entries/:entryId/reactions', isAuthenticated, requiresPremiumFor('reactions'), async (req: any, res) => {
+  app.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -697,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/entries/:entryId/reactions', isAuthenticated, requiresPremiumFor('reactions'), async (req: any, res) => {
+  app.get('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
       const { entryId } = req.params;
       const reactions = await storage.getEntryReactions(entryId);
@@ -708,8 +734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Streak routes (premium — part of groups)
-  app.get('/api/groups/:groupId/streak', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  // Streak routes (free — part of groups)
+  app.get('/api/groups/:groupId/streak', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -747,7 +773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/groups/:groupId/streak/check', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  app.post('/api/groups/:groupId/streak/check', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -765,8 +791,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Group Leaderboard — member rankings by deuce count (premium)
-  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  // Group Leaderboard — member rankings by deuce count (free)
+  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -794,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Squad Spy Mode — typical log hour per member (premium)
-  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('groups'), async (req: any, res) => {
+  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('squad_spy'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.params;
@@ -812,8 +838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Deuce feed route (premium — free users can only POST, not view feed)
-  app.get('/api/deuces', isAuthenticated, requiresPremiumFor('feed'), async (req: any, res) => {
+  // Deuce feed route (free)
+  app.get('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.query;
@@ -993,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/referral/stats', isAuthenticated, requiresPremium, async (req: any, res) => {
+  app.get('/api/referral/stats', isAuthenticated, requiresPremiumFor('referral_stats'), async (req: any, res) => {
     try {
       const stats = await storage.getReferralStats(req.user.id);
       res.json(stats);

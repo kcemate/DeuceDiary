@@ -859,7 +859,7 @@ describe("PUT /api/auth/user", () => {
 });
 
 /* ================================================================
- *  4. GET /api/groups/:groupId  (premium-gated)
+ *  4. GET /api/groups/:groupId  (free)
  * ================================================================ */
 describe("GET /api/groups/:groupId", () => {
   it("returns group details with members and entries for premium member", async () => {
@@ -887,13 +887,15 @@ describe("GET /api/groups/:groupId", () => {
     expect(res.body.message).toMatch(/not authorized/i);
   });
 
-  it("returns 403 for free user (premium-gated)", async () => {
+  it("returns 200 for free user (route is now free)", async () => {
     const agent = await loginAs("alice");
     const groupId = await getSoloGroupId("alice");
 
     const res = await agent.get(`/api/groups/${groupId}`);
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("group");
+    expect(res.body).toHaveProperty("members");
+    expect(res.body).toHaveProperty("entries");
   });
 });
 
@@ -931,7 +933,7 @@ describe("GET /api/groups/:groupId/spy", () => {
 });
 
 /* ================================================================
- *  6. GET /api/deuces?groupId=X  (premium-gated feed)
+ *  6. GET /api/deuces?groupId=X  (free feed)
  * ================================================================ */
 describe("GET /api/deuces", () => {
   it("returns feed entries for premium user with groupId filter", async () => {
@@ -980,18 +982,18 @@ describe("GET /api/deuces", () => {
     expect(res.body.message).toMatch(/not authorized/i);
   });
 
-  it("returns 403 for free user", async () => {
+  it("returns 200 for free user (feed is now free)", async () => {
     const agent = await loginAs("alice");
     const groupId = await getSoloGroupId("alice");
 
     const res = await agent.get(`/api/deuces?groupId=${groupId}`);
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
   });
 });
 
 /* ================================================================
- *  7. DELETE /api/entries/:entryId/reactions  (premium-gated)
+ *  7. DELETE /api/entries/:entryId/reactions  (free)
  * ================================================================ */
 describe("DELETE /api/entries/:entryId/reactions", () => {
   it("removes a reaction successfully", async () => {
@@ -1033,18 +1035,18 @@ describe("DELETE /api/entries/:entryId/reactions", () => {
     expect(res.body.message).toMatch(/emoji is required/i);
   });
 
-  it("returns 403 for free user", async () => {
+  it("is accessible to free users (reactions are now free)", async () => {
     const agent = await loginAs("alice");
     const res = await agent
       .delete("/api/entries/some-entry/reactions")
       .send({ emoji: "fire" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    // Should not return 403 upgrade-gate; may return 200 or 404 depending on entry
+    expect(res.status).not.toBe(403);
   });
 });
 
 /* ================================================================
- *  8. GET /api/entries/:entryId/reactions  (premium-gated)
+ *  8. GET /api/entries/:entryId/reactions  (free)
  * ================================================================ */
 describe("GET /api/entries/:entryId/reactions", () => {
   it("lists reactions for an entry", async () => {
@@ -1093,11 +1095,11 @@ describe("GET /api/entries/:entryId/reactions", () => {
     expect(res.body).toEqual([]);
   });
 
-  it("returns 403 for free user", async () => {
+  it("is accessible to free users (reactions are now free)", async () => {
     const agent = await loginAs("alice");
     const res = await agent.get("/api/entries/some-entry/reactions");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    // Should not return 403 upgrade-gate; may return 200 or empty array
+    expect(res.status).not.toBe(403);
   });
 });
 

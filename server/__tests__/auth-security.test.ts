@@ -730,14 +730,14 @@ describe("Missing auth / no session returns 401", () => {
  *  2. CROSS-USER DATA ACCESS
  * ================================================================ */
 describe("Cross-user data access", () => {
-  it("User B (free, not member) tries GET /api/groups/:id -> 403 (premium gate)", async () => {
-    // Alice creates a group (premium)
-    const alice = await loginAsPremium("alice");
+  it("User B (free, not member) tries GET /api/groups/:id -> 403 (not a member)", async () => {
+    // Alice creates a group
+    const alice = await loginAs("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Alice's Squad" });
     expect(groupRes.status).toBe(200);
     const groupId = groupRes.body.id;
 
-    // Bob is free, tries to access the group
+    // Bob is free and not a member, tries to access the group
     const bob = await loginAs("bob");
     const res = await bob.get(`/api/groups/${groupId}`);
     expect(res.status).toBe(403);
@@ -875,79 +875,9 @@ describe("Premium gating — free users get 403", () => {
     expect(res.body.upgrade).toBe(true);
   });
 
-  it("POST /api/groups", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.post("/api/groups").send({ name: "Test Squad" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("GET /api/groups", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.get("/api/groups");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("GET /api/groups/:id/leaderboard", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.get("/api/groups/fake-group-id/leaderboard");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
   it("GET /api/groups/:id/spy", async () => {
     const agent = await loginAs("alice");
     const res = await agent.get("/api/groups/fake-group-id/spy");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("GET /api/groups/:id/streak", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.get("/api/groups/fake-group-id/streak");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("POST /api/groups/:id/invite", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.post("/api/groups/fake-group-id/invite");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("POST /api/join/:id", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.post("/api/join/fake-invite-id");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("GET /api/deuces", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.get("/api/deuces");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("POST /api/entries/:id/reactions", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.post("/api/entries/fake-entry-id/reactions").send({ emoji: "poop" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("DELETE /api/entries/:id/reactions", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.delete("/api/entries/fake-entry-id/reactions").send({ emoji: "poop" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-  });
-
-  it("GET /api/entries/:id/reactions", async () => {
-    const agent = await loginAs("alice");
-    const res = await agent.get("/api/entries/fake-entry-id/reactions");
     expect(res.status).toBe(403);
     expect(res.body.upgrade).toBe(true);
   });

@@ -370,7 +370,7 @@ describe("Invite flow integration", () => {
 
   it("full lifecycle: create group → invite → preview → join → verify → streak", async () => {
     // 1) User A creates a group and gets an invite code
-    const alice = await loginAsPremium("alice");
+    const alice = await loginAs("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Test Squad" });
     expect(groupRes.status).toBe(200);
     const groupId = groupRes.body.id;
@@ -396,17 +396,14 @@ describe("Invite flow integration", () => {
     expect(bobLogin.body.joinedGroup).toBeDefined();
     expect(bobLogin.body.joinedGroup.name).toBe("Test Squad");
 
-    // Upgrade Bob to premium so he can access premium-gated endpoints
-    await memStore.updateUserSubscription("dev-bob", "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
-
-    // 4) GET /api/groups → User B sees the group (premium-gated)
+    // 4) GET /api/groups → User B sees the group (free)
     const bobGroups = await bob.get("/api/groups");
     expect(bobGroups.status).toBe(200);
     const groupNames = bobGroups.body.map((g: any) => g.name);
     expect(groupNames).toContain("Test Squad");
     expect(groupNames).toContain("Solo Deuces");
 
-    // 5) GET /api/groups/:id/streak → streak is 0 (no entries yet, premium-gated)
+    // 5) GET /api/groups/:id/streak → streak is 0 (no entries yet, free)
     const streakRes = await bob.get(`/api/groups/${groupId}/streak`);
     expect(streakRes.status).toBe(200);
     expect(streakRes.body.currentStreak).toBe(0);
@@ -437,20 +434,20 @@ describe("Invite flow integration", () => {
 
   it("rejects already-consumed invite code", async () => {
     // 8) Alice creates group + invite, Bob consumes it, Charlie tries same code
-    const alice = await loginAsPremium("alice");
+    const alice = await loginAs("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "One-Use Invite" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
     const inviteCode = inviteRes.body.id;
 
-    // Bob joins via invite (consumes it) — premium-gated endpoint
-    const bob = await loginAsPremium("bob");
+    // Bob joins via invite (consumes it) — free endpoint
+    const bob = await loginAs("bob");
     const bobJoin = await bob.post(`/api/join/${inviteCode}`);
     expect(bobJoin.status).toBe(200);
     expect(bobJoin.body.group).toBeDefined();
 
     // Charlie tries the same code → fails (invite was deleted)
-    const charlie = await loginAsPremium("charlie");
+    const charlie = await loginAs("charlie");
     const charlieJoin = await charlie.post(`/api/join/${inviteCode}`);
     expect(charlieJoin.status).toBe(400);
     expect(charlieJoin.body.message).toMatch(/invalid|expired/i);
@@ -464,7 +461,7 @@ describe("Invite flow integration", () => {
 
   it("returns 404 for expired invite code on preview", async () => {
     // 9b) Create an expired invite and try preview
-    const alice = await loginAsPremium("alice");
+    const alice = await loginAs("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Expired Group" });
     const groupId = groupRes.body.id;
 
@@ -481,7 +478,7 @@ describe("Invite flow integration", () => {
   });
 
   it("returns 400 for expired invite code on join", async () => {
-    const alice = await loginAsPremium("alice");
+    const alice = await loginAs("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Expired Join" });
     const groupId = groupRes.body.id;
 
@@ -492,14 +489,14 @@ describe("Invite flow integration", () => {
       expiresAt: new Date(Date.now() - 1000),
     });
 
-    const bob = await loginAsPremium("bob");
+    const bob = await loginAs("bob");
     const joinRes = await bob.post("/api/join/expired-join-code");
     expect(joinRes.status).toBe(400);
     expect(joinRes.body.message).toMatch(/invalid|expired/i);
   });
 
   it("returns 400 for completely nonexistent invite on join", async () => {
-    const bob = await loginAsPremium("bob");
+    const bob = await loginAs("bob");
     const joinRes = await bob.post("/api/join/totally-fake-id");
     expect(joinRes.status).toBe(400);
   });
