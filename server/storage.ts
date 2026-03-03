@@ -165,6 +165,16 @@ export interface IStorage {
   // User lifecycle
   softDeleteUser(userId: string): Promise<void>;
 
+  // Share card
+  getShareCardData(userId: string): Promise<{
+    username: string | null;
+    currentStreak: number;
+    longestStreak: number;
+    totalLogs: number;
+    memberSince: Date | null;
+    squadCount: number;
+  }>;
+
   // Admin stats
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -1139,6 +1149,49 @@ export class DatabaseStorage implements IStorage {
       totalLogsAllTime: logsAll?.count ?? 0,
       activeGroups: activeGroupsRow?.count ?? 0,
       avgStreakLength: Math.round((avgStreakRow?.avg ?? 0) * 10) / 10,
+    };
+  }
+
+  // Share card
+  async getShareCardData(userId: string): Promise<{
+    username: string | null;
+    currentStreak: number;
+    longestStreak: number;
+    totalLogs: number;
+    memberSince: Date | null;
+    squadCount: number;
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+
+    // Get streak data across user's groups
+    const userGroupIds = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+
+    let currentStreak = 0;
+    let longestStreak = 0;
+    if (userGroupIds.length > 0) {
+      const gids = userGroupIds.map(g => g.groupId);
+      const [streakResult] = await db
+        .select({
+          maxCurrent: sql<number>`COALESCE(MAX(${groups.currentStreak}), 0)::int`,
+          maxLongest: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int`,
+        })
+        .from(groups)
+        .where(inArray(groups.id, gids));
+      currentStreak = streakResult?.maxCurrent ?? 0;
+      longestStreak = streakResult?.maxLongest ?? 0;
+    }
+
+    return {
+      username: user.username,
+      currentStreak,
+      longestStreak,
+      totalLogs: user.deuceCount ?? 0,
+      memberSince: user.createdAt ?? null,
+      squadCount: userGroupIds.length,
     };
   }
 
