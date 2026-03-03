@@ -16,6 +16,8 @@ import path from "path";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
+import { getRecentErrors } from "./lib/errorTracker";
+import { buildDetailedHealth } from "./lib/perfBaseline";
 
 // --- Zod Validation Schemas ---
 const loginSchema = z.object({
@@ -220,6 +222,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[STREAK CHECK ERROR]', error);
       res.status(500).json({ message: 'Streak check failed' });
+    }
+  });
+
+  // --- Error log endpoint (internal) ---
+  app.get('/api/internal/errors', (req, res) => {
+    const key = req.headers['x-internal-key'];
+    if (key !== INTERNAL_KEY) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const errors = getRecentErrors(limit);
+    res.json({ errors, count: errors.length });
+  });
+
+  // --- Detailed health endpoint (internal) ---
+  app.get('/api/internal/health/detailed', async (req, res) => {
+    const key = req.headers['x-internal-key'];
+    if (key !== INTERNAL_KEY) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    try {
+      await pool.query('SELECT 1');
+      res.json(buildDetailedHealth(pool));
+    } catch (err) {
+      res.status(503).json({
+        status: 'degraded',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        db: { connected: false, poolTotal: 0, poolIdle: 0, poolWaiting: 0 },
+        memory: {
+          rss: '0 MB',
+          heapUsed: '0 MB',
+          heapTotal: '0 MB',
+          external: '0 MB',
+        },
+        avgResponseTimeMs: 0,
+      });
     }
   });
 

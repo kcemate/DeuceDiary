@@ -8,6 +8,8 @@ import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic, log } from "./utils";
 import { startCronJobs } from "./cron";
+import { errorTrackingMiddleware } from "./lib/errorTracker";
+import { responseTimeMiddleware } from "./lib/perfBaseline";
 
 // Initialize Sentry (skip silently if no DSN)
 if (process.env.SENTRY_DSN) {
@@ -64,6 +66,9 @@ app.use("/api/deuces", logLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
+// --- Response time tracking (must be before routes) ---
+app.use(responseTimeMiddleware);
+
 // --- Request Logging (morgan) ---
 app.use(morgan("short"));
 
@@ -105,6 +110,9 @@ app.use((req, res, next) => {
   if (process.env.SENTRY_DSN) {
     Sentry.setupExpressErrorHandler(app);
   }
+
+  // --- Error Tracking Middleware (captures to log file + memory buffer) ---
+  app.use(errorTrackingMiddleware);
 
   // --- Global Error Handler ---
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
