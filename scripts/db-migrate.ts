@@ -66,11 +66,15 @@ const migrations: { name: string; sql: string }[] = [
     sql: `CREATE TABLE IF NOT EXISTS referrals (
       id serial PRIMARY KEY NOT NULL,
       referrer_id varchar NOT NULL REFERENCES users(id),
-      referred_id varchar NOT NULL REFERENCES users(id),
-      converted boolean DEFAULT false NOT NULL,
+      referee_id varchar NOT NULL REFERENCES users(id),
       discount_applied boolean DEFAULT false NOT NULL,
       created_at timestamp DEFAULT now()
     )`,
+  },
+  // Fix: rename referred_id → referee_id for DBs that ran the old migration
+  {
+    name: "referrals.rename_referred_id_to_referee_id",
+    sql: "ALTER TABLE referrals RENAME COLUMN referred_id TO referee_id",
   },
   // referrals: add converted_to_premium_at column
   {
@@ -140,7 +144,8 @@ async function runMigrations() {
       if (
         err.code === "42701" || // column already exists
         err.code === "42P07" || // relation already exists
-        err.code === "23505"    // unique violation on index create
+        err.code === "23505" || // unique violation on index create
+        err.code === "42703"    // column does not exist (e.g. rename source gone)
       ) {
         console.log(`  ⏭️  ${m.name} (already exists)`);
         passed++;
