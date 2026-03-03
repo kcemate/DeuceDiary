@@ -1,12 +1,12 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { Webhook } from "svix";
 import { z } from "zod";
 import { storage } from "./storage";
 import { pool } from "./db";
 import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
+import { registerClerkWebhook } from "./routes/webhooks";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -287,50 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Clerk webhook (must be before session middleware) ---
   if (clerkEnabled) {
-    app.post("/api/webhooks/clerk", express.raw({ type: "application/json" }), async (req, res) => {
-      const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
-      if (!WEBHOOK_SECRET) {
-        console.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
-        return res.status(500).json({ message: "Webhook secret not configured" });
-      }
-
-      const svixId = req.headers["svix-id"] as string;
-      const svixTimestamp = req.headers["svix-timestamp"] as string;
-      const svixSignature = req.headers["svix-signature"] as string;
-
-      if (!svixId || !svixTimestamp || !svixSignature) {
-        return res.status(400).json({ message: "Missing svix headers" });
-      }
-
-      try {
-        const wh = new Webhook(WEBHOOK_SECRET);
-        const event = wh.verify(req.body, {
-          "svix-id": svixId,
-          "svix-timestamp": svixTimestamp,
-          "svix-signature": svixSignature,
-        }) as any;
-
-        if (event.type === "user.created" || event.type === "user.updated") {
-          const { id, email_addresses, first_name, last_name, image_url } = event.data;
-          await storage.upsertUser({
-            id,
-            email: email_addresses?.[0]?.email_address ?? null,
-            firstName: first_name ?? null,
-            lastName: last_name ?? null,
-            profileImageUrl: image_url ?? null,
-          });
-          console.log(`Clerk webhook: synced user ${id} (${event.type})`);
-          if (event.type === "user.created") {
-            track("user_registered", id);
-          }
-        }
-
-        res.json({ received: true });
-      } catch (err) {
-        console.error("Clerk webhook verification failed:", err);
-        res.status(400).json({ message: "Invalid webhook signature" });
-      }
-    });
+    registerClerkWebhook(app);
   }
 
   // --- RevenueCat webhook (no session auth, server-to-server) ---
@@ -416,6 +373,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Clerk frontend sync — called after Clerk login to upsert user + return profile
+  app.post('/api/auth/sync', isAuthenticated, async (req: any, res) => {
+    try {
+      const clerkData = req.body;
+      const userId = req.user.id;
+
+      const user = await storage.upsertUser({
+        id: userId,
+        email: clerkData.email ?? req.user.email ?? null,
+        firstName: clerkData.firstName ?? req.user.firstName ?? null,
+        lastName: clerkData.lastName ?? req.user.lastName ?? null,
+        username: clerkData.username ?? undefined,
+        profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
+      });
+
+      // Fetch streak data from user's groups
+      const groups = await storage.getUserGroups(userId);
+      const streaks = await Promise.all(
+        groups.map(async (g) => {
+          const streak = await storage.getGroupStreak(g.id);
+          return { groupId: g.id, groupName: g.name, ...streak };
+        }),
+      );
+
+      res.json({
+        ...user,
+        title: getTitle(user.deuceCount ?? 0),
+        streaks,
+      });
+    } catch (error) {
+      console.error("Error syncing user:", error);
+      res.status(500).json({ message: "Failed to sync user" });
     }
   });
 

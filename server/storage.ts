@@ -162,6 +162,9 @@ export interface IStorage {
   getReferralDashboardStats(userId: string): Promise<{ totalReferrals: number; premiumConversions: number; pendingConversions: number }>;
   getReferralLeaderboard(): Promise<{ username: string | null; profileImageUrl: string | null; referralCount: number; premiumConversionCount: number }[]>;
 
+  // User lifecycle
+  softDeleteUser(userId: string): Promise<void>;
+
   // Admin stats
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -1137,6 +1140,21 @@ export class DatabaseStorage implements IStorage {
       activeGroups: activeGroupsRow?.count ?? 0,
       avgStreakLength: Math.round((avgStreakRow?.avg ?? 0) * 10) / 10,
     };
+  }
+
+  async softDeleteUser(userId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        email: null,
+        firstName: null,
+        lastName: null,
+        username: `deleted_${userId.slice(0, 8)}`,
+        profileImageUrl: null,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
   }
 }
 
