@@ -403,6 +403,14 @@ const memStore = vi.hoisted(() => {
       };
     },
 
+    /* ---- Referral dashboard ---- */
+    async getReferralDashboardStats(_userId: string) {
+      return { totalReferrals: 0, premiumConversions: 0, pendingConversions: 0 };
+    },
+    async getReferralLeaderboard() {
+      return [];
+    },
+
     /* ---- test helper ---- */
     _reset() {
       _users.clear();

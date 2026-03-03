@@ -158,6 +158,10 @@ export interface IStorage {
   applyReferral(refereeId: string, referrerId: string): Promise<Referral>;
   getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }>;
 
+  // Referral dashboard
+  getReferralDashboardStats(userId: string): Promise<{ totalReferrals: number; premiumConversions: number; pendingConversions: number }>;
+  getReferralLeaderboard(): Promise<{ username: string | null; profileImageUrl: string | null; referralCount: number; premiumConversionCount: number }[]>;
+
   // Admin stats
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -1063,6 +1067,37 @@ export class DatabaseStorage implements IStorage {
       referralCount: user?.referralCount ?? 0,
       referrals: rows,
     };
+  }
+
+  // Referral dashboard
+  async getReferralDashboardStats(userId: string): Promise<{ totalReferrals: number; premiumConversions: number; pendingConversions: number }> {
+    const [result] = await db
+      .select({
+        totalReferrals: sql<number>`COUNT(*)::int`,
+        premiumConversions: sql<number>`COUNT(${referrals.convertedToPremiumAt})::int`,
+      })
+      .from(referrals)
+      .where(eq(referrals.referrerId, userId));
+
+    const total = result?.totalReferrals ?? 0;
+    const converted = result?.premiumConversions ?? 0;
+    return { totalReferrals: total, premiumConversions: converted, pendingConversions: total - converted };
+  }
+
+  async getReferralLeaderboard(): Promise<{ username: string | null; profileImageUrl: string | null; referralCount: number; premiumConversionCount: number }[]> {
+    const rows = await db
+      .select({
+        username: users.username,
+        profileImageUrl: users.profileImageUrl,
+        referralCount: sql<number>`COUNT(*)::int`,
+        premiumConversionCount: sql<number>`COUNT(${referrals.convertedToPremiumAt})::int`,
+      })
+      .from(referrals)
+      .innerJoin(users, eq(referrals.referrerId, users.id))
+      .groupBy(users.id, users.username, users.profileImageUrl)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(10);
+    return rows;
   }
 
   // Admin stats

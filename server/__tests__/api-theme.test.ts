@@ -227,6 +227,14 @@ const memStore = vi.hoisted(() => {
     async resetAllStreakInsurance() { return 0; },
     async upsertPushToken(token: any) { return token; },
 
+    /* ---- Referral dashboard ---- */
+    async getReferralDashboardStats(_userId: string) {
+      return { totalReferrals: 0, premiumConversions: 0, pendingConversions: 0 };
+    },
+    async getReferralLeaderboard() {
+      return [];
+    },
+
     /* ---- test helper ---- */
     _reset() {
       _users.clear(); _groups.clear(); _members = []; _entries.clear();

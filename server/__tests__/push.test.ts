@@ -284,6 +284,14 @@ const memStore = vi.hoisted(() => {
       return { referralCount: _users.get(userId)?.referralCount ?? 0, referrals: [] };
     },
 
+    /* ---- Referral dashboard ---- */
+    async getReferralDashboardStats(_userId: string) {
+      return { totalReferrals: 0, premiumConversions: 0, pendingConversions: 0 };
+    },
+    async getReferralLeaderboard() {
+      return [];
+    },
+
     /* ---- Admin stats ---- */
     async getAdminStats() {
       return { totalUsers: _users.size, premiumUsers: 0, dauToday: 0, totalLogsToday: 0, totalLogsAllTime: 0, activeGroups: 0, avgStreakLength: 0 };

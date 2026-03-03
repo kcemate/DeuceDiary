@@ -151,6 +151,7 @@ export const referrals = pgTable("referrals", {
   referrerId: varchar("referrer_id").notNull().references(() => users.id),
   refereeId: varchar("referee_id").notNull().references(() => users.id),
   discountApplied: boolean("discount_applied").default(false).notNull(),
+  convertedToPremiumAt: timestamp("converted_to_premium_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

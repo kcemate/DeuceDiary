@@ -72,6 +72,11 @@ const migrations: { name: string; sql: string }[] = [
       created_at timestamp DEFAULT now()
     )`,
   },
+  // referrals: add converted_to_premium_at column
+  {
+    name: "referrals.converted_to_premium_at",
+    sql: "ALTER TABLE referrals ADD COLUMN IF NOT EXISTS converted_to_premium_at timestamp",
+  },
   // streak_alerts table
   {
     name: "table.streak_alerts",

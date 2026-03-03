@@ -442,6 +442,7 @@ const memStore = vi.hoisted(() => {
         referrerId,
         refereeId,
         discountApplied: false,
+        convertedToPremiumAt: null as Date | null,
         createdAt: new Date(),
       };
       _referrals.push(referral);
@@ -460,6 +461,37 @@ const memStore = vi.hoisted(() => {
         referralCount: user?.referralCount ?? 0,
         referrals: userReferrals,
       };
+    },
+
+    /* ---- Referral dashboard ---- */
+    async getReferralDashboardStats(userId: string) {
+      const userReferrals = _referrals.filter((r) => r.referrerId === userId);
+      const premiumConversions = userReferrals.filter((r) => r.convertedToPremiumAt).length;
+      return {
+        totalReferrals: userReferrals.length,
+        premiumConversions,
+        pendingConversions: userReferrals.length - premiumConversions,
+      };
+    },
+    async getReferralLeaderboard() {
+      const counts = new Map<string, { referralCount: number; premiumConversionCount: number }>();
+      for (const r of _referrals) {
+        const existing = counts.get(r.referrerId) ?? { referralCount: 0, premiumConversionCount: 0 };
+        existing.referralCount++;
+        if (r.convertedToPremiumAt) existing.premiumConversionCount++;
+        counts.set(r.referrerId, existing);
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1].referralCount - a[1].referralCount)
+        .slice(0, 10)
+        .map(([userId, stats]) => {
+          const user = _users.get(userId);
+          return {
+            username: user?.username ?? null,
+            profileImageUrl: user?.profileImageUrl ?? null,
+            ...stats,
+          };
+        });
     },
 
     /* ---- Admin stats ---- */
@@ -733,6 +765,41 @@ describe("Referral system", () => {
     const res = await agent.get("/api/referral/stats");
     expect(res.status).toBe(403);
     expect(res.body.message).toMatch(/premium required/i);
+  });
+
+  it("GET /api/referrals/stats returns dashboard stats for any authenticated user", async () => {
+    const aliceAgent = await loginAs("alice");
+    await memStore.updateUserUsername("dev-alice", "alice");
+    const aliceUser = await memStore.getUser("dev-alice");
+
+    const bobAgent = await loginAs("bob");
+    await bobAgent.post("/api/referral/apply").send({ code: aliceUser.referralCode });
+
+    const res = await aliceAgent.get("/api/referrals/stats");
+    expect(res.status).toBe(200);
+    expect(res.body.totalReferrals).toBe(1);
+    expect(res.body.premiumConversions).toBe(0);
+    expect(res.body.pendingConversions).toBe(1);
+  });
+
+  it("GET /api/referrals/leaderboard returns top referrers", async () => {
+    const aliceAgent = await loginAs("alice");
+    await memStore.updateUserUsername("dev-alice", "alice");
+    const aliceUser = await memStore.getUser("dev-alice");
+
+    const bobAgent = await loginAs("bob");
+    await bobAgent.post("/api/referral/apply").send({ code: aliceUser.referralCode });
+
+    const charlieAgent = await loginAs("charlie");
+    await charlieAgent.post("/api/referral/apply").send({ code: aliceUser.referralCode });
+
+    const res = await aliceAgent.get("/api/referrals/leaderboard");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+    expect(res.body[0].username).toBe("alice");
+    expect(res.body[0].referralCount).toBe(2);
+    expect(res.body[0].premiumConversionCount).toBe(0);
   });
 });
 

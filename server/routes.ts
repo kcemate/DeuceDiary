@@ -1068,6 +1068,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Referral dashboard routes ---
+
+  app.get('/api/referrals/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getReferralDashboardStats(req.user.id);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching referral dashboard stats:', error);
+      res.status(500).json({ message: 'Failed to fetch referral stats' });
+    }
+  });
+
+  app.get('/api/referrals/leaderboard', isAuthenticated, async (req: any, res) => {
+    try {
+      const leaderboard = await storage.getReferralLeaderboard();
+      res.json(leaderboard);
+    } catch (error) {
+      console.error('Error fetching referral leaderboard:', error);
+      res.status(500).json({ message: 'Failed to fetch referral leaderboard' });
+    }
+  });
+
   // --- Subscription routes ---
 
   app.get('/api/subscription', isAuthenticated, async (req: any, res) => {

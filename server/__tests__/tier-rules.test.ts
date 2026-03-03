@@ -457,6 +457,14 @@ const memStore = vi.hoisted(() => {
     async getGroupPushTokens(_gid: string) { return []; },
     async getGroupMemberTypicalHours(_gid: string) { return []; },
 
+    /* ---- Referral dashboard ---- */
+    async getReferralDashboardStats(_userId: string) {
+      return { totalReferrals: 0, premiumConversions: 0, pendingConversions: 0 };
+    },
+    async getReferralLeaderboard() {
+      return [];
+    },
+
     /* ---- test helpers ---- */
     _reset() {
       _users.clear();
