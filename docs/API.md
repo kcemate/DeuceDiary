@@ -45,8 +45,9 @@ Authorization: Bearer <clerk_jwt_token>
 
 ### Development (Session)
 In development mode, session-based auth is available:
-- `POST /api/login` with `{ "username": "..." }` to create a session
-- `GET /api/logout` to destroy the session
+- `POST /api/login` with `{ "username": "...", "inviteCode": "..." }` to create a session (inviteCode is optional — auto-joins the group if provided)
+- `GET /api/logout` to destroy the session (redirects to `/`)
+- `POST /api/auth/logout` to destroy the session (returns `{ "ok": true }`)
 
 ### Internal Endpoints
 Internal endpoints use header-based API keys:
@@ -868,6 +869,8 @@ Use monthly streak insurance to preserve at-risk streaks.
   "message": "Streak preserved!"
 }
 ```
+
+When no at-risk streaks are found, `extended` is `false` and the message is `"Insurance activated (no at-risk streaks found)"`.
 
 **Errors:**
 | Code | Message |
