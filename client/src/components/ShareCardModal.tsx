@@ -1,0 +1,155 @@
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Copy, Share2 } from "lucide-react";
+
+interface ShareCardData {
+  username: string | null;
+  currentStreak: number;
+  longestStreak: number;
+  totalLogs: number;
+  memberSince: string | null;
+  squadCount: number;
+}
+
+export function ShareCardModal({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const userId = (user as any)?.id;
+
+  const { data } = useQuery<ShareCardData>({
+    queryKey: [`/api/share/streak/${userId}`],
+    enabled: open && !!userId,
+  });
+
+  const shareUrl = userId
+    ? `${window.location.origin}/api/og/streak/${userId}`
+    : "";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied!" });
+    } catch {
+      toast({ title: "Failed to copy", variant: "destructive" });
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!navigator.share) {
+      handleCopy();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: `${data?.username || "I"}'m on a ${data?.currentStreak}-day streak!`,
+        text: `Join my streak on Deuce Diary`,
+        url: shareUrl,
+      });
+    } catch {
+      // user cancelled — no action needed
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm mx-auto">
+        <DialogHeader>
+          <DialogTitle className="text-center">Share Your Streak</DialogTitle>
+        </DialogHeader>
+
+        {/* Share Card Preview */}
+        <div
+          className="rounded-3xl p-8 text-center mx-auto w-full"
+          style={{
+            background: "hsl(38, 30%, 94%)",
+            border: "1px solid hsl(38, 18%, 83%)",
+          }}
+        >
+          <div className="text-5xl leading-none">🔥</div>
+          <div
+            className="text-7xl font-black leading-none mt-2 mb-1"
+            style={{
+              color: "hsl(45, 88%, 48%)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {data?.currentStreak ?? 0}
+          </div>
+          <div
+            className="text-xs font-bold uppercase tracking-widest mb-6"
+            style={{ color: "hsl(25, 12%, 42%)" }}
+          >
+            Day Streak
+          </div>
+
+          <div className="text-xl font-extrabold" style={{ color: "hsl(25, 30%, 8%)" }}>
+            {data?.username || "Anonymous"}
+          </div>
+          <div className="text-sm mb-6" style={{ color: "hsl(25, 12%, 42%)" }}>
+            on Deuce Diary
+          </div>
+
+          <div className="flex justify-center gap-8">
+            <div>
+              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+                {data?.totalLogs ?? 0}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+                Logs
+              </div>
+            </div>
+            <div>
+              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+                {data?.longestStreak ?? 0}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+                Best Streak
+              </div>
+            </div>
+            <div>
+              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+                {data?.squadCount ?? 0}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+                Squads
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-2">
+          <Button
+            variant="outline"
+            className="flex-1 rounded-xl font-bold"
+            onClick={handleCopy}
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Copy Link
+          </Button>
+          <Button
+            className="flex-1 rounded-xl font-bold"
+            onClick={handleNativeShare}
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Share
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

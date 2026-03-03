@@ -7,8 +7,9 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
+import { ShareCardModal } from "@/components/ShareCardModal";
 import { StreakFrame } from "@/components/streak-frame";
-import { Edit2 } from "lucide-react";
+import { Edit2, Share2 } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,7 @@ export default function Profile() {
   const { user } = useAuth();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [editUsernameOpen, setEditUsernameOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -94,21 +96,22 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Share Streak */}
+      <div className="mb-6">
+        <Button
+          onClick={() => setShareOpen(true)}
+          variant="secondary"
+          className="w-full rounded-xl font-bold"
+        >
+          <Share2 className="w-4 h-4 mr-2" />
+          Share Your Streak
+        </Button>
+      </div>
+
       {/* Weekly Report */}
       <div className="mb-6">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Weekly Report</h3>
         <WeeklyThroneReport />
-        <Button
-          onClick={() =>
-            toast({
-              title: "Screenshot this and share with your squad! \uD83D\uDCF8",
-            })
-          }
-          variant="secondary"
-          className="w-full rounded-xl font-bold mt-3"
-        >
-          Share Report {"\uD83D\uDCE4"}
-        </Button>
       </div>
 
       {/* Recent Activity */}
@@ -184,6 +187,7 @@ export default function Profile() {
         onOpenChange={setEditUsernameOpen}
         currentUsername={user?.username || ""}
       />
+      <ShareCardModal open={shareOpen} onOpenChange={setShareOpen} />
     </div>
   );
 }
