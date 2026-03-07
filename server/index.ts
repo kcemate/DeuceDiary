@@ -163,6 +163,40 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
+
+  // --- Graceful Shutdown ---
+  // Railway (and other PaaS platforms) send SIGTERM on deploy/stop.
+  // We close the HTTP server first (stops accepting new connections),
+  // wait for in-flight requests to complete (up to 10s), then drain the DB pool.
+  const shutdown = (signal: string) => {
+    log(`[SHUTDOWN] Received ${signal} — shutting down gracefully`);
+
+    server.close(async (err) => {
+      if (err) {
+        console.error("[SHUTDOWN] Error closing HTTP server:", err);
+        process.exit(1);
+      }
+
+      try {
+        const { pool: dbPool } = await import("./db.js");
+        await dbPool.end();
+        log("[SHUTDOWN] DB pool drained — exiting cleanly");
+      } catch (dbErr) {
+        console.error("[SHUTDOWN] Error draining DB pool:", dbErr);
+      }
+
+      process.exit(0);
+    });
+
+    // Force-exit after 15s if graceful shutdown stalls
+    setTimeout(() => {
+      console.error("[SHUTDOWN] Graceful shutdown timed out after 15s — forcing exit");
+      process.exit(1);
+    }, 15_000).unref();
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 })();
 
 // --- Unhandled rejection / exception safety net ---
