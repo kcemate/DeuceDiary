@@ -26,9 +26,17 @@ const ALLOWED_ORIGINS = [
   "https://deuce-diary-web-production.up.railway.app",
   "http://localhost:5000",
   "http://localhost:3000",
+  "http://localhost:8081",
 ];
 app.use(cors({
-  origin: ALLOWED_ORIGINS,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, iOS WebView sends null)
+    if (!origin) return callback(null, true);
+    // Allow Expo development URLs (exp://*)
+    if (origin.startsWith("exp://")) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
 }));
 

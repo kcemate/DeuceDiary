@@ -68,7 +68,9 @@ export const groupMembers = pgTable("group_members", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   role: varchar("role").notNull().default("member"), // "admin" or "member"
   joinedAt: timestamp("joined_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_group_members_user_group").on(table.userId, table.groupId),
+]);
 
 export const deuceEntries = pgTable("deuce_entries", {
   id: varchar("id").primaryKey().notNull(),
@@ -78,8 +80,12 @@ export const deuceEntries = pgTable("deuce_entries", {
   thoughts: text("thoughts").notNull(),
   ghost: boolean("ghost").default(false).notNull(),
   loggedAt: timestamp("logged_at").notNull(),
+  lastLoggedAt: timestamp("last_logged_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_deuce_entries_user_group").on(table.userId, table.groupId),
+  index("idx_deuce_entries_logged_at").on(table.loggedAt),
+]);
 
 export const invites = pgTable("invites", {
   id: varchar("id").primaryKey().notNull(),
@@ -112,7 +118,9 @@ export const pushTokens = pgTable("push_tokens", {
   token: text("token").notNull(),
   platform: varchar("platform", { length: 10 }).notNull(), // 'ios' | 'android'
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_push_tokens_user").on(table.userId),
+]);
 
 export const reactions = pgTable("reactions", {
   id: serial("id").primaryKey(),
@@ -122,6 +130,7 @@ export const reactions = pgTable("reactions", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   uniqueUserEntryEmoji: unique().on(table.entryId, table.userId, table.emoji),
+  entryIdIdx: index("idx_reactions_entry").on(table.entryId),
 }));
 
 export const broadcasts = pgTable("broadcasts", {
@@ -327,7 +336,7 @@ export const insertReactionSchema = createInsertSchema(reactions).omit({
 });
 
 export const updateUserSchema = z.object({
-  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_ ]+$/, "Username can only contain letters, numbers, underscores, and spaces"),
+  username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
 });
 
 export type InsertGroupRequest = z.infer<typeof insertGroupSchema>;

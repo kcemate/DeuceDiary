@@ -19,11 +19,16 @@ export async function sendPushNotification(
     return { sent: 0, failed: 0 };
   }
 
-  // Build messages, filtering to valid Expo push tokens
+  // Build messages, filtering to valid Expo push tokens and deduplicating by token value
   const messages: ExpoPushMessage[] = [];
   const invalidTokenValues: string[] = [];
+  const seenTokenValues = new Set<string>();
 
   for (const t of tokens) {
+    // Deduplicate: skip if we've already queued this token value
+    if (seenTokenValues.has(t.token)) continue;
+    seenTokenValues.add(t.token);
+
     if (!Expo.isExpoPushToken(t.token)) {
       console.warn(`[PUSH] Invalid Expo push token for user ${userId}: ${t.token}`);
       invalidTokenValues.push(t.token);
@@ -100,7 +105,7 @@ export async function sendGroupPushNotification(
     return { sent: 0, failed: 0 };
   }
 
-  // Group tokens by userId to deduplicate cleanup
+  // Deduplicate by userId to prevent sending to the same user twice
   const userIds = [...new Set(tokens.map((t) => t.userId))];
   let totalSent = 0;
   let totalFailed = 0;

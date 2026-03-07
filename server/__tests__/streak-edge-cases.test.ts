@@ -290,6 +290,8 @@ vi.mock("../replitAuth", async () => {
 
   return {
     clerkEnabled: false,
+    clerk: null,
+    getSession: () => session({ secret: "test-secret", resave: false, saveUninitialized: false }),
     setupAuth: async (app: any) => {
       app.use(session({ secret: "test-secret", resave: false, saveUninitialized: false }));
 

@@ -15,7 +15,7 @@ export const requiresPremium: RequestHandler = (req: any, res, next) => {
     return next();
   }
 
-  return res.status(403).json({ message: "Premium required", upgrade: true });
+  return res.status(403).json({ feature: "general", message: "Premium required", upgrade: true });
 };
 
 /**
@@ -34,6 +34,6 @@ export function requiresPremiumFor(feature: string): RequestHandler {
       return next();
     }
 
-    return res.status(403).json({ message: "Premium required", upgrade: true, feature });
+    return res.status(403).json({ feature, message: "Premium required", upgrade: true });
   };
 }

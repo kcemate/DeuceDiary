@@ -24,7 +24,7 @@ const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 /** True when Clerk keys are configured and should be used for auth. */
 export let clerkEnabled = !!CLERK_SECRET_KEY;
 
-let clerk: any = null;
+export let clerk: any = null;
 if (clerkEnabled) {
   try {
     const { createClerkClient } = require("@clerk/clerk-sdk-node");

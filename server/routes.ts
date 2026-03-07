@@ -4,9 +4,10 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { storage } from "./storage";
 import { pool } from "./db";
-import { setupAuth, isAuthenticated, clerkEnabled } from "./replitAuth";
+import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
+import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
 import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -111,39 +112,64 @@ function getYesterdayUTC(): string {
  * If yes, advance the streak. If a day was missed, reset first.
  */
 async function recalculateStreak(groupId: string): Promise<void> {
-  const today = getTodayUTC();
-  const yesterday = getYesterdayUTC();
-  const streak = await storage.getGroupStreak(groupId);
-  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Advisory lock on groupId hash to prevent concurrent streak updates
+    const lockKey = Math.abs(hashCode(groupId));
+    await client.query('SELECT pg_advisory_xact_lock($1)', [lockKey]);
 
-  const allLoggedToday = memberStatuses.every(m => m.hasLogged);
+    const today = getTodayUTC();
+    const yesterday = getYesterdayUTC();
+    const streak = await storage.getGroupStreak(groupId);
+    const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
 
-  if (!allLoggedToday) {
-    // Not everyone has logged today yet — but check if streak needs resetting
-    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-      // Missed a day — reset
-      await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+    const allLoggedToday = memberStatuses.every(m => m.hasLogged);
+
+    if (!allLoggedToday) {
+      // Not everyone has logged today yet — but check if streak needs resetting
+      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+        // Missed a day — reset
+        await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+      }
+      await client.query('COMMIT');
+      return;
     }
-    return;
-  }
 
-  // Everyone logged today
-  if (streak.lastStreakDate === today) {
-    // Already counted today
-    return;
-  }
+    // Everyone logged today
+    if (streak.lastStreakDate === today) {
+      // Already counted today
+      await client.query('COMMIT');
+      return;
+    }
 
-  let newStreak: number;
-  if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-    // Fresh start (first time or missed a day)
-    newStreak = 1;
-  } else {
-    // Continuing from yesterday
-    newStreak = streak.currentStreak + 1;
-  }
+    let newStreak: number;
+    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
+      // Fresh start (first time or missed a day)
+      newStreak = 1;
+    } else {
+      // Continuing from yesterday
+      newStreak = streak.currentStreak + 1;
+    }
 
-  const newLongest = Math.max(newStreak, streak.longestStreak);
-  await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
+    const newLongest = Math.max(newStreak, streak.longestStreak);
+    await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Simple string hash for advisory lock keys */
+function hashCode(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
+  }
+  return hash;
 }
 
 /**
@@ -194,7 +220,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Admin stats endpoint (no session auth, X-Admin-Key header) ---
-  const ADMIN_KEY = process.env.ADMIN_KEY || 'dev-admin-key';
+  const ADMIN_KEY = process.env.ADMIN_KEY;
+  if (!ADMIN_KEY) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_KEY environment variable is required in production');
+    }
+    console.warn('[WARN] ADMIN_KEY not set — admin endpoints will reject all requests in dev');
+  }
   app.get('/api/admin/stats', async (req, res) => {
     const key = req.headers['x-admin-key'];
     if (key !== ADMIN_KEY) {
@@ -210,7 +242,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Internal streak check endpoint (cron / manual trigger, no session auth)
-  const INTERNAL_KEY = process.env.INTERNAL_API_KEY || 'streak-check-secret';
+  const INTERNAL_KEY = process.env.INTERNAL_API_KEY;
+  if (!INTERNAL_KEY) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('INTERNAL_API_KEY environment variable is required in production');
+    }
+    console.warn('[WARN] INTERNAL_API_KEY not set — internal endpoints will reject all requests in dev');
+  }
   app.post('/api/internal/streak-check', async (req, res) => {
     const key = req.headers['x-internal-key'];
     if (key !== INTERNAL_KEY) {
@@ -291,42 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // --- RevenueCat webhook (no session auth, server-to-server) ---
-  app.post('/api/webhooks/revenuecat', express.json(), async (req, res) => {
-    try {
-      const { event } = req.body;
-      if (!event?.type || !event?.app_user_id) {
-        return res.status(400).json({ message: 'Invalid payload' });
-      }
-
-      const userId = event.app_user_id;
-      const expirationMs = event.expiration_at_ms;
-
-      switch (event.type) {
-        case 'INITIAL_PURCHASE':
-        case 'RENEWAL':
-        case 'PRODUCT_CHANGE': {
-          const expiresAt = expirationMs ? new Date(expirationMs) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-          await storage.updateUserSubscription(userId, 'premium', expiresAt);
-          console.log(`[REVENUECAT] ${event.type} — user ${userId} upgraded until ${expiresAt.toISOString()}`);
-          break;
-        }
-        case 'CANCELLATION':
-        case 'EXPIRATION': {
-          // Set expiration to now so the premium check fails immediately
-          await storage.updateUserSubscription(userId, 'free', new Date());
-          console.log(`[REVENUECAT] ${event.type} — user ${userId} downgraded`);
-          break;
-        }
-        default:
-          console.log(`[REVENUECAT] Unhandled event type: ${event.type}`);
-      }
-
-      res.json({ received: true });
-    } catch (error) {
-      console.error('[REVENUECAT] Webhook error:', error);
-      res.status(500).json({ message: 'Webhook processing failed' });
-    }
-  });
+  registerRevenueCatWebhook(app);
 
   // --- Public endpoints (no auth required) ---
 
@@ -1492,24 +1495,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // WebSocket server — authenticated connections only
+  const wss = new WebSocketServer({ noServer: true });
   const groupConnections = new Map<string, Set<WebSocket>>();
 
+  // Authenticate WebSocket upgrade requests
+  const sessionMiddleware = getSession();
+  httpServer.on('upgrade', async (req, socket, head) => {
+    const url = new URL(req.url || '', `http://${req.headers.host}`);
+    if (url.pathname !== '/ws') {
+      socket.destroy();
+      return;
+    }
+
+    try {
+      let userId: string | null = null;
+
+      if (clerkEnabled) {
+        // Clerk mode: token passed as query param (browsers can't set WS headers)
+        const token = url.searchParams.get('token');
+        if (!token) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+        try {
+          const payload = await clerk!.verifyToken(token);
+          const user = await storage.getUser(payload.sub);
+          if (!user) {
+            socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+            socket.destroy();
+            return;
+          }
+          userId = user.id;
+        } catch {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+      } else {
+        // Dev mode: validate session cookie
+        const res = { end() {}, setHeader() {}, getHeader() {} } as any;
+        await new Promise<void>((resolve) => {
+          sessionMiddleware(req as any, res, () => resolve());
+        });
+        userId = (req as any).session?.userId || null;
+        if (!userId) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+        const user = await storage.getUser(userId);
+        if (!user) {
+          socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+          socket.destroy();
+          return;
+        }
+      }
+
+      // Upgrade and attach userId
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        (ws as any).userId = userId;
+        wss.emit('connection', ws, req);
+      });
+    } catch (error) {
+      console.error('WebSocket auth error:', error);
+      socket.destroy();
+    }
+  });
+
   wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket connection established');
-    
-    ws.on('message', (message) => {
+    const userId = (ws as any).userId as string;
+    console.log(`WebSocket connection authenticated for user ${userId}`);
+
+    ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         if (data.type === 'join_group') {
           const groupId = data.groupId;
+
+          // Verify user is a member of this group
+          const isMember = await storage.isUserInGroup(userId, groupId);
+          if (!isMember) {
+            ws.send(JSON.stringify({ type: 'error', message: 'Not a member of this group' }));
+            return;
+          }
+
           if (!groupConnections.has(groupId)) {
             groupConnections.set(groupId, new Set());
           }
           groupConnections.get(groupId)?.add(ws);
-          
+
           // Store groupId on the WebSocket for cleanup
           (ws as any).groupId = groupId;
         }
@@ -1517,7 +1594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error parsing WebSocket message:', error);
       }
     });
-    
+
     ws.on('close', () => {
       // Clean up connection
       const groupId = (ws as any).groupId;

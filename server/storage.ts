@@ -1196,6 +1196,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async softDeleteUser(userId: string): Promise<void> {
+    // Cascade: remove group memberships, push tokens, reactions, and anonymize entries for GDPR
+    await db
+      .delete(groupMembers)
+      .where(eq(groupMembers.userId, userId));
+
+    await db
+      .delete(pushTokens)
+      .where(eq(pushTokens.userId, userId));
+
+    await db
+      .delete(reactions)
+      .where(eq(reactions.userId, userId));
+
+    await db
+      .update(deuceEntries)
+      .set({ thoughts: "", location: "deleted" })
+      .where(eq(deuceEntries.userId, userId));
+
     await db
       .update(users)
       .set({

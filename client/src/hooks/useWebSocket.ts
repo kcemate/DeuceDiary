@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./useAuth";
+import { getAuthToken } from "@/lib/auth-token";
 
 interface WebSocketMessage {
   type: string;
@@ -15,12 +16,18 @@ export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const connect = () => {
+  const connect = async () => {
     if (!isAuthenticated) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
+    let wsUrl = `${protocol}//${window.location.host}/ws`;
+
+    // Attach Clerk token as query param for authenticated connections
+    const token = await getAuthToken();
+    if (token) {
+      wsUrl += `?token=${encodeURIComponent(token)}`;
+    }
+
     try {
       wsRef.current = new WebSocket(wsUrl);
 
