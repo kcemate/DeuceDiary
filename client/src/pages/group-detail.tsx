@@ -334,6 +334,49 @@ export default function GroupDetail() {
                 Start a streak — every member logs today to begin!
               </p>
             )}
+
+            {/* ── Streak Rescue button — shown when streak is active but someone hasn't logged ── */}
+            {streakData.currentStreak > 0 && streakData.logsToday.some(m => !m.hasLogged) && (
+              <div className="border-t pt-3 mt-3">
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⚠️</span>
+                    <div>
+                      <p className="text-sm font-bold text-red-700 leading-tight">Streak at risk!</p>
+                      <p className="text-xs text-red-500 leading-tight">
+                        {streakData.logsToday.filter(m => !m.hasLogged).map(m => m.username).join(", ")}
+                        {" "}still need{streakData.logsToday.filter(m => !m.hasLogged).length === 1 ? "s" : ""} to log today.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-sm text-sm"
+                    onClick={async () => {
+                      const groupName = groupDetail?.group.name ?? "our squad";
+                      const streak = streakData.currentStreak;
+                      const message = `🚨 STREAK ALERT 🔥\n\n"${groupName}" is on a ${streak}-day streak — but it's at risk!\n\nLog your deuce TODAY to keep it alive 🚽\n\n👉 ${window.location.origin}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({ title: "Save Our Streak!", text: message });
+                        } catch {
+                          // User cancelled — that's fine
+                        }
+                      } else {
+                        try {
+                          await navigator.clipboard.writeText(message);
+                          toast({ title: "Rescue message copied! 📋", description: "Paste it in your group chat." });
+                        } catch {
+                          toast({ title: "Share this:", description: message });
+                        }
+                      }
+                    }}
+                  >
+                    🆘 Save Our Streak!
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

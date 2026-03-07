@@ -1,10 +1,180 @@
 {/* SEO TODO: Add OG meta tags in index.html — og:title, og:description, og:image, og:url, twitter:card */}
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+
+// ── Demo feed data — realistic sample of the core loop ─────────────────────
+const DEMO_ENTRIES = [
+  {
+    username: "FlushKing99",
+    avatar: "💪",
+    thoughts: "Morning constitutional. Clean and efficient. 8/10 would recommend.",
+    location: "Home Base",
+    timeAgo: "2m ago",
+    reactions: [{ emoji: "🔥", count: 3 }, { emoji: "👑", count: 1 }],
+    isNew: true,
+  },
+  {
+    username: "TroneZone",
+    avatar: "🏆",
+    thoughts: "Post-gym drop. Possibly the greatest deuce of my career.",
+    location: "Planet Fitness",
+    timeAgo: "14m ago",
+    reactions: [{ emoji: "😂", count: 5 }, { emoji: "💪", count: 2 }],
+    isNew: false,
+  },
+  {
+    username: "SeatWarrior",
+    avatar: "🎯",
+    thoughts: "Double deuce day. Living the dream. The streak continues.",
+    location: "The Office",
+    timeAgo: "1h ago",
+    reactions: [{ emoji: "🚽", count: 4 }],
+    isNew: false,
+  },
+  {
+    username: "CrownPrincess",
+    avatar: "👸",
+    thoughts: "Solid 10-minute session. Audiobook made it even better.",
+    location: "Home Base",
+    timeAgo: "3h ago",
+    reactions: [{ emoji: "📚", count: 2 }, { emoji: "❤️", count: 1 }],
+    isNew: false,
+  },
+];
+
+function DemoGroupFeed() {
+  const [visibleItems, setVisibleItems] = useState(1);
+  const [highlightNew, setHighlightNew] = useState(false);
+
+  useEffect(() => {
+    // Stagger reveal of demo items
+    const timers = DEMO_ENTRIES.map((_, i) =>
+      setTimeout(() => setVisibleItems(i + 1), i * 500 + 300)
+    );
+    // Pulse the "new" entry after a delay
+    const pulseTimer = setTimeout(() => setHighlightNew(true), 800);
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(pulseTimer);
+    };
+  }, []);
+
+  return (
+    <section className="border-y border-border bg-card/50">
+      <div className="max-w-2xl mx-auto px-4 py-10">
+        <div className="text-center mb-6">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+            See it in action
+          </p>
+          <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
+            This is what your squad feed looks like
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Real-time updates, reactions, streaks — the whole throne experience.
+          </p>
+        </div>
+
+        {/* Fake phone frame */}
+        <div className="max-w-sm mx-auto">
+          {/* Group header */}
+          <div className="bg-card border border-border rounded-t-2xl px-4 py-3 flex items-center justify-between border-b-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🚽</span>
+              <div>
+                <p className="font-bold text-foreground text-sm leading-tight">The Throne Room</p>
+                <p className="text-xs text-muted-foreground">4 members</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base">🔥</span>
+              <span className="text-sm font-extrabold text-foreground">12</span>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5">🥈 Silver</Badge>
+            </div>
+          </div>
+
+          {/* Feed entries */}
+          <div className="bg-card border border-border rounded-b-2xl overflow-hidden divide-y divide-border">
+            {DEMO_ENTRIES.slice(0, visibleItems).map((entry, i) => (
+              <div
+                key={i}
+                className={`px-4 py-3 transition-all duration-500 ${
+                  i === 0 && highlightNew
+                    ? "bg-green-50 dark:bg-green-950/20"
+                    : ""
+                }`}
+              >
+                <div className="flex gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base flex-shrink-0">
+                    {entry.avatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-foreground">{entry.username}</span>
+                      {i === 0 && highlightNew && (
+                        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-semibold">
+                          NEW
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground ml-auto">{entry.timeAgo}</span>
+                    </div>
+                    <p className="text-xs text-foreground mt-0.5 leading-relaxed">
+                      {entry.thoughts}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      📍 {entry.location}
+                    </p>
+                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      {entry.reactions.map((r, ri) => (
+                        <span
+                          key={ri}
+                          className="inline-flex items-center gap-0.5 bg-muted rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                        >
+                          {r.emoji} {r.count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {visibleItems < DEMO_ENTRIES.length && (
+              <div className="px-4 py-3 flex gap-2.5 animate-pulse">
+                <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0" />
+                <div className="flex-1 space-y-1.5 py-1">
+                  <div className="h-2.5 bg-muted rounded w-1/3" />
+                  <div className="h-2 bg-muted rounded w-2/3" />
+                  <div className="h-2 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+            )}
+            {/* Streak rescue teaser */}
+            {visibleItems >= DEMO_ENTRIES.length && (
+              <div className="px-4 py-2.5 bg-red-50 dark:bg-red-950/20 flex items-center gap-2">
+                <span className="text-sm">⚠️</span>
+                <p className="text-xs text-red-600 font-medium flex-1">
+                  <span className="font-bold">CrownPrincess</span> hasn't logged today —
+                  streak at risk!
+                </p>
+                <span className="text-[10px] text-red-400 font-bold whitespace-nowrap">
+                  🆘 Save it
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            ↑ This is live — your feed updates in real-time
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Landing() {
   const [username, setUsername] = useState("");
@@ -75,22 +245,8 @@ export default function Landing() {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent" />
       </section>
 
-      {/* ── Social Proof / Stats ── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-4xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: "10K+", label: "Deuces Logged" },
-            { value: "2.5K+", label: "Active Streakers" },
-            { value: "500+", label: "Squads Formed" },
-            { value: "💯", label: "Longest Streak" },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <div className="text-3xl md:text-4xl font-extrabold text-primary">{stat.value}</div>
-              <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── Live Demo Feed ── */}
+      <DemoGroupFeed />
 
       {/* ── Features Section ── */}
       <section className="max-w-5xl mx-auto px-4 py-16 md:py-24">

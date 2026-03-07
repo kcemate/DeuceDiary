@@ -45,6 +45,8 @@ const createDeuceSchema = z.object({
   thoughts: z.string().optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
   ghost: z.boolean().optional(),
+  bristolScore: z.number().int().min(1).max(7).optional(),
+  photoUrl: z.string().url().optional(),
 });
 
 const reactionSchema = z.object({
@@ -368,9 +370,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!group) {
         return res.status(404).json({ message: "Group not found" });
       }
-      const memberCount = await storage.getGroupMemberCount(invite.groupId);
-      const deuceCount = await storage.getGroupDeuceCount(invite.groupId);
-      res.json({ name: group.name, memberCount, deuceCount });
+      const [memberCount, deuceCount, streakData, members, entries] = await Promise.all([
+        storage.getGroupMemberCount(invite.groupId),
+        storage.getGroupDeuceCount(invite.groupId),
+        storage.getGroupStreak(invite.groupId),
+        storage.getGroupMembers(invite.groupId),
+        storage.getGroupEntries(invite.groupId),
+      ]);
+      // Return slim public preview — no auth required
+      res.json({
+        name: group.name,
+        memberCount,
+        deuceCount,
+        currentStreak: streakData.currentStreak,
+        longestStreak: streakData.longestStreak,
+        members: members.slice(0, 5).map(m => ({
+          username: m.user.username || m.user.firstName || "Anon",
+          deuceCount: m.user.deuceCount,
+        })),
+        recentActivity: entries.slice(0, 3).map(e => ({
+          username: e.user.username || e.user.firstName || "Anon",
+          thoughts: e.thoughts,
+          location: e.location,
+          loggedAt: e.loggedAt,
+        })),
+      });
     } catch (error) {
       console.error("Error fetching group preview:", error);
       res.status(500).json({ message: "Failed to fetch group preview" });
@@ -904,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid deuce entry data" });
       }
 
-      const { groupIds, groupId, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
 
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -916,6 +940,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate thought length
       if (entryData.thoughts && entryData.thoughts.length > 500) {
         return res.status(400).json({ message: "Thought must be 500 characters or less" });
+      }
+
+      // bristolScore validated by zod (1-7 int), but double-check for safety
+      if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
+        return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
       }
 
       // Check if user is in all selected groups
@@ -935,6 +964,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const entry = await storage.createDeuceEntry({
           ...entryData,
           ghost: isGhost,
+          bristolScore: bristolScore ?? null,
+          photoUrl: photoUrl ?? null,
           groupId,
           userId,
           loggedAt,

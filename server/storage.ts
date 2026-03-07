@@ -38,6 +38,11 @@ import {
 import { db } from "./db";
 import { eq, desc, and, count, sql, inArray, gte, isNull } from "drizzle-orm";
 
+/** Internal helper — today as YYYY-MM-DD in UTC */
+function getTodayStorageUTC(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 // Interface for storage operations
 export interface IStorage {
   // User operations
@@ -152,6 +157,59 @@ export interface IStorage {
     totalReactionsReceived: number;
     weekOf: string;
   }>;
+
+  // Weekly Throne Report — group-level weekly summary
+  getGroupWeeklyReport(groupId: string): Promise<{
+    groupId: string;
+    groupName: string;
+    weekOf: string;
+    weekEnding: string;
+    groupStats: {
+      currentStreak: number;
+      longestStreak: number;
+      totalDeucesThisWeek: number;
+    };
+    members: Array<{
+      userId: string;
+      username: string | null;
+      profileImageUrl: string | null;
+      deucesThisWeek: number;
+      streakStatus: 'active' | 'at_risk' | 'inactive';
+    }>;
+    mvp: {
+      userId: string;
+      username: string | null;
+      profileImageUrl: string | null;
+      deuceCount: number;
+    } | null;
+    funnyStats: {
+      longestGap: { userId: string; username: string | null; gapDays: number } | null;
+      mostReactionsReceived: { userId: string; username: string | null; reactionCount: number } | null;
+      funniestEntry: { userId: string; username: string | null; thought: string; reactions: number } | null;
+    };
+  }>;
+
+  // Group preview (rich) — for invite OG/landing pages
+  getGroupInvitePreview(inviteCode: string): Promise<{
+    name: string;
+    description: string | null;
+    memberCount: number;
+    memberNames: string[];
+    deuceCount: number;
+    currentStreak: number;
+    longestStreak: number;
+  } | null>;
+
+  // Badges — tiered badge catalog for a user
+  getUserBadges(userId: string): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    emoji: string;
+    tier: 'free' | 'premium';
+    unlocked: boolean;
+    unlockedAt?: Date | null;
+  }>>;
 
   // Squad spy mode — modal log hour per member
   getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]>;
@@ -1039,6 +1097,301 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Weekly Throne Report — group-level weekly summary
+  async getGroupWeeklyReport(groupId: string): Promise<{
+    groupId: string;
+    groupName: string;
+    weekOf: string;
+    weekEnding: string;
+    groupStats: {
+      currentStreak: number;
+      longestStreak: number;
+      totalDeucesThisWeek: number;
+    };
+    members: Array<{
+      userId: string;
+      username: string | null;
+      profileImageUrl: string | null;
+      deucesThisWeek: number;
+      streakStatus: 'active' | 'at_risk' | 'inactive';
+    }>;
+    mvp: {
+      userId: string;
+      username: string | null;
+      profileImageUrl: string | null;
+      deuceCount: number;
+    } | null;
+    funnyStats: {
+      longestGap: { userId: string; username: string | null; gapDays: number } | null;
+      mostReactionsReceived: { userId: string; username: string | null; reactionCount: number } | null;
+      funniestEntry: { userId: string; username: string | null; thought: string; reactions: number } | null;
+    };
+  }> {
+    const today = getTodayStorageUTC();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6); // inclusive 7-day window
+    sevenDaysAgo.setUTCHours(0, 0, 0, 0);
+    const weekOf = sevenDaysAgo.toISOString().slice(0, 10);
+    const weekEnding = today;
+
+    // 1. Group metadata + streak
+    const [group] = await db
+      .select({ name: groups.name, currentStreak: groups.currentStreak, longestStreak: groups.longestStreak })
+      .from(groups)
+      .where(eq(groups.id, groupId));
+    if (!group) throw new Error('Group not found');
+
+    // 2. Member list
+    const memberRows = await db
+      .select({
+        userId: groupMembers.userId,
+        username: users.username,
+        firstName: users.firstName,
+        profileImageUrl: users.profileImageUrl,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)));
+
+    // 3. Deuces per member this week
+    const weeklyEntryCounts = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.groupId, groupId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+      .groupBy(deuceEntries.userId);
+
+    const countByUser = new Map(weeklyEntryCounts.map(r => [r.userId, r.count]));
+
+    // 4. Who logged today (for streak status)
+    const loggedToday = await db
+      .select({ userId: deuceEntries.userId })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.groupId, groupId), sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`))
+      .groupBy(deuceEntries.userId);
+    const loggedTodaySet = new Set(loggedToday.map(r => r.userId));
+
+    // 5. Total group deuces this week
+    const totalDeucesThisWeek = weeklyEntryCounts.reduce((sum, r) => sum + r.count, 0);
+
+    // 6. Build member objects
+    const members = memberRows.map(m => {
+      const count = countByUser.get(m.userId) ?? 0;
+      const hasLoggedToday = loggedTodaySet.has(m.userId);
+      const streakStatus: 'active' | 'at_risk' | 'inactive' = hasLoggedToday
+        ? 'active'
+        : count > 0 ? 'at_risk' : 'inactive';
+      return {
+        userId: m.userId,
+        username: m.username ?? m.firstName,
+        profileImageUrl: m.profileImageUrl,
+        deucesThisWeek: count,
+        streakStatus,
+      };
+    });
+
+    // 7. MVP — member with most deuces this week
+    const sortedByCount = [...members].sort((a, b) => b.deucesThisWeek - a.deucesThisWeek);
+    const mvpMember = sortedByCount[0] && sortedByCount[0].deucesThisWeek > 0 ? sortedByCount[0] : null;
+    const mvp = mvpMember
+      ? { userId: mvpMember.userId, username: mvpMember.username, profileImageUrl: mvpMember.profileImageUrl, deuceCount: mvpMember.deucesThisWeek }
+      : null;
+
+    // 8. Funny stats
+
+    // 8a. Longest gap — find the member with the most days since last entry (within the week)
+    const lastEntryRows = await db
+      .select({
+        userId: deuceEntries.userId,
+        lastLog: sql<string>`MAX(DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC'))`,
+      })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.groupId, groupId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+      .groupBy(deuceEntries.userId);
+
+    const lastEntryMap = new Map(lastEntryRows.map(r => [r.userId, r.lastLog]));
+
+    let longestGap: { userId: string; username: string | null; gapDays: number } | null = null;
+    for (const m of memberRows) {
+      const lastLog = lastEntryMap.get(m.userId);
+      if (lastLog) {
+        const gapMs = new Date(today).getTime() - new Date(lastLog).getTime();
+        const gapDays = Math.floor(gapMs / (1000 * 60 * 60 * 24));
+        if (!longestGap || gapDays > longestGap.gapDays) {
+          longestGap = { userId: m.userId, username: m.username ?? m.firstName, gapDays };
+        }
+      }
+    }
+
+    // 8b. Most reactions received this week
+    const reactionRows = await db
+      .select({
+        userId: deuceEntries.userId,
+        reactionCount: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
+      .where(and(eq(deuceEntries.groupId, groupId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+      .groupBy(deuceEntries.userId)
+      .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
+      .limit(1);
+
+    let mostReactionsReceived: { userId: string; username: string | null; reactionCount: number } | null = null;
+    if (reactionRows.length > 0 && reactionRows[0].reactionCount > 0) {
+      const m = memberRows.find(m => m.userId === reactionRows[0].userId);
+      mostReactionsReceived = {
+        userId: reactionRows[0].userId,
+        username: m?.username ?? m?.firstName ?? null,
+        reactionCount: reactionRows[0].reactionCount,
+      };
+    }
+
+    // 8c. Funniest entry — most reacted entry with a thought
+    const funniestRows = await db
+      .select({
+        entryId: deuceEntries.id,
+        userId: deuceEntries.userId,
+        thought: deuceEntries.thoughts,
+        reactionCount: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
+      .where(and(
+        eq(deuceEntries.groupId, groupId),
+        gte(deuceEntries.loggedAt, sevenDaysAgo),
+        sql`${deuceEntries.thoughts} != ''`,
+      ))
+      .groupBy(deuceEntries.id, deuceEntries.userId, deuceEntries.thoughts)
+      .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
+      .limit(1);
+
+    let funniestEntry: { userId: string; username: string | null; thought: string; reactions: number } | null = null;
+    if (funniestRows.length > 0 && funniestRows[0].reactionCount > 0) {
+      const m = memberRows.find(m => m.userId === funniestRows[0].userId);
+      funniestEntry = {
+        userId: funniestRows[0].userId,
+        username: m?.username ?? m?.firstName ?? null,
+        thought: funniestRows[0].thought,
+        reactions: funniestRows[0].reactionCount,
+      };
+    }
+
+    return {
+      groupId,
+      groupName: group.name,
+      weekOf,
+      weekEnding,
+      groupStats: {
+        currentStreak: group.currentStreak,
+        longestStreak: group.longestStreak,
+        totalDeucesThisWeek,
+      },
+      members,
+      mvp,
+      funnyStats: { longestGap, mostReactionsReceived, funniestEntry },
+    };
+  }
+
+  // Group invite preview — rich data for OG/landing pages
+  async getGroupInvitePreview(inviteCode: string): Promise<{
+    name: string;
+    description: string | null;
+    memberCount: number;
+    memberNames: string[];
+    deuceCount: number;
+    currentStreak: number;
+    longestStreak: number;
+  } | null> {
+    const invite = await this.getInviteById(inviteCode);
+    if (!invite || invite.expiresAt < new Date()) return null;
+
+    const group = await this.getGroupById(invite.groupId);
+    if (!group) return null;
+
+    const memberRows = await db
+      .select({ username: users.username, firstName: users.firstName })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(and(eq(groupMembers.groupId, invite.groupId), isNull(users.deletedAt)))
+      .limit(10);
+
+    const memberNames = memberRows.map(m => m.username ?? m.firstName ?? 'Member').filter(Boolean);
+    const memberCount = memberRows.length;
+
+    const [countRow] = await db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.groupId, invite.groupId));
+
+    return {
+      name: group.name,
+      description: group.description ?? null,
+      memberCount,
+      memberNames,
+      deuceCount: countRow?.total ?? 0,
+      currentStreak: group.currentStreak,
+      longestStreak: group.longestStreak,
+    };
+  }
+
+  // Badges — tiered badge catalog for a user
+  async getUserBadges(userId: string): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    emoji: string;
+    tier: 'free' | 'premium';
+    unlocked: boolean;
+    unlockedAt?: Date | null;
+  }>> {
+    const user = await this.getUser(userId);
+    if (!user) return [];
+
+    const isPremium = user.subscription === 'premium' && user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date();
+    const totalLogs = user.deuceCount ?? 0;
+    const userGroupIds = await db.select({ groupId: groupMembers.groupId }).from(groupMembers).where(eq(groupMembers.userId, userId));
+    const squadCount = userGroupIds.length;
+
+    let longestStreak = 0;
+    if (userGroupIds.length > 0) {
+      const [sr] = await db
+        .select({ max: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int` })
+        .from(groups)
+        .where(inArray(groups.id, userGroupIds.map(g => g.groupId)));
+      longestStreak = sr?.max ?? 0;
+    }
+
+    const badgeCatalog: Array<{
+      id: string; name: string; description: string; emoji: string;
+      tier: 'free' | 'premium'; condition: boolean; unlockedAt?: Date | null;
+    }> = [
+      // Free badges
+      { id: 'first_flush', name: 'First Flush', description: 'Logged your first deuce', emoji: '🚽', tier: 'free', condition: totalLogs >= 1 },
+      { id: 'ten_club', name: 'Ten Club', description: 'Logged 10 deuces', emoji: '🔟', tier: 'free', condition: totalLogs >= 10 },
+      { id: 'half_century', name: 'Half Century', description: 'Logged 50 deuces', emoji: '5️⃣0️⃣', tier: 'free', condition: totalLogs >= 50 },
+      { id: 'centurion', name: 'Centurion', description: 'Logged 100 deuces', emoji: '💯', tier: 'free', condition: totalLogs >= 100 },
+      { id: 'squad_up', name: 'Squad Up', description: 'Joined your first squad', emoji: '👥', tier: 'free', condition: squadCount >= 1 },
+      { id: 'social_butterfly', name: 'Social Butterfly', description: 'Member of 3+ squads', emoji: '🦋', tier: 'free', condition: squadCount >= 3 },
+      // Premium badges
+      { id: 'gold_throne', name: 'Gold Throne', description: 'Premium subscriber', emoji: '👑', tier: 'premium', condition: !!isPremium },
+      { id: 'streak_king', name: 'Streak King', description: 'Maintained a 7-day group streak', emoji: '🔥', tier: 'premium', condition: longestStreak >= 7 },
+      { id: 'streak_legend', name: 'Streak Legend', description: 'Maintained a 30-day group streak', emoji: '🏆', tier: 'premium', condition: longestStreak >= 30 },
+      { id: 'legend_tier', name: 'Legend', description: 'Logged 500 deuces', emoji: '🌟', tier: 'premium', condition: totalLogs >= 500 },
+    ];
+
+    return badgeCatalog.map(b => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      emoji: b.emoji,
+      tier: b.tier,
+      unlocked: b.tier === 'premium' ? (!!isPremium && b.condition) : b.condition,
+      unlockedAt: b.condition ? user.createdAt : null,
+    }));
+  }
+
   // Squad spy mode — find the modal (most common) hour each member logs
   async getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]> {
     // Single query: get members + their most common logging hour + total count
@@ -1262,6 +1615,197 @@ export class DatabaseStorage implements IStorage {
       memberSince: user.createdAt ?? null,
       squadCount: userGroupIds.length,
     };
+  }
+
+  async getGroupLeaderboard(groupId: string): Promise<{
+    userId: string;
+    username: string | null;
+    profileImageUrl: string | null;
+    weekly: { totalDeuces: number; reactionsReceived: number };
+    monthly: { totalDeuces: number; reactionsReceived: number };
+    allTime: { totalDeuces: number; reactionsReceived: number; currentStreak: number };
+    isMvp: boolean;
+  }[]> {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - now.getUTCDay()); // Sunday
+    weekStart.setUTCHours(0, 0, 0, 0);
+
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    // Get all active members
+    const members = await db
+      .select({
+        userId: groupMembers.userId,
+        username: users.username,
+        firstName: users.firstName,
+        profileImageUrl: users.profileImageUrl,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)));
+
+    if (members.length === 0) return [];
+
+    const userIds = members.map(m => m.userId);
+
+    // All-time deuce counts per member in this group
+    const allTimeCounts = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.groupId, groupId), inArray(deuceEntries.userId, userIds)))
+      .groupBy(deuceEntries.userId);
+
+    // Weekly deuce counts
+    const weeklyCounts = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(
+        eq(deuceEntries.groupId, groupId),
+        inArray(deuceEntries.userId, userIds),
+        gte(deuceEntries.loggedAt, weekStart)
+      ))
+      .groupBy(deuceEntries.userId);
+
+    // Monthly deuce counts
+    const monthlyCounts = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(
+        eq(deuceEntries.groupId, groupId),
+        inArray(deuceEntries.userId, userIds),
+        gte(deuceEntries.loggedAt, monthStart)
+      ))
+      .groupBy(deuceEntries.userId);
+
+    // Reactions received all-time (reactions on this user's entries in this group)
+    const allTimeReactions = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(reactions.entryId, deuceEntries.id))
+      .where(and(eq(deuceEntries.groupId, groupId), inArray(deuceEntries.userId, userIds)))
+      .groupBy(deuceEntries.userId);
+
+    // Reactions received this week
+    const weeklyReactions = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(reactions.entryId, deuceEntries.id))
+      .where(and(
+        eq(deuceEntries.groupId, groupId),
+        inArray(deuceEntries.userId, userIds),
+        gte(deuceEntries.loggedAt, weekStart)
+      ))
+      .groupBy(deuceEntries.userId);
+
+    // Reactions received this month
+    const monthlyReactions = await db
+      .select({
+        userId: deuceEntries.userId,
+        count: sql<number>`COUNT(${reactions.id})::int`,
+      })
+      .from(deuceEntries)
+      .innerJoin(reactions, eq(reactions.entryId, deuceEntries.id))
+      .where(and(
+        eq(deuceEntries.groupId, groupId),
+        inArray(deuceEntries.userId, userIds),
+        gte(deuceEntries.loggedAt, monthStart)
+      ))
+      .groupBy(deuceEntries.userId);
+
+    // Current streak per member: count consecutive days (most recent streak)
+    const today = new Date().toISOString().slice(0, 10);
+    const streakMap = new Map<string, number>();
+    for (const userId of userIds) {
+      // Get distinct logged dates for this user in this group, sorted desc
+      const dateLogs = await db
+        .select({
+          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+        })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.groupId, groupId), eq(deuceEntries.userId, userId)))
+        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+        .orderBy(desc(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`));
+
+      let streak = 0;
+      let expected = today;
+      for (const row of dateLogs) {
+        if (row.date === expected) {
+          streak++;
+          const d = new Date(expected + 'T00:00:00Z');
+          d.setUTCDate(d.getUTCDate() - 1);
+          expected = d.toISOString().slice(0, 10);
+        } else {
+          break;
+        }
+      }
+      streakMap.set(userId, streak);
+    }
+
+    // Build lookup maps
+    const allTimeMap = new Map(allTimeCounts.map(r => [r.userId, r.count]));
+    const weeklyMap = new Map(weeklyCounts.map(r => [r.userId, r.count]));
+    const monthlyMap = new Map(monthlyCounts.map(r => [r.userId, r.count]));
+    const allTimeRxMap = new Map(allTimeReactions.map(r => [r.userId, r.count]));
+    const weeklyRxMap = new Map(weeklyReactions.map(r => [r.userId, r.count]));
+    const monthlyRxMap = new Map(monthlyReactions.map(r => [r.userId, r.count]));
+
+    const rows = members.map(m => ({
+      userId: m.userId,
+      username: m.username ?? m.firstName ?? null,
+      profileImageUrl: m.profileImageUrl,
+      weekly: {
+        totalDeuces: weeklyMap.get(m.userId) ?? 0,
+        reactionsReceived: weeklyRxMap.get(m.userId) ?? 0,
+      },
+      monthly: {
+        totalDeuces: monthlyMap.get(m.userId) ?? 0,
+        reactionsReceived: monthlyRxMap.get(m.userId) ?? 0,
+      },
+      allTime: {
+        totalDeuces: allTimeMap.get(m.userId) ?? 0,
+        reactionsReceived: allTimeRxMap.get(m.userId) ?? 0,
+        currentStreak: streakMap.get(m.userId) ?? 0,
+      },
+      isMvp: false,
+    }));
+
+    // MVP = member with highest weekly deuce count (ties broken by reactions)
+    if (rows.length > 0) {
+      let mvpIdx = 0;
+      for (let i = 1; i < rows.length; i++) {
+        const curr = rows[i];
+        const best = rows[mvpIdx];
+        if (
+          curr.weekly.totalDeuces > best.weekly.totalDeuces ||
+          (curr.weekly.totalDeuces === best.weekly.totalDeuces &&
+            curr.weekly.reactionsReceived > best.weekly.reactionsReceived)
+        ) {
+          mvpIdx = i;
+        }
+      }
+      // Only award MVP if they have at least 1 deuce this week
+      if (rows[mvpIdx].weekly.totalDeuces > 0) {
+        rows[mvpIdx].isMvp = true;
+      }
+    }
+
+    return rows.sort((a, b) => b.weekly.totalDeuces - a.weekly.totalDeuces);
   }
 
   async softDeleteUser(userId: string): Promise<void> {

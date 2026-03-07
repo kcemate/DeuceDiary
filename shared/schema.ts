@@ -84,6 +84,8 @@ export const deuceEntries = pgTable("deuce_entries", {
   location: varchar("location").notNull(),
   thoughts: text("thoughts").notNull(),
   ghost: boolean("ghost").default(false).notNull(),
+  bristolScore: integer("bristol_score"),
+  photoUrl: text("photo_url"),
   loggedAt: timestamp("logged_at").notNull(),
   lastLoggedAt: timestamp("last_logged_at"),
   createdAt: timestamp("created_at").defaultNow(),
