@@ -27,7 +27,8 @@ export let clerkEnabled = !!CLERK_SECRET_KEY;
 export let clerk: any = null;
 if (clerkEnabled) {
   try {
-    const { createClerkClient } = require("@clerk/clerk-sdk-node");
+    const mod = await import("@clerk/clerk-sdk-node");
+    const { createClerkClient } = mod;
     clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
   } catch (err) {
     console.warn("[AUTH] Clerk SDK failed to initialise — falling back to session auth:", (err as Error).message);

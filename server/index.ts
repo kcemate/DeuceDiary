@@ -19,12 +19,30 @@ if (process.env.SENTRY_DSN) {
 const app = express();
 
 // --- Security Headers (helmet) ---
-app.use(helmet());
+const isDev = process.env.NODE_ENV !== "production";
+app.use(
+  helmet({
+    contentSecurityPolicy: isDev
+      ? false // Disable CSP in dev — Vite needs inline scripts + eval
+      : {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "https://clerk.com", "https://*.clerk.accounts.dev"],
+            connectSrc: ["'self'", "https://*.clerk.accounts.dev", "wss://*.clerk.accounts.dev"],
+            imgSrc: ["'self'", "data:", "https://img.clerk.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+            frameSrc: ["'self'", "https://*.clerk.accounts.dev"],
+            fontSrc: ["'self'", "https:", "data:"],
+          },
+        },
+  }),
+);
 
 // --- CORS ---
 const ALLOWED_ORIGINS = [
   "https://deuce-diary-web-production.up.railway.app",
   "http://localhost:5000",
+  "http://localhost:5001",
   "http://localhost:3000",
   "http://localhost:8081",
 ];
