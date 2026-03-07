@@ -87,6 +87,7 @@ export interface IStorage {
 
   // Streak operations
   getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
+  getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>>;
   updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void>;
   getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
 
@@ -97,6 +98,7 @@ export interface IStorage {
   // Group preview (for invite landing — no auth needed)
   getGroupMemberCount(groupId: string): Promise<number>;
   getGroupDeuceCount(groupId: string): Promise<number>;
+  getGroupPreview(groupId: string): Promise<{ name: string; memberCount: number; deuceCount: number } | undefined>;
 
   // Theme operations
   updateUserTheme(userId: string, theme: string): Promise<User>;
@@ -468,6 +470,19 @@ export class DatabaseStorage implements IStorage {
     return Number(result?.count ?? 0);
   }
 
+  async getGroupPreview(groupId: string): Promise<{ name: string; memberCount: number; deuceCount: number } | undefined> {
+    const rows = await db.execute(sql`
+      SELECT
+        g.name,
+        (SELECT COUNT(*)::int FROM group_members WHERE group_id = ${groupId}) AS "memberCount",
+        (SELECT COUNT(*)::int FROM deuce_entries WHERE group_id = ${groupId}) AS "deuceCount"
+      FROM groups g
+      WHERE g.id = ${groupId}
+    `);
+    const row = rows.rows[0] as { name: string; memberCount: number; deuceCount: number } | undefined;
+    return row;
+  }
+
   // Location operations
   async getLocations(): Promise<Location[]> {
     return await db.select().from(locations).orderBy(locations.isDefault, locations.name);
@@ -584,6 +599,24 @@ export class DatabaseStorage implements IStorage {
       .from(groups)
       .where(eq(groups.id, groupId));
     return group ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
+  }
+
+  async getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>> {
+    const result = new Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>();
+    if (groupIds.length === 0) return result;
+    const rows = await db
+      .select({
+        id: groups.id,
+        currentStreak: groups.currentStreak,
+        longestStreak: groups.longestStreak,
+        lastStreakDate: groups.lastStreakDate,
+      })
+      .from(groups)
+      .where(inArray(groups.id, groupIds));
+    for (const row of rows) {
+      result.set(row.id, { currentStreak: row.currentStreak, longestStreak: row.longestStreak, lastStreakDate: row.lastStreakDate });
+    }
+    return result;
   }
 
   async updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void> {
@@ -871,33 +904,34 @@ export class DatabaseStorage implements IStorage {
       ? { day: dayNames[bestDayRows[0].dow] ?? "Unknown", count: bestDayRows[0].cnt }
       : { day: "N/A", count: 0 };
 
-    // Group rankings — user's rank in each group by deuce count
+    // Group rankings — user's rank in each group by deuce count (single query)
     const groupRankings: { groupId: string; groupName: string; rank: number; total: number }[] = [];
     if (userGroupIds.length > 0) {
-      for (const { groupId } of userGroupIds) {
-        const group = await this.getGroupById(groupId);
-        if (!group) continue;
-
-        const rankRows = await db
-          .select({
-            memberId: groupMembers.userId,
-            cnt: sql<number>`COUNT(${deuceEntries.id})::int`,
-          })
-          .from(groupMembers)
-          .leftJoin(
-            deuceEntries,
-            and(
-              eq(deuceEntries.userId, groupMembers.userId),
-              eq(deuceEntries.groupId, groupMembers.groupId),
-            ),
-          )
-          .where(eq(groupMembers.groupId, groupId))
-          .groupBy(groupMembers.userId)
-          .orderBy(desc(sql<number>`COUNT(${deuceEntries.id})::int`));
-
-        const total = rankRows.length;
-        const rank = rankRows.findIndex(r => r.memberId === userId) + 1;
-        groupRankings.push({ groupId, groupName: group.name, rank: rank || total, total });
+      const gids = userGroupIds.map(g => g.groupId);
+      const rankingRows = await db.execute(sql`
+        WITH member_counts AS (
+          SELECT
+            gm.group_id,
+            gm.user_id,
+            COUNT(de.id)::int AS cnt,
+            RANK() OVER (PARTITION BY gm.group_id ORDER BY COUNT(de.id) DESC) AS rnk,
+            COUNT(*) OVER (PARTITION BY gm.group_id) AS total_members
+          FROM group_members gm
+          LEFT JOIN deuce_entries de ON de.user_id = gm.user_id AND de.group_id = gm.group_id
+          WHERE gm.group_id = ANY(${gids})
+          GROUP BY gm.group_id, gm.user_id
+        )
+        SELECT
+          mc.group_id AS "groupId",
+          g.name AS "groupName",
+          mc.rnk::int AS rank,
+          mc.total_members::int AS total
+        FROM member_counts mc
+        INNER JOIN groups g ON g.id = mc.group_id
+        WHERE mc.user_id = ${userId}
+      `);
+      for (const row of rankingRows.rows as { groupId: string; groupName: string; rank: number; total: number }[]) {
+        groupRankings.push(row);
       }
     }
 
@@ -1007,49 +1041,48 @@ export class DatabaseStorage implements IStorage {
 
   // Squad spy mode — find the modal (most common) hour each member logs
   async getGroupMemberTypicalHours(groupId: string): Promise<{ username: string; typicalHour: number | null }[]> {
-    // Get all members
-    const members = await db
-      .select({
-        userId: groupMembers.userId,
-        username: users.username,
-        firstName: users.firstName,
-      })
-      .from(groupMembers)
-      .innerJoin(users, eq(groupMembers.userId, users.id))
-      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)));
+    // Single query: get members + their most common logging hour + total count
+    // Uses a window function to rank hours by frequency per user
+    const rows = await db.execute(sql`
+      WITH member_hours AS (
+        SELECT
+          gm.user_id,
+          COALESCE(u.username, u.first_name, 'Unknown') AS display_name,
+          EXTRACT(HOUR FROM de.logged_at)::int AS hour,
+          COUNT(*)::int AS cnt,
+          ROW_NUMBER() OVER (PARTITION BY gm.user_id ORDER BY COUNT(*) DESC) AS rn
+        FROM group_members gm
+        INNER JOIN users u ON gm.user_id = u.id
+        LEFT JOIN deuce_entries de ON de.user_id = gm.user_id
+        WHERE gm.group_id = ${groupId} AND u.deleted_at IS NULL
+        GROUP BY gm.user_id, u.username, u.first_name, EXTRACT(HOUR FROM de.logged_at)
+      ),
+      member_totals AS (
+        SELECT user_id, SUM(cnt)::int AS total_logs
+        FROM member_hours
+        GROUP BY user_id
+      )
+      SELECT
+        mh.display_name AS username,
+        CASE WHEN mt.total_logs >= 3 THEN mh.hour ELSE NULL END AS typical_hour
+      FROM member_hours mh
+      INNER JOIN member_totals mt ON mh.user_id = mt.user_id
+      WHERE mh.rn = 1
+      UNION ALL
+      SELECT
+        COALESCE(u.username, u.first_name, 'Unknown') AS username,
+        NULL AS typical_hour
+      FROM group_members gm
+      INNER JOIN users u ON gm.user_id = u.id
+      LEFT JOIN deuce_entries de ON de.user_id = gm.user_id
+      WHERE gm.group_id = ${groupId} AND u.deleted_at IS NULL AND de.id IS NULL
+      GROUP BY gm.user_id, u.username, u.first_name
+    `);
 
-    const results: { username: string; typicalHour: number | null }[] = [];
-
-    for (const member of members) {
-      const displayName = member.username || member.firstName || "Unknown";
-
-      // Count logs per hour for this user across all their entries
-      const hourRows = await db
-        .select({
-          hour: sql<number>`EXTRACT(HOUR FROM ${deuceEntries.loggedAt})::int`,
-          cnt: sql<number>`COUNT(*)::int`,
-        })
-        .from(deuceEntries)
-        .where(eq(deuceEntries.userId, member.userId))
-        .groupBy(sql`EXTRACT(HOUR FROM ${deuceEntries.loggedAt})`)
-        .orderBy(desc(sql<number>`COUNT(*)::int`))
-        .limit(1);
-
-      // If user has < 3 total logs, return null
-      const [totalResult] = await db
-        .select({ total: sql<number>`COUNT(*)::int` })
-        .from(deuceEntries)
-        .where(eq(deuceEntries.userId, member.userId));
-      const totalLogs = totalResult?.total ?? 0;
-
-      if (totalLogs < 3 || hourRows.length === 0) {
-        results.push({ username: displayName, typicalHour: null });
-      } else {
-        results.push({ username: displayName, typicalHour: hourRows[0].hour });
-      }
-    }
-
-    return results;
+    return (rows.rows as { username: string; typical_hour: number | null }[]).map(r => ({
+      username: r.username,
+      typicalHour: r.typical_hour,
+    }));
   }
 
   // Referral operations

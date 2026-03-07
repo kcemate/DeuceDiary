@@ -61,14 +61,14 @@ export function createAuthRouter(uploadsDir: string): Router {
         profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
       });
 
-      // Fetch streak data from user's groups
+      // Fetch streak data from user's groups (batch)
       const groups = await storage.getUserGroups(userId);
-      const streaks = await Promise.all(
-        groups.map(async (g) => {
-          const streak = await storage.getGroupStreak(g.id);
-          return { groupId: g.id, groupName: g.name, ...streak };
-        }),
-      );
+      const groupIds = groups.map(g => g.id);
+      const streaksMap = await storage.getGroupStreaksBatch(groupIds);
+      const streaks = groups.map(g => {
+        const streak = streaksMap.get(g.id) ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
+        return { groupId: g.id, groupName: g.name, ...streak };
+      });
 
       res.json({
         ...user,

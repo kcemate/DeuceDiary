@@ -116,20 +116,24 @@ export function createPremiumRouter(): Router {
         return res.status(400).json({ message: "Streak insurance already used this month" });
       }
 
-      // Find the user's groups and extend any at-risk streaks
+      // Find the user's groups and extend any at-risk streaks (batch fetch)
       const userGroups = await storage.getUserGroups(req.user.id);
       const today = getTodayUTC();
       const yesterday = getYesterdayUTC();
       let extended = false;
 
+      const groupIds = userGroups.map(g => g.id);
+      const streaksMap = await storage.getGroupStreaksBatch(groupIds);
+      const updatePromises: Promise<void>[] = [];
       for (const group of userGroups) {
-        const streak = await storage.getGroupStreak(group.id);
+        const streak = streaksMap.get(group.id) ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
         // If last streak date was yesterday and streak > 0, extend it through today
         if (streak.lastStreakDate === yesterday && streak.currentStreak > 0) {
-          await storage.updateGroupStreak(group.id, streak.currentStreak, streak.longestStreak, today);
+          updatePromises.push(storage.updateGroupStreak(group.id, streak.currentStreak, streak.longestStreak, today));
           extended = true;
         }
       }
+      await Promise.all(updatePromises);
 
       await storage.useStreakInsurance(req.user.id);
       res.json({ used: true, extended, message: extended ? "Streak preserved!" : "Insurance activated (no at-risk streaks found)" });
