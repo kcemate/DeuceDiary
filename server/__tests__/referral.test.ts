@@ -636,7 +636,10 @@ import { registerRoutes } from "../routes";
 let app: Express;
 let server: Server;
 
+const TEST_ADMIN_KEY = "test-admin-key-" + Math.random().toString(36).slice(2);
+
 beforeAll(async () => {
+  process.env.ADMIN_KEY = TEST_ADMIN_KEY;
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
@@ -832,7 +835,7 @@ describe("Admin stats endpoint", () => {
 
     const res = await supertest(app)
       .get("/api/admin/stats")
-      .set("X-Admin-Key", "dev-admin-key");
+      .set("X-Admin-Key", TEST_ADMIN_KEY);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("totalUsers");

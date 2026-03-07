@@ -617,6 +617,8 @@ let app: Express;
 let server: Server;
 
 beforeAll(async () => {
+  process.env.ADMIN_KEY = "test-admin-key";
+  process.env.INTERNAL_API_KEY = "test-internal-key";
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
