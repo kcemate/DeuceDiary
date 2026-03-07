@@ -9,10 +9,11 @@ import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { ShareCardModal } from "@/components/ShareCardModal";
 import { StreakFrame } from "@/components/streak-frame";
-import { Edit2, Share2 } from "lucide-react";
+import { Edit2, Share2, Award } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { useToast } from "@/hooks/use-toast";
+import { AchievementBadge } from "@/components/Badge";
 
 interface Analytics {
   date: string;
@@ -41,6 +42,11 @@ export default function Profile() {
 
   const { data: groups = [] } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
+  });
+
+  const { data: badges = [] } = useQuery({
+    queryKey: ["/api/user/badges"],
+    enabled: !!user?.id,
   });
 
   const bestDayCount = analytics?.count || 0;
@@ -106,6 +112,37 @@ export default function Profile() {
           <Share2 className="w-4 h-4 mr-2" />
           Share Your Streak
         </Button>
+      </div>
+
+      {/* Badges Section */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Award className="h-4 w-4 text-amber-500" />
+          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Achievements</h3>
+          <div className="flex-1 h-px bg-border"></div>
+          <span className="text-[10px] text-amber-500 font-medium">{badges.filter((b: any) => b.unlocked).length} UNLOCKED</span>
+        </div>
+        
+        <div className="grid grid-cols-4 gap-4 bg-card border border-border rounded-3xl p-6">
+          {badges.length > 0 ? (
+            badges.map((badge: any) => (
+              <AchievementBadge
+                key={badge.id}
+                id={badge.id}
+                name={badge.name}
+                description={badge.description}
+                emoji={badge.emoji}
+                unlocked={badge.unlocked}
+                tier={badge.tier}
+              />
+            ))
+          ) : (
+            <div className="col-span-4 text-center py-8 text-muted-foreground">
+              <p className="text-2xl mb-2">🏆</p>
+              <p className="font-medium">Log more deuces to unlock badges</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Weekly Report */}

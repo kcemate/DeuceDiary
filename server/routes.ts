@@ -1687,6 +1687,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Badge system (free)
+  app.get('/api/user/badges', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const badges = await storage.getUserBadges(userId);
+      res.json(badges);
+    } catch (error) {
+      console.error('Error fetching user badges:', error);
+      Errors.internal(res, 'Failed to fetch badges');
+    }
+  });
+
   // --- OG Image / Share Card Preview (public) ---
   app.get('/api/og/streak/:userId', async (req, res) => {
     try {
