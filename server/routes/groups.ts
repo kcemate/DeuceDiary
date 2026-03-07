@@ -265,6 +265,21 @@ export function createGroupsRouter(): Router {
     }
   });
 
+  // Weekly Throne Report — group-level shareable summary card
+  router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+    try {
+      const groupId = req.groupId;
+      const report = await storage.getGroupWeeklyReport(groupId);
+      res.json(report);
+    } catch (error: any) {
+      if (error.message === "Group not found") {
+        return res.status(404).json({ message: "Group not found" });
+      }
+      console.error("Error fetching group weekly report:", error);
+      res.status(500).json({ message: "Failed to fetch group weekly report" });
+    }
+  });
+
   // Squad Spy Mode — typical log hour per member (premium)
   router.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), async (req: any, res) => {
     try {

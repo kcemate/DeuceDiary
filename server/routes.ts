@@ -22,6 +22,7 @@ import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
+import { apiError, Errors } from "./lib/apiError";
 
 // --- Zod Validation Schemas ---
 const loginSchema = z.object({
@@ -255,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/stats', async (req, res) => {
     const key = req.headers['x-admin-key'];
     if (key !== ADMIN_KEY) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return Errors.unauthorized(res);
     }
     try {
       const stats = await storage.getAdminStats();
@@ -277,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/internal/streak-check', async (req, res) => {
     const key = req.headers['x-internal-key'];
     if (key !== INTERNAL_KEY) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return Errors.unauthorized(res);
     }
     try {
       const summary = await checkAllGroupStreaksAndNotify();
@@ -292,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/internal/errors', (req, res) => {
     const key = req.headers['x-internal-key'];
     if (key !== INTERNAL_KEY) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return Errors.unauthorized(res);
     }
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const errors = getRecentErrors(limit);
@@ -303,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/internal/health/detailed', async (req, res) => {
     const key = req.headers['x-internal-key'];
     if (key !== INTERNAL_KEY) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return Errors.unauthorized(res);
     }
     try {
       await pool.query('SELECT 1');
@@ -364,11 +365,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { inviteCode } = req.params;
       const invite = await storage.getInviteById(inviteCode);
       if (!invite || invite.expiresAt < new Date()) {
-        return res.status(404).json({ message: "Invite not found or expired" });
+        return Errors.notFound(res, "Invite");
       }
       const group = await storage.getGroupById(invite.groupId);
       if (!group) {
-        return res.status(404).json({ message: "Group not found" });
+        return Errors.notFound(res, "Group");
       }
       const [memberCount, deuceCount, streakData, members, entries] = await Promise.all([
         storage.getGroupMemberCount(invite.groupId),
@@ -397,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching group preview:", error);
-      res.status(500).json({ message: "Failed to fetch group preview" });
+      return Errors.internal(res, "Failed to fetch group preview");
     }
   });
 
@@ -847,22 +848,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Group Leaderboard — member rankings by deuce count (free)
+  // Group Leaderboard — weekly/monthly/all-time stats per member with MVP designation (free)
   app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
       const groupId = req.groupId;
-
-      const members = await storage.getGroupMembers(groupId);
-      const ranked = members
-        .map(m => ({
-          userId: m.userId,
-          username: m.user?.username ?? null,
-          profileImageUrl: m.user?.profileImageUrl ?? null,
-          deuceCount: m.user?.deuceCount ?? 0,
-        }))
-        .sort((a, b) => b.deuceCount - a.deuceCount);
-
-      res.json(ranked);
+      const leaderboard = await storage.getGroupLeaderboard(groupId);
+      res.json(leaderboard);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
       res.status(500).json({ message: "Failed to fetch leaderboard" });
