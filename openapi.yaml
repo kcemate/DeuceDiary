@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Deuce Diary API
+  description: API for the Deuce Diary social pooping tracking app
+  version: 1.0.0
+  contact:
+    name: Giovanni Labs
+    email: giovannilabs@icloud.com
+servers:
+  - url: https://deuce-diary-web-production.up.railway.app
+    description: Production server
+  - url: http://localhost:4000
+    description: Local development
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  timestamp: { type: string }
+                  uptime: { type: number }
+                  db: { type: string }
+        '503':
+          description: Service degraded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/groups/{groupId}/leaderboard:
+    get:
+      summary: Get group leaderboard with weekly/monthly/all-time stats
+      tags: [Groups]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Leaderboard data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/deuces:
+    post:
+      summary: Create a new deuce entry
+      tags: [Deuces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeuceRequest'
+      responses:
+        '200':
+          description: Deuce created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeuceEntry'
+                  count: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimit'
+
+  /api/deuces/bulk:
+    post:
+      summary: Log a deuce to multiple groups in one transaction
+      tags: [Deuces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeuceRequest'
+      responses:
+        '200':
+          description: Bulk deuce logged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries: { type: array, items: { $ref: '#/components/schemas/DeuceEntry' } }
+                  count: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+        code: { type: string }
+        status: { type: integer }
+      required: [error, code, status]
+    
+    LeaderboardEntry:
+      type: object
+      properties:
+        userId: { type: string }
+        username: { type: string, nullable: true }
+        profileImageUrl: { type: string, nullable: true }
+        weekly: 
+          type: object
+          properties:
+            totalDeuces: { type: integer }
+            reactionsReceived: { type: integer }
+        monthly:
+          type: object
+          properties:
+            totalDeuces: { type: integer }
+            reactionsReceived: { type: integer }
+        allTime:
+          type: object
+          properties:
+            totalDeuces: { type: integer }
+            reactionsReceived: { type: integer }
+            currentStreak: { type: integer }
+        isMvp: { type: boolean }
+    
+    CreateDeuceRequest:
+      type: object
+      properties:
+        groupIds: { type: array, items: { type: string } }
+        groupId: { type: string }
+        location: { type: string }
+        thoughts: { type: string }
+        loggedAt: { type: string, format: date-time }
+        ghost: { type: boolean }
+        bristolScore: { type: integer, minimum: 1, maximum: 7 }
+        photoUrl: { type: string, format: uri }
+    
+    BulkDeuceRequest:
+      type: object
+      properties:
+        groupIds: { type: array, items: { type: string }, minItems: 1 }
+        location: { type: string }
+        thoughts: { type: string }
+        loggedAt: { type: string, format: date-time }
+        ghost: { type: boolean }
+        bristolScore: { type: integer, minimum: 1, maximum: 7 }
+        photoUrl: { type: string, format: uri }
+      required: [groupIds, location]
+
+    DeuceEntry:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        groupId: { type: string }
+        location: { type: string }
+        thoughts: { type: string }
+        ghost: { type: boolean }
+        bristolScore: { type: integer, nullable: true }
+        photoUrl: { type: string, nullable: true }
+        loggedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+  responses:
+    Unauthorized:
+      description: User is not authenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: User does not have permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    BadRequest:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    RateLimit:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

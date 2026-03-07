@@ -1219,7 +1219,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ entries, count: entries.length });
     } catch (error) {
       console.error("Error creating deuce entry:", error);
-      Errors.internal(res, "Failed to create deuce entry");
+      return Errors.internal(res, "Failed to create deuce entry");
+    }
+  });
+
+  // Bulk deuce logging - log to multiple groups in one transaction (atomic)
+  app.post('/api/deuces/bulk', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+
+      // Per-user daily rate limit (10 logs per UTC day)
+      const today = getTodayUTC();
+      const currentCount = await storage.getUserDailyLogCount(userId, today);
+      if (currentCount >= MAX_LOGS_PER_DAY) {
+        return Errors.tooManyRequests(res, 'Throne limit reached for today. Come back tomorrow.');
+      }
+
+      const parsed = createDeuceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return Errors.badRequest(res, "Invalid deuce entry data");
+      }
+
+      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
+
+      // Must provide multiple groupIds for bulk endpoint
+      const targetGroupIds = groupIds || (groupId ? [groupId] : []);
+      if (targetGroupIds.length === 0) {
+        return Errors.badRequest(res, "At least one group must be selected");
+      }
+      if (targetGroupIds.length === 1) {
+        return Errors.badRequest(res, "Use /api/deuces for single group logging. Bulk requires multiple groups.");
+      }
+
+      // Validate thought length
+      if (entryData.thoughts && entryData.thoughts.length > 500) {
+        return Errors.badRequest(res, "Thought must be 500 characters or less");
+      }
+
+      // bristolScore validated by zod (1-7 int), but double-check for safety
+      if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
+        return Errors.badRequest(res, "bristolScore must be an integer between 1 and 7");
+      }
+
+      // Check if user is in all selected groups
+      for (const gid of targetGroupIds) {
+        const isInGroup = await storage.isUserInGroup(userId, gid);
+        if (!isInGroup) {
+          return Errors.forbidden(res, `Not authorized for group ${gid}`);
+        }
+      }
+
+      const entries = [];
+      const loggedAt = new Date(entryData.loggedAt || new Date());
+      const isGhost = !!entryData.ghost;
+
+      // Use transaction for atomicity
+      await db.transaction(async (tx) => {
+        for (const groupId of targetGroupIds) {
+          const [entry] = await tx
+            .insert(deuceEntries)
+            .values({
+              ...entryData,
+              ghost: isGhost,
+              bristolScore: bristolScore ?? null,
+              photoUrl: photoUrl ?? null,
+              groupId,
+              userId,
+              loggedAt,
+              id: uuidv4(),
+            })
+            .returning();
+          entries.push(entry);
+        }
+
+        // Update user's deuce count only once
+        await tx
+          .update(users)
+          .set({
+            deuceCount: sql`${users.deuceCount} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+      });
+
+      track("bulk_log_created", userId, {
+        group_count: targetGroupIds.length,
+        has_notes: !!entryData.thoughts,
+        has_photo: !!photoUrl,
+      });
+
+      // Get user info for WebSocket notification
+      const user = await storage.getUser(userId);
+      const displayName = user?.username ||
+                        (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
+                        'Someone';
+
+      // Send WebSocket notification to all groups (skip for ghost logs)
+      if (!isGhost) {
+        for (const groupId of targetGroupIds) {
+          const groupEntry = entries.find(e => e.groupId === groupId);
+          broadcastToGroup(groupId, {
+            type: 'deuce_logged',
+            message: `${displayName} logged a new deuce`,
+            entry: { ...groupEntry, user },
+            userId: userId,
+          });
+        }
+      }
+
+      // Recalculate streaks for all affected groups
+      for (const groupId of targetGroupIds) {
+        try {
+          await recalculateStreak(groupId);
+        } catch (err) {
+          console.error(`Error recalculating streak for group ${groupId}:`, err);
+        }
+      }
+
+      res.json({ entries, count: entries.length });
+    } catch (error) {
+      console.error("Error creating bulk deuce entry:", error);
+      return Errors.internal(res, "Failed to create bulk deuce entry");
     }
   });
 
