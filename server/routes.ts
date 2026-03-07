@@ -16,6 +16,7 @@ import multer from "multer";
 import sharp from "sharp";
 import { promises as fs } from "fs";
 import path from "path";
+import { Expo } from "expo-server-sdk";
 import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
@@ -1187,6 +1188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Push notification token registration ---
+  const MAX_PUSH_TOKENS_PER_USER = 10;
+
   app.post('/api/notifications/register', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -1195,6 +1198,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "token and platform ('ios' or 'android') are required" });
       }
       const { token, platform } = parsed.data;
+
+      // Validate Expo push token format
+      if (!Expo.isExpoPushToken(token)) {
+        return res.status(400).json({ message: "Invalid push token format" });
+      }
+
+      // Enforce per-user token limit (prevents token flooding)
+      const tokenCount = await storage.countUserPushTokens(userId);
+      if (tokenCount >= MAX_PUSH_TOKENS_PER_USER) {
+        // Check if this exact token already exists (upsert is fine)
+        const existing = await storage.getUserPushTokens(userId);
+        if (!existing.some(t => t.token === token)) {
+          return res.status(400).json({ message: `Maximum of ${MAX_PUSH_TOKENS_PER_USER} devices reached` });
+        }
+      }
 
       await storage.upsertPushToken({ userId, token, platform });
       res.json({ ok: true });

@@ -243,6 +243,9 @@ const memStore = vi.hoisted(() => {
     async getUserPushTokens(userId: string) {
       return _pushTokens.filter((t) => t.userId === userId);
     },
+    async countUserPushTokens(userId: string) {
+      return _pushTokens.filter((t) => t.userId === userId).length;
+    },
     async deletePushToken(userId: string, token: string) {
       _pushTokens = _pushTokens.filter((t) => !(t.userId === userId && t.token === token));
     },
@@ -472,6 +475,62 @@ describe("POST /api/notifications/register", () => {
 
     const tokens = await memStore.getUserPushTokens("dev-alice");
     expect(tokens).toHaveLength(2);
+  });
+
+  it("rejects invalid Expo push token format", async () => {
+    const agent = await loginAs("alice");
+    const res = await agent
+      .post("/api/notifications/register")
+      .send({ token: "not-a-valid-token", platform: "ios" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/Invalid push token format/);
+
+    const tokens = await memStore.getUserPushTokens("dev-alice");
+    expect(tokens).toHaveLength(0);
+  });
+
+  it("rejects registration when user has reached max token limit", async () => {
+    const agent = await loginAs("alice");
+
+    // Register 10 tokens (the max)
+    for (let i = 0; i < 10; i++) {
+      await agent.post("/api/notifications/register").send({
+        token: `ExponentPushToken[device${i}]`,
+        platform: "ios",
+      });
+    }
+
+    const tokens = await memStore.getUserPushTokens("dev-alice");
+    expect(tokens).toHaveLength(10);
+
+    // 11th token should be rejected
+    const res = await agent
+      .post("/api/notifications/register")
+      .send({ token: "ExponentPushToken[device10]", platform: "ios" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/Maximum of 10 devices/);
+  });
+
+  it("allows re-registering existing token when at max limit", async () => {
+    const agent = await loginAs("alice");
+
+    // Register 10 tokens (the max)
+    for (let i = 0; i < 10; i++) {
+      await agent.post("/api/notifications/register").send({
+        token: `ExponentPushToken[device${i}]`,
+        platform: "ios",
+      });
+    }
+
+    // Re-registering an existing token should succeed (upsert)
+    const res = await agent
+      .post("/api/notifications/register")
+      .send({ token: "ExponentPushToken[device0]", platform: "ios" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 });
 

@@ -111,6 +111,7 @@ export interface IStorage {
   // Push token operations
   upsertPushToken(token: InsertPushToken): Promise<PushToken>;
   getUserPushTokens(userId: string): Promise<PushToken[]>;
+  countUserPushTokens(userId: string): Promise<number>;
   deletePushToken(userId: string, token: string): Promise<void>;
   getGroupPushTokens(groupId: string): Promise<PushToken[]>;
 
@@ -655,6 +656,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(pushTokens)
       .where(eq(pushTokens.userId, userId));
+  }
+
+  async countUserPushTokens(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(pushTokens)
+      .where(eq(pushTokens.userId, userId));
+    return result?.count ?? 0;
   }
 
   async deletePushToken(userId: string, token: string): Promise<void> {

@@ -70,6 +70,16 @@ const logLimiter = rateLimit({
 });
 app.use("/api/deuces", logLimiter);
 
+const pushLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many push token requests, please try again later." },
+});
+app.use("/api/notifications/register", pushLimiter);
+app.use("/api/push/unregister", pushLimiter);
+
 // --- Body parsers ---
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));

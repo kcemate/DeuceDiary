@@ -389,6 +389,9 @@ const memStore = vi.hoisted(() => {
     async getUserPushTokens(userId: string) {
       return _pushTokens.filter((t) => t.userId === userId);
     },
+    async countUserPushTokens(userId: string) {
+      return _pushTokens.filter((t) => t.userId === userId).length;
+    },
     async deletePushToken(userId: string, token: string) {
       _pushTokens = _pushTokens.filter((t) => !(t.userId === userId && t.token === token));
     },
