@@ -1,5 +1,6 @@
 import express, { type Express, type Request, type Response } from "express";
 import { Webhook } from "svix";
+import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
 import { track } from "../lib/analytics";
 
@@ -57,6 +58,17 @@ export function registerClerkWebhook(app: Express): void {
             });
             console.log(`Clerk webhook: synced user ${id} (${event.type})`);
             if (event.type === "user.created") {
+              // Auto-create "Solo Deuces" default group for new users
+              const userGroups = await storage.getUserGroups(id);
+              if (userGroups.length === 0) {
+                await storage.createGroup({
+                  id: uuidv4(),
+                  name: "Solo Deuces",
+                  description: "Your personal throne log",
+                  createdBy: id,
+                });
+                console.log(`Clerk webhook: created Solo Deuces for user ${id}`);
+              }
               track("user_registered", id);
             }
             break;

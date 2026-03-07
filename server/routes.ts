@@ -437,8 +437,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
       });
 
+      // Auto-create "Solo Deuces" if user has no groups
+      let groups = await storage.getUserGroups(userId);
+      if (groups.length === 0) {
+        const { v4: uuidv4 } = await import("uuid");
+        const soloGroup = await storage.createGroup({
+          id: uuidv4(),
+          name: "Solo Deuces",
+          description: "Your personal throne log",
+          createdBy: userId,
+        });
+        groups = await storage.getUserGroups(userId);
+        console.log(`Auth sync: created Solo Deuces for user ${userId}`);
+      }
+
       // Fetch streak data from user's groups
-      const groups = await storage.getUserGroups(userId);
       const streaks = await Promise.all(
         groups.map(async (g) => {
           const streak = await storage.getGroupStreak(g.id);
