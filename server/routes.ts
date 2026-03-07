@@ -8,6 +8,7 @@ import { groups, groupMembers, deuceEntries, insertGroupSchema, insertDeuceEntry
 import { eq, and, sql } from "drizzle-orm";
 import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
+import { requireGroupMember } from "./groupAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
 import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
 import { v4 as uuidv4 } from "uuid";
@@ -556,17 +557,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/groups/:groupId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const { groupId } = req.params;
-      
-      console.log("Fetching group details for:", groupId, "user:", userId);
-      
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
       
       const group = await storage.getGroupById(groupId);
       if (!group) {
@@ -587,15 +580,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Invite routes (free)
-  app.post('/api/groups/:groupId/invite', isAuthenticated, async (req: any, res) => {
+  app.post('/api/groups/:groupId/invite', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { groupId } = req.params;
-      
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
       
       const inviteId = uuidv4();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -791,15 +779,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Streak routes (free — part of groups)
-  app.get('/api/groups/:groupId/streak', isAuthenticated, async (req: any, res) => {
+  app.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const { groupId } = req.params;
-
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
 
       const today = getTodayUTC();
       const yesterday = getYesterdayUTC();
@@ -829,15 +811,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/groups/:groupId/streak/check', isAuthenticated, async (req: any, res) => {
+  app.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const { groupId } = req.params;
-
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
 
       const result = await checkAndNotifyStreakRisk(groupId);
       res.json(result);
@@ -848,15 +824,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Group Leaderboard — member rankings by deuce count (free)
-  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, async (req: any, res) => {
+  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const { groupId } = req.params;
-
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
 
       const members = await storage.getGroupMembers(groupId);
       const ranked = members
@@ -876,15 +846,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Squad Spy Mode — typical log hour per member (premium)
-  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('squad_spy'), async (req: any, res) => {
+  app.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), async (req: any, res) => {
     try {
-      const userId = req.user.id;
-      const { groupId } = req.params;
-
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      const groupId = req.groupId;
 
       const typicalHours = await storage.getGroupMemberTypicalHours(groupId);
       res.json(typicalHours);
@@ -1259,20 +1223,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Throne Broadcast (premium) ---
-  app.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), async (req: any, res) => {
+  app.post('/api/squads/:id/broadcast', isAuthenticated, requireGroupMember('id'), requiresPremiumFor('throne_broadcast'), async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const groupId = req.params.id;
+      const groupId = req.groupId;
       const parsed = broadcastSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: 'milestone is required' });
       }
       const { milestone } = parsed.data;
-
-      const isInGroup = await storage.isUserInGroup(userId, groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: 'Not authorized' });
-      }
 
       // Look up all push tokens for group members
       const tokens = await storage.getGroupPushTokens(groupId);
