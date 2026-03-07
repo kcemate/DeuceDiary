@@ -22,7 +22,7 @@ export default function Groups() {
   const { user } = useAuth();
   const { joinGroup } = useWebSocket();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const isFree = (user as any)?.subscription !== "premium";
+  const isFree = user?.subscription !== "premium";
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],

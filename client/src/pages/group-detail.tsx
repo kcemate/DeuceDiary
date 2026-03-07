@@ -132,7 +132,7 @@ export default function GroupDetail() {
       if (!response.ok) throw new Error("Failed to create invite");
       return response.json();
     },
-    onSuccess: async (response: any) => {
+    onSuccess: async (response: { id: string }) => {
       const code = response.id;
       if (!code) return;
       setInviteCode(code);
@@ -179,7 +179,7 @@ export default function GroupDetail() {
     return null;
   };
 
-  const isAdmin = (member: any) => member.role === "admin";
+  const isAdmin = (member: { role: string }) => member.role === "admin";
   const isCurrentUserAdmin = groupDetail?.members.find(m => m.user.id === user?.id)?.role === "admin";
 
   if (isLoading) {

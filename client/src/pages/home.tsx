@@ -25,7 +25,7 @@ export default function Home() {
   const { user } = useAuth();
   const { joinGroup } = useWebSocket();
   const [showLogModal, setShowLogModal] = useState(false);
-  const isFree = (user as any)?.subscription !== "premium";
+  const isFree = user?.subscription !== "premium";
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
@@ -88,7 +88,7 @@ export default function Home() {
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Total Deuces</p>
-              <p className="stat-number text-5xl text-foreground">{(user as any)?.deuceCount || 0}</p>
+              <p className="stat-number text-5xl text-foreground">{user?.deuceCount || 0}</p>
             </div>
             <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
               <span className="text-3xl">💩</span>

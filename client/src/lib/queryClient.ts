@@ -14,14 +14,14 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function apiRequest(
+export async function apiRequest<T = unknown>(
   url: string,
   options?: {
     method?: string;
     body?: string;
     headers?: Record<string, string>;
   }
-): Promise<any> {
+): Promise<T> {
   const auth = await authHeaders();
   const res = await fetch(url, {
     method: options?.method || "GET",
@@ -35,7 +35,7 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

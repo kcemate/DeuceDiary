@@ -46,11 +46,11 @@ export default function Referral() {
 
   const applyMutation = useMutation({
     mutationFn: () =>
-      apiRequest("/api/referral/apply", {
+      apiRequest<{ referrerUsername: string }>("/api/referral/apply", {
         method: "POST",
         body: JSON.stringify({ code: applyCode.trim().toUpperCase() }),
       }),
-    onSuccess: (data: any) => {
+    onSuccess: (data: { referrerUsername: string }) => {
       toast({
         title: "Code applied!",
         description: `You and ${data.referrerUsername} are linked`,

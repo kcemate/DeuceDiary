@@ -5,7 +5,14 @@ import { getAuthToken } from "@/lib/auth-token";
 interface WebSocketMessage {
   type: string;
   message: string;
-  entry?: any;
+  entry?: {
+    id: string;
+    userId: string;
+    groupId: string;
+    location: string;
+    thoughts: string;
+    loggedAt: string;
+  };
   userId?: string;
 }
 

@@ -45,7 +45,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Sync with server on mount
   useEffect(() => {
-    apiRequest("/api/user/theme")
+    apiRequest<{ theme: string }>("/api/user/theme")
       .then((res) => {
         if (res.theme && VALID_THEMES.includes(res.theme)) {
           setThemeState(res.theme);

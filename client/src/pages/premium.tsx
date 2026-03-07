@@ -60,7 +60,7 @@ export default function Premium() {
   });
 
   // Already premium — show success
-  if (upgraded || (user as any)?.subscription === "premium") {
+  if (upgraded || user?.subscription === "premium") {
     return (
       <div className="pt-6 pb-24">
         <div className="text-center py-16">

@@ -28,7 +28,7 @@ export function ShareCardModal({
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const userId = (user as any)?.id;
+  const userId = user?.id;
 
   const { data } = useQuery<ShareCardData>({
     queryKey: [`/api/share/streak/${userId}`],

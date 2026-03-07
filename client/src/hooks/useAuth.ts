@@ -2,13 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useEffect } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
+import type { User } from "@shared/schema";
 
 const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // ---------- dev mode ----------
 
 function useDevAuth() {
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -41,7 +42,7 @@ function useClerkAuthHook() {
   }, [isSignedIn, getToken]);
 
   // Fetch app-specific user data once signed in
-  const { data: user, isLoading: appLoading, error } = useQuery({
+  const { data: user, isLoading: appLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 5 * 60 * 1000,

@@ -100,11 +100,11 @@ function Router() {
   // Handle invite link joining
   const joinGroupMutation = useMutation({
     mutationFn: async (inviteId: string) => {
-      return await apiRequest(`/api/join/${inviteId}`, {
+      return await apiRequest<{ message: string; group: { id: string; name: string } }>(`/api/join/${inviteId}`, {
         method: "POST",
       });
     },
-    onSuccess: (response: any) => {
+    onSuccess: (response: { message: string; group: { id: string; name: string } }) => {
       console.log("Successfully joined group:", response.group);
       setProcessingInvite(false);
 
@@ -148,7 +148,7 @@ function Router() {
   useEffect(() => {
     if (lastMessage && lastMessage.type === "deuce_logged") {
       // Don't show notification if it's the user's own deuce log
-      if (lastMessage.userId && (user as any)?.id === lastMessage.userId) {
+      if (lastMessage.userId && user?.id === lastMessage.userId) {
         return;
       }
 

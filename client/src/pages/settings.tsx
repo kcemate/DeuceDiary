@@ -22,7 +22,7 @@ export default function Settings() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const isPremium = (user as any)?.subscription === "premium";
+  const isPremium = user?.subscription === "premium";
 
   function handleSelect(t: (typeof THEMES)[number]) {
     if (t.premium && !isPremium) {

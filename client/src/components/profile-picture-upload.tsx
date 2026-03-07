@@ -116,7 +116,7 @@ export function ProfilePictureUpload({
     fileInputRef.current?.click();
   };
 
-  const getInitials = (user: any) => {
+  const getInitials = (user: ProfilePictureUploadProps["user"]) => {
     if (user.username) {
       return user.username.substring(0, 2).toUpperCase();
     }

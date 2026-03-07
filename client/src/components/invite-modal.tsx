@@ -39,7 +39,7 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
       
       return await response.json();
     },
-    onSuccess: (response: any) => {
+    onSuccess: (response: { id: string }) => {
       const inviteId = response.id;
       if (!inviteId) {
         toast({

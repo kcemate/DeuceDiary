@@ -10,7 +10,7 @@ interface PremiumGateProps {
 
 export function PremiumGate({ featureName, children }: PremiumGateProps) {
   const { user } = useAuth();
-  const isFree = (user as any)?.subscription !== "premium";
+  const isFree = user?.subscription !== "premium";
 
   if (!isFree) return <>{children}</>;
 

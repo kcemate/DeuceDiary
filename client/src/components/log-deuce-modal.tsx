@@ -86,12 +86,12 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
 
   const logDeuceMutation = useMutation({
     mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string }) => {
-      return await apiRequest("/api/deuces", {
+      return await apiRequest<{ count?: number }>("/api/deuces", {
         method: "POST",
         body: JSON.stringify(data),
       });
     },
-    onSuccess: (response: any) => {
+    onSuccess: (response: { count?: number }) => {
       const count = response.count || 1;
       toast({
         title: "Success",
