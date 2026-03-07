@@ -3,12 +3,13 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { storage } from "./storage";
-import { pool } from "./db";
+import { db, pool } from "./db";
+import { groups, groupMembers, deuceEntries, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
 import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
-import { insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import sharp from "sharp";
@@ -112,55 +113,76 @@ function getYesterdayUTC(): string {
  * If yes, advance the streak. If a day was missed, reset first.
  */
 async function recalculateStreak(groupId: string): Promise<void> {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    // Advisory lock on groupId hash to prevent concurrent streak updates
+  await db.transaction(async (tx) => {
+    // Advisory lock on groupId hash — serializes streak updates per group
     const lockKey = Math.abs(hashCode(groupId));
-    await client.query('SELECT pg_advisory_xact_lock($1)', [lockKey]);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
 
     const today = getTodayUTC();
     const yesterday = getYesterdayUTC();
-    const streak = await storage.getGroupStreak(groupId);
-    const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
 
-    const allLoggedToday = memberStatuses.every(m => m.hasLogged);
+    // Read streak state within the same transaction
+    const [streak] = await tx
+      .select({
+        currentStreak: groups.currentStreak,
+        longestStreak: groups.longestStreak,
+        lastStreakDate: groups.lastStreakDate,
+      })
+      .from(groups)
+      .where(eq(groups.id, groupId));
+
+    if (!streak) return;
+
+    // Check who has logged today within the same transaction
+    const members = await tx
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    const loggedToday = await tx
+      .select({ userId: deuceEntries.userId })
+      .from(deuceEntries)
+      .where(
+        and(
+          eq(deuceEntries.groupId, groupId),
+          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`
+        )
+      )
+      .groupBy(deuceEntries.userId);
+
+    const loggedUserIds = new Set(loggedToday.map(r => r.userId));
+    const allLoggedToday = members.every(m => loggedUserIds.has(m.userId));
 
     if (!allLoggedToday) {
       // Not everyone has logged today yet — but check if streak needs resetting
       if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-        // Missed a day — reset
-        await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+        await tx
+          .update(groups)
+          .set({ currentStreak: 0, updatedAt: new Date() })
+          .where(eq(groups.id, groupId));
       }
-      await client.query('COMMIT');
       return;
     }
 
     // Everyone logged today
     if (streak.lastStreakDate === today) {
-      // Already counted today
-      await client.query('COMMIT');
+      // Already counted today — idempotent
       return;
     }
 
     let newStreak: number;
     if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-      // Fresh start (first time or missed a day)
       newStreak = 1;
     } else {
-      // Continuing from yesterday
       newStreak = streak.currentStreak + 1;
     }
 
     const newLongest = Math.max(newStreak, streak.longestStreak);
-    await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
-    await client.query('COMMIT');
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
-  }
+    await tx
+      .update(groups)
+      .set({ currentStreak: newStreak, longestStreak: newLongest, lastStreakDate: today, updatedAt: new Date() })
+      .where(eq(groups.id, groupId));
+  });
 }
 
 /** Simple string hash for advisory lock keys */
