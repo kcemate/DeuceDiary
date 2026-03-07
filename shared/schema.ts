@@ -45,6 +45,7 @@ export const users = pgTable("users", {
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
   referralCount: integer("referral_count").default(0),
+  timezone: varchar("timezone", { length: 64 }).default("UTC").notNull(),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -55,6 +56,7 @@ export const groups = pgTable("groups", {
   name: varchar("name").notNull(),
   description: text("description"),
   createdBy: varchar("created_by").notNull().references(() => users.id),
+  timezone: varchar("timezone", { length: 64 }).default("UTC").notNull(),
   currentStreak: integer("current_streak").default(0).notNull(),
   longestStreak: integer("longest_streak").default(0).notNull(),
   lastStreakDate: varchar("last_streak_date"), // ISO date string YYYY-MM-DD
