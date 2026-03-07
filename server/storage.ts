@@ -329,40 +329,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGroupMembers(groupId: string): Promise<(GroupMember & { user: User & { personalRecord?: { date: string; count: number } } })[]> {
-    console.log("Getting group members for group:", groupId);
-    
-    // First, get all group members
-    const allMembers = await db
-      .select()
+    // Single JOIN query: group_members + users (filtered to non-deleted)
+    const rows = await db
+      .select({
+        member: groupMembers,
+        user: users,
+      })
       .from(groupMembers)
-      .where(eq(groupMembers.groupId, groupId))
+      .innerJoin(users, eq(groupMembers.userId, users.id))
+      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)))
       .orderBy(desc(groupMembers.joinedAt));
 
-    console.log("All group members:", allMembers);
+    if (rows.length === 0) return [];
 
-    // Then get users for each member with their personal records
-    const membersWithUsers = [];
-    for (const member of allMembers) {
-      const user = await this.getUser(member.userId);
-      if (user) {
-        // Get personal record (best day) for this user
-        const personalRecord = await this.getUserPersonalRecord(member.userId);
-        
-        membersWithUsers.push({
-          ...member,
-          user: {
-            ...user,
-            personalRecord,
-          },
-        });
-      } else {
-        console.warn("User not found for member:", member.userId);
+    // Batch personal records for all member userIds in one query
+    const userIds = rows.map((r) => r.member.userId);
+    const records = await db
+      .select({
+        userId: deuceEntries.userId,
+        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(inArray(deuceEntries.userId, userIds))
+      .groupBy(deuceEntries.userId, sql`DATE(${deuceEntries.createdAt})`)
+      .orderBy(deuceEntries.userId, desc(sql<number>`COUNT(*)::int`));
+
+    // Keep only the top record per user (first occurrence due to ORDER BY)
+    const personalRecordMap = new Map<string, { date: string; count: number }>();
+    for (const r of records) {
+      if (!personalRecordMap.has(r.userId)) {
+        personalRecordMap.set(r.userId, { date: r.date, count: r.count });
       }
     }
 
-    console.log("Members with users:", membersWithUsers);
-    
-    return membersWithUsers;
+    return rows.map((row) => ({
+      ...row.member,
+      user: {
+        ...row.user,
+        personalRecord: personalRecordMap.get(row.member.userId),
+      },
+    }));
   }
 
   async isUserInGroup(userId: string, groupId: string): Promise<boolean> {
