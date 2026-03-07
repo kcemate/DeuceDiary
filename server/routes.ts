@@ -236,12 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         db: 'connected',
       });
     } catch (err) {
-      res.status(503).json({
-        status: 'degraded',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        db: 'disconnected',
-      });
+      Errors.internal(res, "Service degraded");
     }
   });
 
@@ -523,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const parsed = themeSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
+        return Errors.badRequest(res, `Invalid theme. Must be one of: ${VALID_THEMES.join(", ")}`);
       }
       const user = await storage.updateUserTheme(req.user.id, parsed.data.theme);
       res.json({ theme: user.theme });
@@ -873,6 +868,226 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Weekly Throne Report — group-level weekly summary (premium)
+  app.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'), async (req: any, res) => {
+    try {
+      const groupId = req.groupId;
+      const report = await storage.getGroupWeeklyReport(groupId);
+      res.json(report);
+    } catch (error: any) {
+      console.error("Error fetching group weekly report:", error);
+      if (error.message === 'Group not found') return Errors.notFound(res, "Group");
+      Errors.internal(res, "Failed to fetch weekly report");
+    }
+  });
+
+  // Export Weekly Throne Report as PDF (premium)
+  app.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), async (req: any, res) => {
+    try {
+      const groupId = req.groupId;
+      const report = await storage.getGroupWeeklyReport(groupId);
+
+      // Lazy import pdfkit to avoid startup cost
+      const PDFDocument = (await import('pdfkit')).default;
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="throne-report-${report.weekOf}.pdf"`);
+      doc.pipe(res);
+
+      // Header
+      doc.fontSize(24).font('Helvetica-Bold').text('Weekly Throne Report', { align: 'center' });
+      doc.fontSize(12).font('Helvetica').fillColor('#666')
+        .text(`${report.groupName}  |  Week of ${report.weekOf} to ${report.weekEnding}`, { align: 'center' });
+      doc.moveDown(1.5);
+
+      // Group stats
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text('Squad Stats');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
+      doc.moveDown(0.5);
+      doc.fontSize(12).font('Helvetica')
+        .text(`Total Deuces This Week: ${report.groupStats.totalDeucesThisWeek}`)
+        .text(`Current Streak: ${report.groupStats.currentStreak} days`)
+        .text(`Longest Streak: ${report.groupStats.longestStreak} days`);
+      doc.moveDown(1);
+
+      // MVP
+      if (report.mvp) {
+        doc.fontSize(14).font('Helvetica-Bold').text('MVP of the Week');
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
+        doc.moveDown(0.5);
+        doc.fontSize(12).font('Helvetica')
+          .text(`${report.mvp.username ?? 'Anonymous'} — ${report.mvp.deuceCount} deuces`);
+        doc.moveDown(1);
+      }
+
+      // Member breakdown
+      doc.fontSize(14).font('Helvetica-Bold').text('Member Breakdown');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
+      doc.moveDown(0.5);
+      for (const m of report.members) {
+        const statusLabel = m.streakStatus === 'active' ? '[Active]' : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
+        doc.fontSize(12).font('Helvetica')
+          .text(`${statusLabel} ${m.username ?? 'Unknown'}: ${m.deucesThisWeek} deuces`);
+      }
+      doc.moveDown(1);
+
+      // Funny stats
+      doc.fontSize(14).font('Helvetica-Bold').text('Fun Facts');
+      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
+      doc.moveDown(0.5);
+
+      if (report.funnyStats.longestGap) {
+        doc.fontSize(12).font('Helvetica')
+          .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} — ${report.funnyStats.longestGap.gapDays} days since last log`);
+      }
+      if (report.funnyStats.mostReactionsReceived) {
+        doc.fontSize(12).font('Helvetica')
+          .text(`Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} — ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`);
+      }
+      if (report.funnyStats.funniestEntry) {
+        doc.fontSize(12).font('Helvetica')
+          .text(`Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`);
+      }
+
+      // Footer
+      doc.moveDown(2);
+      doc.fontSize(10).fillColor('#999').text('Generated by Deuce Diary — track your throne time with your squad', { align: 'center' });
+
+      doc.end();
+    } catch (error: any) {
+      console.error("Error generating PDF report:", error);
+      if (error.message === 'Group not found') return Errors.notFound(res, "Group");
+      Errors.internal(res, "Failed to generate PDF report");
+    }
+  });
+
+  // Rich invite preview (public — no auth, enhanced for OG)
+  app.get('/api/groups/invite-preview/:inviteCode', async (req, res) => {
+    try {
+      const { inviteCode } = req.params;
+      const preview = await storage.getGroupInvitePreview(inviteCode);
+      if (!preview) {
+        return Errors.notFound(res, "Invite");
+      }
+      res.json(preview);
+    } catch (error) {
+      console.error("Error fetching invite preview:", error);
+      Errors.internal(res, "Failed to fetch invite preview");
+    }
+  });
+
+  // OG HTML page for invite links — crawlers get rich meta tags (public)
+  app.get('/api/og/invite/:inviteCode', async (req, res) => {
+    try {
+      const { inviteCode } = req.params;
+      const preview = await storage.getGroupInvitePreview(inviteCode);
+
+      if (!preview) {
+        return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
+      }
+
+      const title = `Join ${preview.name} on Deuce Diary`;
+      const topMembers = preview.memberNames.slice(0, 5);
+      const memberList = topMembers.join(', ') + (preview.memberNames.length > 5 ? ` and ${preview.memberNames.length - 5} more` : '');
+      const descParts: string[] = [
+        `${preview.memberCount} member${preview.memberCount !== 1 ? 's' : ''}`,
+      ];
+      if (preview.currentStreak > 0) descParts.push(`${preview.currentStreak}-day streak`);
+      descParts.push(`${preview.deuceCount} total deuces`);
+      if (memberList) descParts.push(`Members: ${memberList}`);
+      const description = descParts.join(' · ');
+
+      const appUrl = 'https://deuce-diary-web-production.up.railway.app';
+      const ogImageUrl = `${appUrl}/og-banner.png`;
+
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${ogImageUrl}" />
+  <meta property="og:url" content="${appUrl}/invite/${inviteCode}" />
+  <meta property="og:site_name" content="Deuce Diary" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${ogImageUrl}" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(38, 40%, 96%);
+      color: hsl(25, 30%, 8%);
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .card {
+      background: hsl(38, 30%, 94%);
+      border: 1px solid hsl(38, 18%, 83%);
+      border-radius: 24px;
+      padding: 48px 40px;
+      max-width: 420px; width: 100%; text-align: center;
+    }
+    .icon { font-size: 48px; line-height: 1; margin-bottom: 12px; }
+    .group-name { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
+    .description { font-size: 14px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
+    .stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
+    .stat-value { font-size: 24px; font-weight: 900; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
+    .members { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
+    .cta {
+      display: inline-block; background: hsl(45, 88%, 48%); color: #000;
+      font-size: 16px; font-weight: 700; padding: 14px 32px; border-radius: 14px; text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🚽</div>
+    <div class="group-name">${escapeHtml(preview.name)}</div>
+    ${preview.description ? `<div class="description">${escapeHtml(preview.description)}</div>` : ''}
+    <div class="stats">
+      <div>
+        <div class="stat-value">${preview.memberCount}</div>
+        <div class="stat-label">Members</div>
+      </div>
+      ${preview.currentStreak > 0 ? `
+      <div>
+        <div class="stat-value">${preview.currentStreak}</div>
+        <div class="stat-label">Streak</div>
+      </div>` : ''}
+      <div>
+        <div class="stat-value">${preview.deuceCount}</div>
+        <div class="stat-label">Deuces</div>
+      </div>
+    </div>
+    ${memberList ? `<div class="members">Squad: ${escapeHtml(memberList)}</div>` : ''}
+    <a class="cta" href="/invite/${inviteCode}">Join the Squad</a>
+  </div>
+</body>
+</html>`;
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error) {
+      console.error("Error rendering invite OG page:", error);
+      res.status(500).send('<html><body><h1>Something went wrong</h1></body></html>');
+    }
+  });
+
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Deuce feed route (free)
   app.get('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
@@ -942,7 +1157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const gid of targetGroupIds) {
         const isInGroup = await storage.isUserInGroup(userId, gid);
         if (!isInGroup) {
-          return res.status(403).json({ message: `Not authorized for group ${gid}` });
+          return Errors.forbidden(res, `Not authorized for group ${gid}`);
         }
       }
 
@@ -1228,7 +1443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Check if this exact token already exists (upsert is fine)
         const existing = await storage.getUserPushTokens(userId);
         if (!existing.some(t => t.token === token)) {
-          return res.status(400).json({ message: `Maximum of ${MAX_PUSH_TOKENS_PER_USER} devices reached` });
+          return Errors.badRequest(res, `Maximum of ${MAX_PUSH_TOKENS_PER_USER} devices reached`);
         }
       }
 

@@ -293,3 +293,13 @@ export function createPublicRouter(): Router {
 
   return router;
 }
+
+/** Minimal HTML escaping for OG tags */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
