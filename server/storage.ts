@@ -400,7 +400,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(deuceEntries)
       .innerJoin(users, eq(deuceEntries.userId, users.id))
-      .where(eq(deuceEntries.groupId, groupId))
+      .where(and(eq(deuceEntries.groupId, groupId), isNull(users.deletedAt)))
       .orderBy(desc(deuceEntries.createdAt));
 
     return entries.map(row => ({
@@ -521,7 +521,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(reactions)
       .leftJoin(users, eq(reactions.userId, users.id))
-      .where(eq(reactions.entryId, entryId))
+      .where(and(eq(reactions.entryId, entryId), isNull(users.deletedAt)))
       .orderBy(reactions.createdAt);
 
     return entryReactions.map(row => ({
@@ -545,7 +545,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(deuceEntries)
       .innerJoin(users, eq(deuceEntries.userId, users.id))
-      .where(inArray(deuceEntries.groupId, groupIds))
+      .where(and(inArray(deuceEntries.groupId, groupIds), isNull(users.deletedAt)))
       .orderBy(desc(deuceEntries.createdAt))
       .limit(limit);
 
@@ -600,7 +600,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(groupMembers)
       .innerJoin(users, eq(groupMembers.userId, users.id))
-      .where(eq(groupMembers.groupId, groupId));
+      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)));
 
     // Get user IDs who logged today in this group
     const loggedToday = await db
@@ -770,7 +770,7 @@ export class DatabaseStorage implements IStorage {
         streakInsuranceUsed: users.streakInsuranceUsed,
       })
       .from(users)
-      .where(eq(users.id, userId));
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)));
     return user ?? { subscription: "free", subscriptionExpiresAt: null, streakInsuranceUsed: false };
   }
 
@@ -1004,7 +1004,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(groupMembers)
       .innerJoin(users, eq(groupMembers.userId, users.id))
-      .where(eq(groupMembers.groupId, groupId));
+      .where(and(eq(groupMembers.groupId, groupId), isNull(users.deletedAt)));
 
     const results: { username: string; typicalHour: number | null }[] = [];
 
@@ -1042,7 +1042,7 @@ export class DatabaseStorage implements IStorage {
 
   // Referral operations
   async getUserByReferralCode(code: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.referralCode, code));
+    const [user] = await db.select().from(users).where(and(eq(users.referralCode, code), isNull(users.deletedAt)));
     return user;
   }
 
@@ -1080,7 +1080,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(referrals)
       .innerJoin(users, eq(referrals.refereeId, users.id))
-      .where(eq(referrals.referrerId, userId))
+      .where(and(eq(referrals.referrerId, userId), isNull(users.deletedAt)))
       .orderBy(desc(referrals.createdAt));
 
     return {
@@ -1114,6 +1114,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(referrals)
       .innerJoin(users, eq(referrals.referrerId, users.id))
+      .where(isNull(users.deletedAt))
       .groupBy(users.id, users.username, users.profileImageUrl)
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(10);
