@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error('[ADMIN STATS ERROR]', error);
-      res.status(500).json({ message: 'Failed to fetch admin stats' });
+      Errors.internal(res, 'Failed to fetch admin stats');
     }
   });
 
@@ -285,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(summary);
     } catch (error) {
       console.error('[STREAK CHECK ERROR]', error);
-      res.status(500).json({ message: 'Streak check failed' });
+      Errors.internal(res, 'Streak check failed');
     }
   });
 
@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      Errors.internal(res, "Failed to fetch user");
     }
   });
 
@@ -458,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error syncing user:", error);
-      res.status(500).json({ message: "Failed to sync user" });
+      Errors.internal(res, "Failed to sync user");
     }
   });
 
@@ -471,9 +471,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user:", error);
       if (error.message?.includes('duplicate key value')) {
-        return res.status(400).json({ message: "Username already taken" });
+        return Errors.badRequest(res, "Username already taken");
       }
-      res.status(500).json({ message: "Failed to update user" });
+      Errors.internal(res, "Failed to update user");
     }
   });
 
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        return Errors.badRequest(res, "No file uploaded");
       }
 
       // Process the image with sharp
@@ -502,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedUser);
     } catch (error) {
       console.error("Error uploading profile picture:", error);
-      res.status(500).json({ message: "Failed to upload profile picture" });
+      Errors.internal(res, "Failed to upload profile picture");
     }
   });
 
@@ -515,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ theme: user?.theme ?? 'default' });
     } catch (error) {
       console.error("Error fetching theme:", error);
-      res.status(500).json({ message: "Failed to fetch theme" });
+      Errors.internal(res, "Failed to fetch theme");
     }
   });
 
@@ -529,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ theme: user.theme });
     } catch (error) {
       console.error("Error updating theme:", error);
-      res.status(500).json({ message: "Failed to update theme" });
+      Errors.internal(res, "Failed to update theme");
     }
   });
 
@@ -542,13 +542,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isPremiumUser(req.user)) {
         const userGroups = await storage.getUserGroups(userId);
         if (userGroups.length >= 3) {
-          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+          return Errors.upgradRequired(res, 'unlimited_squads');
         }
       }
 
       const parsed = createGroupSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
+        return Errors.badRequest(res, "Invalid group data: name is required (max 100 chars)");
       }
       const groupData = insertGroupSchema.parse({
         ...parsed.data,
@@ -565,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(group);
     } catch (error) {
       console.error("Error creating group:", error);
-      res.status(500).json({ message: "Failed to create group" });
+      Errors.internal(res, "Failed to create group");
     }
   });
 
@@ -578,7 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(groups);
     } catch (error) {
       console.error("Error fetching groups:", error);
-      res.status(500).json({ message: "Failed to fetch groups" });
+      Errors.internal(res, "Failed to fetch groups");
     }
   });
 
@@ -588,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const group = await storage.getGroupById(groupId);
       if (!group) {
-        return res.status(404).json({ message: "Group not found" });
+        return Errors.notFound(res, "Group not found");
       }
       
       const members = await storage.getGroupMembers(groupId);
@@ -600,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ group, members, entries });
     } catch (error) {
       console.error("Error fetching group details:", error);
-      res.status(500).json({ message: "Failed to fetch group details" });
+      Errors.internal(res, "Failed to fetch group details");
     }
   });
 
@@ -626,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ inviteLink, id: inviteId });
     } catch (error) {
       console.error("Error creating invite:", error);
-      res.status(500).json({ message: "Failed to create invite" });
+      Errors.internal(res, "Failed to create invite");
     }
   });
 
@@ -639,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const invite = await storage.getInviteById(inviteId);
       if (!invite || invite.expiresAt < new Date()) {
-        return res.status(400).json({ message: "Invalid or expired invite" });
+        return Errors.badRequest(res, "Invalid or expired invite");
       }
 
       const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isPremiumUser(req.user)) {
         const userGroups = await storage.getUserGroups(userId);
         if (userGroups.length >= 3) {
-          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+          return Errors.upgradRequired(res, 'unlimited_squads');
         }
       }
 
@@ -675,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ group });
     } catch (error) {
       console.error("Error joining group:", error);
-      res.status(500).json({ message: "Failed to join group" });
+      Errors.internal(res, "Failed to join group");
     }
   });
 
@@ -700,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(locations);
     } catch (error) {
       console.error("Error fetching locations:", error);
-      res.status(500).json({ message: "Failed to fetch locations" });
+      Errors.internal(res, "Failed to fetch locations");
     }
   });
 
@@ -709,18 +709,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = createLocationSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Location name is required" });
+        return Errors.badRequest(res, "Location name is required");
       }
       const name = parsed.data.name;
 
       if (!name.trim()) {
-        return res.status(400).json({ message: "Location name is required" });
+        return Errors.badRequest(res, "Location name is required");
       }
       
       // Check if location already exists
       const existing = await storage.getLocationByName(name.trim());
       if (existing) {
-        return res.status(400).json({ message: "Location already exists" });
+        return Errors.badRequest(res, "Location already exists");
       }
       
       const location = await storage.createLocation({
@@ -732,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(location);
     } catch (error) {
       console.error("Error creating location:", error);
-      res.status(500).json({ message: "Failed to create location" });
+      Errors.internal(res, "Failed to create location");
     }
   });
 
@@ -743,19 +743,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { entryId } = req.params;
       const parsed = reactionSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Emoji is required" });
+        return Errors.badRequest(res, "Emoji is required");
       }
       const { emoji } = parsed.data;
       
       // Check if entry exists and user can access it
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
-        return res.status(404).json({ message: "Entry not found" });
+        return Errors.notFound(res, "Entry not found");
       }
       
       const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
       if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized to react to this entry" });
+        return Errors.forbidden(res, "Not authorized to react to this entry");
       }
       
       const reaction = await storage.addReaction({
@@ -768,9 +768,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding reaction:", error);
       if (error.message?.includes('duplicate key')) {
-        return res.status(400).json({ message: "You've already reacted with this emoji" });
+        return Errors.badRequest(res, "You've already reacted with this emoji");
       }
-      res.status(500).json({ message: "Failed to add reaction" });
+      Errors.internal(res, "Failed to add reaction");
     }
   });
 
@@ -780,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { entryId } = req.params;
       const parsed = deleteReactionSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Emoji is required" });
+        return Errors.badRequest(res, "Emoji is required");
       }
       const { emoji } = parsed.data;
       
@@ -788,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Reaction removed" });
     } catch (error) {
       console.error("Error removing reaction:", error);
-      res.status(500).json({ message: "Failed to remove reaction" });
+      Errors.internal(res, "Failed to remove reaction");
     }
   });
 
@@ -799,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(reactions);
     } catch (error) {
       console.error("Error fetching reactions:", error);
-      res.status(500).json({ message: "Failed to fetch reactions" });
+      Errors.internal(res, "Failed to fetch reactions");
     }
   });
 
@@ -832,7 +832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching streak:", error);
-      res.status(500).json({ message: "Failed to fetch streak" });
+      Errors.internal(res, "Failed to fetch streak");
     }
   });
 
@@ -844,7 +844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error checking streak risk:", error);
-      res.status(500).json({ message: "Failed to check streak risk" });
+      Errors.internal(res, "Failed to check streak risk");
     }
   });
 
@@ -856,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(leaderboard);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
-      res.status(500).json({ message: "Failed to fetch leaderboard" });
+      Errors.internal(res, "Failed to fetch leaderboard");
     }
   });
 
@@ -869,7 +869,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(typicalHours);
     } catch (error) {
       console.error("Error fetching spy data:", error);
-      res.status(500).json({ message: "Failed to fetch spy data" });
+      Errors.internal(res, "Failed to fetch spy data");
     }
   });
 
@@ -885,7 +885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Single group — verify membership
         const isInGroup = await storage.isUserInGroup(userId, groupId as string);
         if (!isInGroup) {
-          return res.status(403).json({ message: "Not authorized" });
+          return Errors.forbidden(res, "Not authorized");
         }
         groupIds = [groupId as string];
       } else {
@@ -898,7 +898,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(entries);
     } catch (error) {
       console.error("Error fetching deuces feed:", error);
-      res.status(500).json({ message: "Failed to fetch deuces feed" });
+      Errors.internal(res, "Failed to fetch deuces feed");
     }
   });
 
@@ -911,12 +911,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = getTodayUTC();
       const currentCount = await storage.getUserDailyLogCount(userId, today);
       if (currentCount >= MAX_LOGS_PER_DAY) {
-        return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.' });
+        return Errors.tooManyRequests(res, 'Throne limit reached for today. Come back tomorrow.');
       }
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid deuce entry data" });
+        return Errors.badRequest(res, "Invalid deuce entry data");
       }
 
       const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
@@ -925,17 +925,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
 
       if (targetGroupIds.length === 0) {
-        return res.status(400).json({ message: "At least one group must be selected" });
+        return Errors.badRequest(res, "At least one group must be selected");
       }
 
       // Validate thought length
       if (entryData.thoughts && entryData.thoughts.length > 500) {
-        return res.status(400).json({ message: "Thought must be 500 characters or less" });
+        return Errors.badRequest(res, "Thought must be 500 characters or less");
       }
 
       // bristolScore validated by zod (1-7 int), but double-check for safety
       if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
-        return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
+        return Errors.badRequest(res, "bristolScore must be an integer between 1 and 7");
       }
 
       // Check if user is in all selected groups
@@ -1004,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ entries, count: entries.length });
     } catch (error) {
       console.error("Error creating deuce entry:", error);
-      res.status(500).json({ message: "Failed to create deuce entry" });
+      Errors.internal(res, "Failed to create deuce entry");
     }
   });
 
@@ -1013,7 +1013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/referral', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
-      if (!user) return res.status(404).json({ message: 'User not found' });
+      if (!user) return Errors.notFound(res, 'User not found');
 
       res.json({
         code: user.referralCode,
@@ -1022,7 +1022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching referral info:', error);
-      res.status(500).json({ message: 'Failed to fetch referral info' });
+      Errors.internal(res, 'Failed to fetch referral info');
     }
   });
 
@@ -1031,22 +1031,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = referralApplySchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: 'Referral code is required' });
+        return Errors.badRequest(res, 'Referral code is required');
       }
       const { code } = parsed.data;
 
       const referrer = await storage.getUserByReferralCode(code.toUpperCase());
       if (!referrer) {
-        return res.status(400).json({ message: 'Invalid referral code' });
+        return Errors.badRequest(res, 'Invalid referral code');
       }
 
       if (referrer.id === userId) {
-        return res.status(400).json({ message: 'Cannot use your own referral code' });
+        return Errors.badRequest(res, 'Cannot use your own referral code');
       }
 
       const currentUser = await storage.getUser(userId);
       if (currentUser?.referredBy) {
-        return res.status(400).json({ message: 'You have already used a referral code' });
+        return Errors.badRequest(res, 'You have already used a referral code');
       }
 
       await storage.applyReferral(userId, referrer.id);
@@ -1054,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ok: true, referrerUsername: referrer.username });
     } catch (error) {
       console.error('Error applying referral:', error);
-      res.status(500).json({ message: 'Failed to apply referral' });
+      Errors.internal(res, 'Failed to apply referral');
     }
   });
 
@@ -1064,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error('Error fetching referral stats:', error);
-      res.status(500).json({ message: 'Failed to fetch referral stats' });
+      Errors.internal(res, 'Failed to fetch referral stats');
     }
   });
 
@@ -1076,7 +1076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error('Error fetching referral dashboard stats:', error);
-      res.status(500).json({ message: 'Failed to fetch referral stats' });
+      Errors.internal(res, 'Failed to fetch referral stats');
     }
   });
 
@@ -1086,7 +1086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(leaderboard);
     } catch (error) {
       console.error('Error fetching referral leaderboard:', error);
-      res.status(500).json({ message: 'Failed to fetch referral leaderboard' });
+      Errors.internal(res, 'Failed to fetch referral leaderboard');
     }
   });
 
@@ -1105,7 +1105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
-      res.status(500).json({ message: "Failed to fetch subscription" });
+      Errors.internal(res, "Failed to fetch subscription");
     }
   });
 
@@ -1113,7 +1113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const sub = await storage.getUserSubscription(req.user.id);
       if (sub.streakInsuranceUsed) {
-        return res.status(400).json({ message: "Streak insurance already used this month" });
+        return Errors.badRequest(res, "Streak insurance already used this month");
       }
 
       // Find the user's groups and extend any at-risk streaks
@@ -1135,7 +1135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ used: true, extended, message: extended ? "Streak preserved!" : "Insurance activated (no at-risk streaks found)" });
     } catch (error) {
       console.error("Error using streak insurance:", error);
-      res.status(500).json({ message: "Failed to use streak insurance" });
+      Errors.internal(res, "Failed to use streak insurance");
     }
   });
 
@@ -1147,7 +1147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching premium analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics" });
+      Errors.internal(res, "Failed to fetch analytics");
     }
   });
 
@@ -1164,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(topDay);
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics" });
+      Errors.internal(res, "Failed to fetch analytics");
     }
   });
 
@@ -1176,7 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(report);
     } catch (error) {
       console.error("Error fetching weekly report:", error);
-      res.status(500).json({ message: "Failed to fetch weekly report" });
+      Errors.internal(res, "Failed to fetch weekly report");
     }
   });
 
@@ -1186,7 +1186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = subscriptionUpgradeSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid plan. Must be 'monthly' or 'annual'" });
+        return Errors.badRequest(res, "Invalid plan. Must be 'monthly' or 'annual'");
       }
       const { plan } = parsed.data;
 
@@ -1201,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedUser);
     } catch (error) {
       console.error("Error upgrading subscription:", error);
-      res.status(500).json({ message: "Failed to upgrade subscription" });
+      Errors.internal(res, "Failed to upgrade subscription");
     }
   });
 
@@ -1213,13 +1213,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = pushTokenSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "token and platform ('ios' or 'android') are required" });
+        return Errors.badRequest(res, "token and platform ('ios' or 'android') are required");
       }
       const { token, platform } = parsed.data;
 
       // Validate Expo push token format
       if (!Expo.isExpoPushToken(token)) {
-        return res.status(400).json({ message: "Invalid push token format" });
+        return Errors.badRequest(res, "Invalid push token format");
       }
 
       // Enforce per-user token limit (prevents token flooding)
@@ -1236,7 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ok: true });
     } catch (error) {
       console.error('Error registering push token:', error);
-      res.status(500).json({ message: 'Failed to register push token' });
+      Errors.internal(res, 'Failed to register push token');
     }
   });
 
@@ -1246,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = unregisterPushSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: 'token is required' });
+        return Errors.badRequest(res, 'token is required');
       }
       const { token } = parsed.data;
 
@@ -1254,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ ok: true });
     } catch (error) {
       console.error('Error unregistering push token:', error);
-      res.status(500).json({ message: 'Failed to unregister push token' });
+      Errors.internal(res, 'Failed to unregister push token');
     }
   });
 
@@ -1265,7 +1265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const groupId = req.groupId;
       const parsed = broadcastSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: 'milestone is required' });
+        return Errors.badRequest(res, 'milestone is required');
       }
       const { milestone } = parsed.data;
 
@@ -1278,7 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ broadcast, tokenCount: tokens.length });
     } catch (error) {
       console.error('Error creating broadcast:', error);
-      res.status(500).json({ message: 'Failed to create broadcast' });
+      Errors.internal(res, 'Failed to create broadcast');
     }
   });
 
@@ -1293,7 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ challenge, date: challengeDate, completed: !!completion });
     } catch (error) {
       console.error('Error fetching daily challenge:', error);
-      res.status(500).json({ message: 'Failed to fetch daily challenge' });
+      Errors.internal(res, 'Failed to fetch daily challenge');
     }
   });
 
@@ -1304,7 +1304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const existing = await storage.getDailyChallengeCompletion(userId, challengeDate);
       if (existing) {
-        return res.status(400).json({ message: 'Challenge already completed today' });
+        return Errors.badRequest(res, 'Challenge already completed today');
       }
 
       const completion = await storage.completeDailyChallenge({ userId, challengeDate });
@@ -1315,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ completion, bonusAwarded: true });
     } catch (error) {
       console.error('Error completing challenge:', error);
-      res.status(500).json({ message: 'Failed to complete challenge' });
+      Errors.internal(res, 'Failed to complete challenge');
     }
   });
 
@@ -1325,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const parsed = reminderSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: 'hour (0-23) and minute (0-59) are required' });
+        return Errors.badRequest(res, 'hour (0-23) and minute (0-59) are required');
       }
       const { hour, minute } = parsed.data;
 
@@ -1333,7 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ reminderHour: user.reminderHour, reminderMinute: user.reminderMinute });
     } catch (error) {
       console.error('Error setting reminder:', error);
-      res.status(500).json({ message: 'Failed to set reminder' });
+      Errors.internal(res, 'Failed to set reminder');
     }
   });
 
@@ -1345,10 +1345,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(data);
     } catch (error: any) {
       if (error.message === "User not found") {
-        return res.status(404).json({ message: "User not found" });
+        return Errors.notFound(res, "User not found");
       }
       console.error('Error fetching share card data:', error);
-      res.status(500).json({ message: 'Failed to fetch share card data' });
+      Errors.internal(res, 'Failed to fetch share card data');
     }
   });
 
@@ -1477,10 +1477,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(html);
     } catch (error: any) {
       if (error.message === "User not found") {
-        return res.status(404).json({ message: "User not found" });
+        return Errors.notFound(res, "User not found");
       }
       console.error('Error rendering OG share card:', error);
-      res.status(500).json({ message: 'Failed to render share card' });
+      Errors.internal(res, 'Failed to render share card');
     }
   });
 
@@ -1490,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username } = req.params;
       const user = await storage.getUserByUsername(username);
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return Errors.notFound(res, 'User not found');
       }
 
       const totalLogs = user.deuceCount ?? 0;
@@ -1506,7 +1506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching legacy wall:', error);
-      res.status(500).json({ message: 'Failed to fetch legacy wall' });
+      Errors.internal(res, 'Failed to fetch legacy wall');
     }
   });
 
