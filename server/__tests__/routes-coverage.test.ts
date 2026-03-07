@@ -28,7 +28,8 @@ const memStore = vi.hoisted(() => {
   return {
     /* ---- User ops ---- */
     async getUser(id: string) {
-      return _users.get(id);
+      const u = _users.get(id);
+      return u?.deletedAt ? undefined : u;
     },
     async upsertUser(data: any) {
       const existing = _users.get(data.id);

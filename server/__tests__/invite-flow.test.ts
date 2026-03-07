@@ -19,7 +19,7 @@ const memStore = vi.hoisted(() => {
   let _reactionId = 1;
 
   return {
-    async getUser(id: string) { return _users.get(id); },
+    async getUser(id: string) { const u = _users.get(id); return u?.deletedAt ? undefined : u; },
     async upsertUser(data: any) {
       const existing = _users.get(data.id);
       const user = {

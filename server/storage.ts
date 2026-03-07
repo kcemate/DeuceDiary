@@ -36,7 +36,7 @@ import {
   type Referral,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql, inArray, gte } from "drizzle-orm";
+import { eq, desc, and, count, sql, inArray, gte, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -190,7 +190,7 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt)));
     return user;
   }
 
@@ -704,7 +704,7 @@ export class DatabaseStorage implements IStorage {
 
   // Legacy wall
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(and(eq(users.username, username), isNull(users.deletedAt)));
     return user;
   }
 
@@ -1128,9 +1128,9 @@ export class DatabaseStorage implements IStorage {
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
 
     const [[totalUsersRow], [premiumUsersRow], [dauRow], [logsToday], [logsAll], [activeGroupsRow], [avgStreakRow]] = await Promise.all([
-      db.select({ count: sql<number>`COUNT(*)::int` }).from(users),
+      db.select({ count: sql<number>`COUNT(*)::int` }).from(users).where(isNull(users.deletedAt)),
       db.select({ count: sql<number>`COUNT(*)::int` }).from(users)
-        .where(and(eq(users.subscription, 'premium'), sql`${users.subscriptionExpiresAt} > NOW()`)),
+        .where(and(eq(users.subscription, 'premium'), sql`${users.subscriptionExpiresAt} > NOW()`, isNull(users.deletedAt))),
       db.select({ count: sql<number>`COUNT(DISTINCT ${deuceEntries.userId})::int` }).from(deuceEntries)
         .where(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`),
       db.select({ count: sql<number>`COUNT(*)::int` }).from(deuceEntries)
@@ -1197,35 +1197,38 @@ export class DatabaseStorage implements IStorage {
 
   async softDeleteUser(userId: string): Promise<void> {
     // Cascade: remove group memberships, push tokens, reactions, and anonymize entries for GDPR
-    await db
-      .delete(groupMembers)
-      .where(eq(groupMembers.userId, userId));
+    // Wrapped in a transaction to ensure all-or-nothing consistency
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(groupMembers)
+        .where(eq(groupMembers.userId, userId));
 
-    await db
-      .delete(pushTokens)
-      .where(eq(pushTokens.userId, userId));
+      await tx
+        .delete(pushTokens)
+        .where(eq(pushTokens.userId, userId));
 
-    await db
-      .delete(reactions)
-      .where(eq(reactions.userId, userId));
+      await tx
+        .delete(reactions)
+        .where(eq(reactions.userId, userId));
 
-    await db
-      .update(deuceEntries)
-      .set({ thoughts: "", location: "deleted" })
-      .where(eq(deuceEntries.userId, userId));
+      await tx
+        .update(deuceEntries)
+        .set({ thoughts: "", location: "deleted" })
+        .where(eq(deuceEntries.userId, userId));
 
-    await db
-      .update(users)
-      .set({
-        email: null,
-        firstName: null,
-        lastName: null,
-        username: `deleted_${userId.slice(0, 8)}`,
-        profileImageUrl: null,
-        deletedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
+      await tx
+        .update(users)
+        .set({
+          email: null,
+          firstName: null,
+          lastName: null,
+          username: `deleted_${userId.slice(0, 8)}`,
+          profileImageUrl: null,
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+    });
   }
 }
 
