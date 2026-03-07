@@ -118,6 +118,18 @@ const migrations: { name: string; sql: string }[] = [
   },
   // broadcasts table
   {
+    name: "deuce_entries.ghost",
+    sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS ghost boolean DEFAULT false NOT NULL",
+  },
+  {
+    name: "deuce_entries.bristol_score",
+    sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS bristol_score integer",
+  },
+  {
+    name: "deuce_entries.photo_url",
+    sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS photo_url text",
+  },
+  {
     name: "table.broadcasts",
     sql: `CREATE TABLE IF NOT EXISTS broadcasts (
       id serial PRIMARY KEY NOT NULL,
