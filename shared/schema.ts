@@ -60,7 +60,9 @@ export const groups = pgTable("groups", {
   lastStreakDate: varchar("last_streak_date"), // ISO date string YYYY-MM-DD
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_groups_current_streak").on(table.currentStreak),
+]);
 
 export const groupMembers = pgTable("group_members", {
   id: serial("id").primaryKey(),
@@ -70,6 +72,7 @@ export const groupMembers = pgTable("group_members", {
   joinedAt: timestamp("joined_at").defaultNow(),
 }, (table) => [
   index("idx_group_members_user_group").on(table.userId, table.groupId),
+  index("idx_group_members_group").on(table.groupId),
 ]);
 
 export const deuceEntries = pgTable("deuce_entries", {
@@ -85,6 +88,8 @@ export const deuceEntries = pgTable("deuce_entries", {
 }, (table) => [
   index("idx_deuce_entries_user_group").on(table.userId, table.groupId),
   index("idx_deuce_entries_logged_at").on(table.loggedAt),
+  index("idx_deuce_entries_created_at").on(table.createdAt),
+  index("idx_deuce_entries_user_created").on(table.userId, table.createdAt),
 ]);
 
 export const invites = pgTable("invites", {
@@ -93,7 +98,9 @@ export const invites = pgTable("invites", {
   createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_invites_group").on(table.groupId),
+]);
 
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
@@ -110,7 +117,9 @@ export const streakAlerts = pgTable("streak_alerts", {
   streakLength: integer("streak_length").notNull(),
   missingMembers: text("missing_members").notNull(), // JSON array of names
   notified: boolean("notified").default(false),
-});
+}, (table) => [
+  index("idx_streak_alerts_group").on(table.groupId),
+]);
 
 export const pushTokens = pgTable("push_tokens", {
   id: serial("id").primaryKey(),
@@ -131,6 +140,7 @@ export const reactions = pgTable("reactions", {
 }, (table) => ({
   uniqueUserEntryEmoji: unique().on(table.entryId, table.userId, table.emoji),
   entryIdIdx: index("idx_reactions_entry").on(table.entryId),
+  userIdIdx: index("idx_reactions_user").on(table.userId),
 }));
 
 export const broadcasts = pgTable("broadcasts", {
@@ -139,14 +149,18 @@ export const broadcasts = pgTable("broadcasts", {
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   milestone: text("milestone").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_broadcasts_group").on(table.groupId),
+]);
 
 export const dailyChallengeCompletions = pgTable("daily_challenge_completions", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   challengeDate: varchar("challenge_date", { length: 10 }).notNull(), // YYYY-MM-DD
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_daily_challenge_user_date").on(table.userId, table.challengeDate),
+]);
 
 export const analyticsEvents = pgTable("analytics_events", {
   id: serial("id").primaryKey(),
@@ -154,7 +168,10 @@ export const analyticsEvents = pgTable("analytics_events", {
   event: text("event").notNull(),
   properties: text("properties"),  // JSON string
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_analytics_events_user").on(table.userId),
+  index("idx_analytics_events_event").on(table.event),
+]);
 
 export const referrals = pgTable("referrals", {
   id: serial("id").primaryKey(),
@@ -163,7 +180,10 @@ export const referrals = pgTable("referrals", {
   discountApplied: boolean("discount_applied").default(false).notNull(),
   convertedToPremiumAt: timestamp("converted_to_premium_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_referrals_referrer").on(table.referrerId),
+  index("idx_referrals_referee").on(table.refereeId),
+]);
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
