@@ -198,6 +198,13 @@ const memStore = vi.hoisted(() => {
       _entries.set(e.id, e);
       return e;
     },
+    async getUserDailyLogCount(userId: string, dateUTC: string) {
+      const start = new Date(`${dateUTC}T00:00:00.000Z`);
+      const end = new Date(`${dateUTC}T23:59:59.999Z`);
+      return [..._entries.values()].filter(
+        (e) => e.userId === userId && e.createdAt >= start && e.createdAt <= end
+      ).length;
+    },
     async getGroupEntries(groupId: string) {
       return [..._entries.values()]
         .filter((e) => e.groupId === groupId)

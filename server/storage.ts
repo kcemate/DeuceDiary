@@ -176,6 +176,9 @@ export interface IStorage {
     squadCount: number;
   }>;
 
+  // Daily log count (for rate limiting)
+  getUserDailyLogCount(userId: string, dateUTC: string): Promise<number>;
+
   // Admin stats
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -1128,6 +1131,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(10);
     return rows;
+  }
+
+  async getUserDailyLogCount(userId: string, dateUTC: string): Promise<number> {
+    const startOfDay = new Date(`${dateUTC}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dateUTC}T23:59:59.999Z`);
+    const [result] = await db
+      .select({ count: count(deuceEntries.id) })
+      .from(deuceEntries)
+      .where(
+        and(
+          eq(deuceEntries.userId, userId),
+          gte(deuceEntries.createdAt, startOfDay),
+          sql`${deuceEntries.createdAt} <= ${endOfDay}`
+        )
+      );
+    return result?.count ?? 0;
   }
 
   // Admin stats

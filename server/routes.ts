@@ -94,8 +94,7 @@ function isPremiumUser(user: any): boolean {
   );
 }
 
-// In-memory per-user daily log rate limit (max 10 logs per user per UTC day)
-const dailyLogCounts = new Map<string, number>();
+// Per-user daily log rate limit (max 10 logs per user per UTC day)
 const MAX_LOGS_PER_DAY = 10;
 
 /** Get today's date as YYYY-MM-DD in UTC */
@@ -895,8 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Per-user daily rate limit (10 logs per UTC day)
       const today = getTodayUTC();
-      const rateKey = `${userId}:${today}`;
-      const currentCount = dailyLogCounts.get(rateKey) ?? 0;
+      const currentCount = await storage.getUserDailyLogCount(userId, today);
       if (currentCount >= MAX_LOGS_PER_DAY) {
         return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.' });
       }
@@ -980,8 +978,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Increment daily rate limit counter
-      dailyLogCounts.set(rateKey, currentCount + 1);
 
       res.json({ entries, count: entries.length });
     } catch (error) {
