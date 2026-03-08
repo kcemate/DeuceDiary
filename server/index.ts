@@ -29,8 +29,9 @@ app.use(
           directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "https://clerk.com", "https://*.clerk.accounts.dev"],
+            workerSrc: ["'self'", "blob:", "https://*.clerk.accounts.dev"],
             connectSrc: ["'self'", "https://*.clerk.accounts.dev", "wss://*.clerk.accounts.dev"],
-            imgSrc: ["'self'", "data:", "https://img.clerk.com"],
+            imgSrc: ["'self'", "data:", "https://img.clerk.com", "https:"],
             styleSrc: ["'self'", "'unsafe-inline'", "https:"],
             frameSrc: ["'self'", "https://*.clerk.accounts.dev"],
             fontSrc: ["'self'", "https:", "data:"],
