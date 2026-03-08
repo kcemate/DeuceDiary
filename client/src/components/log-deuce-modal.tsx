@@ -15,8 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { addToQueue } from "@/lib/offlineQueue";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { v4 as uuidv4 } from "uuid";
 
 interface LogDeuceModalProps {
   open: boolean;
@@ -45,6 +48,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const [showCustomLocation, setShowCustomLocation] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isOnline, syncQueue } = useOfflineSync();
 
   const { data: groups = [], error: groupsError, isLoading: groupsLoading } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
@@ -86,20 +90,55 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
 
   const logDeuceMutation = useMutation({
     mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string }) => {
-      return await apiRequest<{ count?: number }>("/api/deuces", {
-        method: "POST",
-        body: JSON.stringify(data),
+      // Optimistically update the user's deuce count in the cache
+      queryClient.setQueryData(["/api/auth/user"], (old: any) => {
+        if (!old) return old;
+        return { ...old, deuceCount: (old.deuceCount ?? 0) + 1 };
       });
+
+      // If offline, queue and return a synthetic success response
+      if (!navigator.onLine) {
+        await addToQueue({ id: uuidv4(), ...data });
+        return { count: data.groupIds.length, queued: true };
+      }
+
+      try {
+        return await apiRequest<{ count?: number }>("/api/deuces", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+      } catch (err) {
+        // Network failure mid-request — queue for later
+        if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+          await addToQueue({ id: uuidv4(), ...data });
+          return { count: data.groupIds.length, queued: true };
+        }
+        // Roll back optimistic count update for non-network errors
+        queryClient.setQueryData(["/api/auth/user"], (old: any) => {
+          if (!old) return old;
+          return { ...old, deuceCount: Math.max(0, (old.deuceCount ?? 1) - 1) };
+        });
+        throw err;
+      }
     },
-    onSuccess: (response: { count?: number }) => {
+    onSuccess: (response: { count?: number; queued?: boolean }) => {
       const count = response.count || 1;
-      toast({
-        title: "Success",
-        description: `Deuce logged successfully to ${count} group${count > 1 ? 's' : ''}!`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      if (response.queued) {
+        toast({
+          title: "Saved offline",
+          description: `Deuce queued — will sync when you're back online.`,
+        });
+        // Kick off sync in background (no-op if still offline)
+        syncQueue();
+      } else {
+        toast({
+          title: "Success",
+          description: `Deuce logged successfully to ${count} group${count > 1 ? 's' : ''}!`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      }
       resetForm();
       onOpenChange(false);
     },
@@ -370,12 +409,17 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
             )}
           </div>
 
+          {!isOnline && (
+            <p className="text-xs text-amber-500 text-center -mb-2">
+              You're offline — your deuce will sync when you reconnect.
+            </p>
+          )}
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             disabled={logDeuceMutation.isPending || thoughts.length > 500}
           >
-            {logDeuceMutation.isPending ? "Logging..." : "Log Deuce"}
+            {logDeuceMutation.isPending ? "Logging..." : isOnline ? "Log Deuce" : "Queue Deuce"}
           </Button>
 
           <div className="text-center text-xs text-muted-foreground">

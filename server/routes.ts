@@ -1407,6 +1407,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Offline sync — accepts an array of queued deuce logs and processes them in order
+  const syncDeuceSchema = z.object({
+    entries: z.array(z.object({
+      id: z.string(),           // client-local ID (for result mapping)
+      location: z.string().min(1).max(200),
+      thoughts: z.string().max(500).optional(),
+      groupIds: z.array(z.string()).min(1),
+      loggedAt: z.union([z.string(), z.null()]).optional(),
+    })).min(1).max(50),
+  });
+
+  app.post('/api/deuces/sync', isAuthenticated, async (req: any, res) => {
+    const parsed = syncDeuceSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return Errors.badRequest(res, 'Invalid sync payload');
+    }
+
+    const userId = req.user.id;
+    const today = getTodayUTC();
+    const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
+
+    for (const entry of parsed.data.entries) {
+      try {
+        const currentCount = await storage.getUserDailyLogCount(userId, today);
+        if (currentCount >= MAX_LOGS_PER_DAY) {
+          results.push({ id: entry.id, status: 'error', reason: 'Daily limit reached' });
+          continue;
+        }
+
+        const validGroups: string[] = [];
+        for (const gid of entry.groupIds) {
+          const isInGroup = await storage.isUserInGroup(userId, gid);
+          if (!isInGroup) {
+            results.push({ id: entry.id, status: 'error', reason: `Not a member of group ${gid}` });
+            break;
+          }
+          validGroups.push(gid);
+        }
+        if (validGroups.length !== entry.groupIds.length) continue;
+
+        const loggedAt = new Date(entry.loggedAt || new Date());
+        for (const groupId of validGroups) {
+          await storage.createDeuceEntry({
+            location: entry.location,
+            thoughts: entry.thoughts ?? '',
+            ghost: false,
+            bristolScore: null,
+            photoUrl: null,
+            groupId,
+            userId,
+            loggedAt,
+            id: uuidv4(),
+          });
+        }
+
+        await storage.updateUserDeuceCount(userId, 1);
+        track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
+
+        for (const groupId of validGroups) {
+          try { await recalculateStreak(groupId); } catch (_) {}
+        }
+
+        results.push({ id: entry.id, status: 'ok' });
+      } catch (err) {
+        console.error('Error syncing offline entry', entry.id, err);
+        results.push({ id: entry.id, status: 'error', reason: 'Internal error' });
+      }
+    }
+
+    res.json({ results, synced: results.filter(r => r.status === 'ok').length });
+  });
+
   // --- Referral routes ---
 
   app.get('/api/referral', isAuthenticated, async (req: any, res) => {
