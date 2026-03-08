@@ -27,6 +27,7 @@ import Premium from "@/pages/premium";
 import Settings from "@/pages/settings";
 import Legacy from "@/pages/legacy";
 import Referral from "@/pages/referral";
+import Bingo from "@/pages/bingo";
 
 function AppRoutes({
   isLoading,
@@ -70,6 +71,7 @@ function AppRoutes({
       <Route path="/premium" component={Premium} />
       <Route path="/settings" component={Settings} />
       <Route path="/referral" component={Referral} />
+      <Route path="/bingo" component={Bingo} />
       <Route path="/legacy/:username" component={Legacy} />
       <Route component={NotFound} />
     </Switch>

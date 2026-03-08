@@ -11,6 +11,7 @@ import { requiresPremiumFor } from "./premiumAuth";
 import { requireGroupMember } from "./groupAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
 import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
+import { createBingoRouter } from "./routes/bingo";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import sharp from "sharp";
@@ -2208,6 +2209,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   }
+
+  // --- Bingo routes (premium) ---
+  app.use(createBingoRouter());
 
   // Cleanup expired invites periodically
   setInterval(async () => {

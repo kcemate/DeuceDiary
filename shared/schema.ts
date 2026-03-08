@@ -189,6 +189,38 @@ export const referrals = pgTable("referrals", {
   index("idx_referrals_referee").on(table.refereeId),
 ]);
 
+// Bingo types
+export interface BingoSquare {
+  id: number;
+  title: string;
+  description: string;
+  condition_type: string;
+  condition_value: number;
+  completed: boolean;
+}
+
+export const bingoCards = pgTable("bingo_cards", {
+  id: varchar("id").primaryKey().notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  groupId: varchar("group_id").references(() => groups.id, { onDelete: "set null" }),
+  month: varchar("month", { length: 7 }).notNull(), // YYYY-MM
+  squares: jsonb("squares").notNull().$type<BingoSquare[]>(),
+  completedSquares: jsonb("completed_squares").notNull().default([]).$type<number[]>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_bingo_cards_user_month").on(table.userId, table.month),
+]);
+
+export const bingoCompletions = pgTable("bingo_completions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  cardId: varchar("card_id").notNull().references(() => bingoCards.id, { onDelete: "cascade" }),
+  completedAt: timestamp("completed_at").defaultNow(),
+}, (table) => [
+  index("idx_bingo_completions_user").on(table.userId),
+  index("idx_bingo_completions_card").on(table.cardId),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupMemberships: many(groupMembers),
@@ -306,6 +338,17 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
   }),
 }));
 
+export const bingoCardsRelations = relations(bingoCards, ({ one, many }) => ({
+  user: one(users, { fields: [bingoCards.userId], references: [users.id] }),
+  group: one(groups, { fields: [bingoCards.groupId], references: [groups.id] }),
+  completions: many(bingoCompletions),
+}));
+
+export const bingoCompletionsRelations = relations(bingoCompletions, ({ one }) => ({
+  user: one(users, { fields: [bingoCompletions.userId], references: [users.id] }),
+  card: one(bingoCards, { fields: [bingoCompletions.cardId], references: [bingoCards.id] }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -331,6 +374,10 @@ export type DailyChallengeCompletion = typeof dailyChallengeCompletions.$inferSe
 export type InsertDailyChallengeCompletion = typeof dailyChallengeCompletions.$inferInsert;
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
+export type BingoCard = typeof bingoCards.$inferSelect;
+export type InsertBingoCard = typeof bingoCards.$inferInsert;
+export type BingoCompletion = typeof bingoCompletions.$inferSelect;
+export type InsertBingoCompletion = typeof bingoCompletions.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

@@ -34,13 +34,125 @@ import {
   type DailyChallengeCompletion,
   type InsertDailyChallengeCompletion,
   type Referral,
+  bingoCards,
+  bingoCompletions,
+  type BingoCard,
+  type InsertBingoCard,
+  type BingoSquare,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql, inArray, gte, isNull } from "drizzle-orm";
+import { eq, desc, and, count, sql, inArray, gte, lt, isNull } from "drizzle-orm";
 
 /** Internal helper — today as YYYY-MM-DD in UTC */
 function getTodayStorageUTC(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Evaluate a single bingo square condition against user data */
+function evaluateBingoCondition(
+  conditionType: string,
+  conditionValue: number,
+  entries: { loggedAt: Date; bristolScore: number | null; thoughts: string; photoUrl: string | null; location: string }[],
+  groups: { id: string; currentStreak: number }[],
+  user: { deuceCount?: number | null } | undefined,
+  reactionCounts: Map<string, number>,
+): boolean {
+  switch (conditionType) {
+    case 'time_before':
+      return entries.some(e => e.loggedAt.getUTCHours() < conditionValue);
+    case 'time_after':
+      return entries.some(e => e.loggedAt.getUTCHours() >= conditionValue);
+    case 'streak_days':
+      return groups.some(g => g.currentStreak >= conditionValue);
+    case 'high_rating_count': {
+      const c = entries.filter(e => e.bristolScore !== null && e.bristolScore >= 6).length;
+      return c >= conditionValue;
+    }
+    case 'unique_locations': {
+      const locs = new Set(entries.map(e => e.location.toLowerCase().trim()));
+      return locs.size >= conditionValue;
+    }
+    case 'fast_log': {
+      // Interpret as: at least conditionValue logs with short thoughts (< 20 chars)
+      const c = entries.filter(e => e.thoughts.trim().length < 20).length;
+      return c >= conditionValue;
+    }
+    case 'daily_count': {
+      const byDay = new Map<string, number>();
+      for (const e of entries) {
+        const day = e.loggedAt.toISOString().slice(0, 10);
+        byDay.set(day, (byDay.get(day) || 0) + 1);
+      }
+      return Array.from(byDay.values()).some(c => c >= conditionValue);
+    }
+    case 'weekend_both': {
+      const hasSat = entries.some(e => e.loggedAt.getUTCDay() === 6);
+      const hasSun = entries.some(e => e.loggedAt.getUTCDay() === 0);
+      return hasSat && hasSun;
+    }
+    case 'group_streak_min':
+      return groups.some(g => g.currentStreak >= conditionValue);
+    case 'perfect_bristol': {
+      const c = entries.filter(e => e.bristolScore === 4).length;
+      return c >= conditionValue;
+    }
+    case 'monthly_days': {
+      const days = new Set(entries.map(e => e.loggedAt.toISOString().slice(0, 10)));
+      return days.size >= conditionValue;
+    }
+    case 'reactions_received': {
+      const total = Array.from(reactionCounts.values()).reduce((a, b) => a + b, 0);
+      return total >= conditionValue;
+    }
+    case 'photo_count': {
+      const c = entries.filter(e => e.photoUrl !== null).length;
+      return c >= conditionValue;
+    }
+    case 'long_thoughts': {
+      const c = entries.filter(e => e.thoughts.trim().length >= 100).length;
+      return c >= conditionValue;
+    }
+    case 'full_week': {
+      const daysByWeek = new Map<string, Set<number>>();
+      for (const e of entries) {
+        const d = e.loggedAt;
+        const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const week = String(Math.ceil(((d.getTime() - jan1.getTime()) / 86400000 + jan1.getUTCDay() + 1) / 7));
+        const year = String(d.getUTCFullYear());
+        const key = `${year}-W${week}`;
+        if (!daysByWeek.has(key)) daysByWeek.set(key, new Set());
+        daysByWeek.get(key)!.add(d.getUTCDay());
+      }
+      return Array.from(daysByWeek.values()).some(days => days.size === 7);
+    }
+    case 'weekday_logs': {
+      // Tuesday (2) logs on distinct days
+      const tueDays = new Set(
+        entries.filter(e => e.loggedAt.getUTCDay() === 2).map(e => e.loggedAt.toISOString().slice(0, 10))
+      );
+      return tueDays.size >= conditionValue;
+    }
+    case 'hourly_burst': {
+      const sorted = [...entries].sort((a, b) => a.loggedAt.getTime() - b.loggedAt.getTime());
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const diff = (sorted[i + 1].loggedAt.getTime() - sorted[i].loggedAt.getTime()) / (1000 * 60);
+        if (diff <= 30) return true;
+      }
+      return false;
+    }
+    case 'repeated_location': {
+      const locCounts = new Map<string, number>();
+      for (const e of entries) {
+        const loc = e.location.toLowerCase().trim();
+        locCounts.set(loc, (locCounts.get(loc) || 0) + 1);
+      }
+      return Array.from(locCounts.values()).some(c => c >= conditionValue);
+    }
+    case 'total_logs':
+      return (user?.deuceCount ?? 0) >= conditionValue;
+    default:
+      return false;
+  }
 }
 
 // Interface for storage operations
@@ -260,6 +372,13 @@ export interface IStorage {
     allTime: { totalDeuces: number; reactionsReceived: number; currentStreak: number };
     isMvp: boolean;
   }[]>;
+
+  // Bingo operations
+  getBingoCard(userId: string, month: string): Promise<BingoCard | undefined>;
+  createBingoCard(data: InsertBingoCard): Promise<BingoCard>;
+  updateBingoProgress(cardId: string, completedSquares: number[]): Promise<BingoCard>;
+  checkAndUpdateBingoProgress(userId: string, month: string): Promise<{ completedSquares: number[]; hasBlackout: boolean }>;
+  getBingoLeaderboard(groupIds: string[], month: string): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; completedCount: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1820,6 +1939,139 @@ export class DatabaseStorage implements IStorage {
     }
 
     return rows.sort((a, b) => b.weekly.totalDeuces - a.weekly.totalDeuces);
+  }
+
+  // --- Bingo operations ---
+
+  async getBingoCard(userId: string, month: string): Promise<BingoCard | undefined> {
+    const [card] = await db
+      .select()
+      .from(bingoCards)
+      .where(and(eq(bingoCards.userId, userId), eq(bingoCards.month, month)));
+    return card;
+  }
+
+  async createBingoCard(data: InsertBingoCard): Promise<BingoCard> {
+    const [card] = await db.insert(bingoCards).values(data).returning();
+    return card;
+  }
+
+  async updateBingoProgress(cardId: string, completedSquares: number[]): Promise<BingoCard> {
+    const [card] = await db
+      .update(bingoCards)
+      .set({ completedSquares })
+      .where(eq(bingoCards.id, cardId))
+      .returning();
+    return card;
+  }
+
+  async checkAndUpdateBingoProgress(userId: string, month: string): Promise<{ completedSquares: number[]; hasBlackout: boolean }> {
+    const card = await this.getBingoCard(userId, month);
+    if (!card) return { completedSquares: [], hasBlackout: false };
+
+    const [year, mon] = month.split('-').map(Number);
+    const monthStart = new Date(year, mon - 1, 1);
+    const monthEnd = new Date(year, mon, 1);
+
+    // Fetch all user entries for this month
+    const entries = await db
+      .select()
+      .from(deuceEntries)
+      .where(and(
+        eq(deuceEntries.userId, userId),
+        gte(deuceEntries.loggedAt, monthStart),
+        lt(deuceEntries.loggedAt, monthEnd),
+      ));
+
+    // Fetch user info
+    const user = await this.getUser(userId);
+
+    // Fetch user groups
+    const userGroupsRaw = await db
+      .select({ id: groups.id, currentStreak: groups.currentStreak })
+      .from(groupMembers)
+      .innerJoin(groups, eq(groups.id, groupMembers.groupId))
+      .where(eq(groupMembers.userId, userId));
+
+    // Fetch reaction counts for user's entries this month
+    const entryIds = entries.map(e => e.id);
+    const reactionCounts = new Map<string, number>();
+    if (entryIds.length > 0) {
+      const reactionRows = await db
+        .select({ entryId: reactions.entryId, cnt: count() })
+        .from(reactions)
+        .where(inArray(reactions.entryId, entryIds))
+        .groupBy(reactions.entryId);
+      for (const r of reactionRows) reactionCounts.set(r.entryId, Number(r.cnt));
+    }
+
+    const squares = card.squares as BingoSquare[];
+    const prevCompleted = new Set<number>((card.completedSquares as number[]) || []);
+    const newCompleted = new Set<number>(prevCompleted);
+
+    for (let i = 0; i < squares.length; i++) {
+      if (prevCompleted.has(i)) continue; // already completed, never un-complete
+      const square = squares[i];
+      const achieved = evaluateBingoCondition(square.condition_type, square.condition_value, entries, userGroupsRaw, user, reactionCounts);
+      if (achieved) newCompleted.add(i);
+    }
+
+    const completedSquares = Array.from(newCompleted).sort((a, b) => a - b);
+    const hasBlackout = completedSquares.length === 25;
+
+    await this.updateBingoProgress(card.id, completedSquares);
+
+    // Record blackout completion if just achieved
+    if (hasBlackout && prevCompleted.size < 25) {
+      const existing = await db
+        .select()
+        .from(bingoCompletions)
+        .where(and(eq(bingoCompletions.userId, userId), eq(bingoCompletions.cardId, card.id)));
+      if (existing.length === 0) {
+        await db.insert(bingoCompletions).values({ userId, cardId: card.id });
+      }
+    }
+
+    return { completedSquares, hasBlackout };
+  }
+
+  async getBingoLeaderboard(groupIds: string[], month: string): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; completedCount: number }[]> {
+    if (groupIds.length === 0) return [];
+
+    // Get all user IDs in these groups
+    const members = await db
+      .selectDistinct({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(inArray(groupMembers.groupId, groupIds));
+
+    const memberIds = members.map(m => m.userId);
+    if (memberIds.length === 0) return [];
+
+    // Get bingo cards for this month
+    const cards = await db
+      .select()
+      .from(bingoCards)
+      .where(and(
+        inArray(bingoCards.userId, memberIds),
+        eq(bingoCards.month, month),
+      ));
+
+    // Get user info
+    const userRows = await db
+      .select({ id: users.id, username: users.username, profileImageUrl: users.profileImageUrl })
+      .from(users)
+      .where(inArray(users.id, memberIds));
+
+    const userMap = new Map(userRows.map(u => [u.id, u]));
+
+    const result = cards.map(card => ({
+      userId: card.userId,
+      username: userMap.get(card.userId)?.username ?? null,
+      profileImageUrl: userMap.get(card.userId)?.profileImageUrl ?? null,
+      completedCount: ((card.completedSquares as number[]) || []).length,
+    }));
+
+    return result.sort((a, b) => b.completedCount - a.completedCount);
   }
 
   async softDeleteUser(userId: string): Promise<void> {
