@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic, log } from "./utils";
 import { startCronJobs } from "./cron";
+import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
 
@@ -140,6 +141,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run DB migrations inline before starting the server
+  await runMigrations();
+
   const server = await registerRoutes(app);
 
   // Sentry error handler (must be before custom error handler)

@@ -141,7 +141,7 @@ const migrations: { name: string; sql: string }[] = [
   },
 ];
 
-async function runMigrations() {
+export async function runMigrations() {
   console.log("🔄 Running DB migrations...");
   let passed = 0;
   let failed = 0;
