@@ -110,8 +110,12 @@ export default function Home() {
               <span className="font-medium">Compete with your squad</span>
             </li>
             <li className="flex items-center gap-3 text-foreground">
-              <span className="text-lg">🔥</span>
-              <span className="font-medium">Track your streaks</span>
+              <span className="text-lg">🎯</span>
+              <span className="font-medium">Deuce Bingo</span>
+            </li>
+            <li className="flex items-center gap-3 text-foreground">
+              <span className="text-lg">🛡️</span>
+              <span className="font-medium">Streak Insurance</span>
             </li>
             <li className="flex items-center gap-3 text-foreground">
               <span className="text-lg">🎨</span>
@@ -184,6 +188,56 @@ export default function Home() {
               <p className="text-sm text-muted-foreground mt-1">Log your first deuce to get the party started</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Premium Perks Hub */}
+      <Card className="mb-8 border border-border rounded-2xl overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">👑</span>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Your Premium Perks</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/bingo">
+              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
+                <span className="text-2xl mb-1">🎯</span>
+                <span className="text-xs font-bold text-foreground">Deuce Bingo</span>
+              </div>
+            </Link>
+
+            <Link href="/profile">
+              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
+                <span className="text-2xl mb-1">🛡️</span>
+                <span className="text-xs font-bold text-foreground">Streak Insurance</span>
+                <span className={`text-[10px] font-bold mt-0.5 ${user?.streakInsuranceUsed ? "text-muted-foreground" : "text-green-500"}`}>
+                  {user?.streakInsuranceUsed ? "Used" : "Active"}
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/profile">
+              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
+                <span className="text-2xl mb-1">🏆</span>
+                <span className="text-xs font-bold text-foreground">Gold Badge</span>
+                <span className="text-[10px] font-bold mt-0.5" style={{ color: "hsl(45, 88%, 48%)" }}>Yours</span>
+              </div>
+            </Link>
+
+            <Link href="/profile">
+              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
+                <span className="text-2xl mb-1">📊</span>
+                <span className="text-xs font-bold text-foreground">Throne Analytics</span>
+              </div>
+            </Link>
+
+            <Link href="/settings">
+              <div className="col-span-2 bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
+                <span className="text-2xl mb-1">🎨</span>
+                <span className="text-xs font-bold text-foreground">Custom Themes</span>
+              </div>
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

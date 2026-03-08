@@ -8,6 +8,12 @@ import { useLocation } from "wouter";
 
 const features = [
   {
+    emoji: "🎯",
+    title: "Deuce Bingo",
+    description: "Hit the squares, own the throne.",
+    free: false,
+  },
+  {
     emoji: "🔥",
     title: "Streak Insurance",
     description: "Miss a day? We've got you.",
