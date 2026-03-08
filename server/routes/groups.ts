@@ -4,7 +4,7 @@ import { insertGroupSchema } from "@shared/schema";
 import { isAuthenticated } from "../replitAuth";
 import { requireGroupMember } from "../groupAuth";
 import { requiresPremiumFor } from "../premiumAuth";
-import { track } from "../lib/analytics";
+import { track, Events } from "../lib/analytics";
 import { v4 as uuidv4 } from "uuid";
 import {
   createGroupSchema,
@@ -174,6 +174,7 @@ export function createGroupsRouter(): Router {
       await storage.deleteInvite(inviteId);
 
       track("group_joined", userId);
+      Events.groupJoined(userId, invite.groupId);
 
       const group = await storage.getGroupById(invite.groupId);
       console.log("User successfully joined group:", group);

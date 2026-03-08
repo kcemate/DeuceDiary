@@ -2,7 +2,7 @@ import { Router } from "express";
 import { WebSocket } from "ws";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
-import { track } from "../lib/analytics";
+import { track, Events } from "../lib/analytics";
 import { v4 as uuidv4 } from "uuid";
 import {
   createDeuceSchema,
@@ -218,6 +218,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       await storage.updateUserDeuceCount(userId, 1);
 
       track("log_created", userId, { has_notes: !!entryData.thoughts });
+      Events.deuceLogged(userId, { groupCount: targetGroupIds.length, has_notes: !!entryData.thoughts });
 
       // Get user info for WebSocket notification
       const user = await storage.getUser(userId);
@@ -241,9 +242,15 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
 
       // Recalculate streaks for all affected groups
+      const STREAK_MILESTONES = [7, 30, 100, 365];
       for (const groupId of targetGroupIds) {
         try {
           await recalculateStreak(groupId);
+          // Fire streak_milestone event when a milestone is hit
+          const { currentStreak } = await storage.getGroupStreak(groupId);
+          if (STREAK_MILESTONES.includes(currentStreak)) {
+            Events.streakMilestone(userId, groupId, currentStreak);
+          }
         } catch (err) {
           console.error(`Error recalculating streak for group ${groupId}:`, err);
         }

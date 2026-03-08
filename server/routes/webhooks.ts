@@ -2,7 +2,7 @@ import express, { type Express, type Request, type Response } from "express";
 import { Webhook } from "svix";
 import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
-import { track } from "../lib/analytics";
+import { track, Events } from "../lib/analytics";
 
 /**
  * Register Clerk webhook route.
@@ -70,6 +70,7 @@ export function registerClerkWebhook(app: Express): void {
                 console.log(`Clerk webhook: created Solo Deuces for user ${id}`);
               }
               track("user_registered", id);
+              Events.userSignup(id);
             }
             break;
           }

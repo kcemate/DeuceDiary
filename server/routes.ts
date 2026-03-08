@@ -117,76 +117,42 @@ function getYesterdayUTC(): string {
  * If yes, advance the streak. If a day was missed, reset first.
  */
 async function recalculateStreak(groupId: string): Promise<void> {
-  await db.transaction(async (tx) => {
-    // Advisory lock on groupId hash — serializes streak updates per group
-    const lockKey = Math.abs(hashCode(groupId));
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
+  const today = getTodayUTC();
+  const yesterday = getYesterdayUTC();
 
-    const today = getTodayUTC();
-    const yesterday = getYesterdayUTC();
+  // Read current streak state via storage layer
+  const streak = await storage.getGroupStreak(groupId);
+  if (!streak) return;
 
-    // Read streak state within the same transaction
-    const [streak] = await tx
-      .select({
-        currentStreak: groups.currentStreak,
-        longestStreak: groups.longestStreak,
-        lastStreakDate: groups.lastStreakDate,
-      })
-      .from(groups)
-      .where(eq(groups.id, groupId));
+  // Check who has logged today
+  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+  if (memberStatuses.length === 0) return;
 
-    if (!streak) return;
+  const allLoggedToday = memberStatuses.every(m => m.hasLogged);
 
-    // Check who has logged today within the same transaction
-    const members = await tx
-      .select({ userId: groupMembers.userId })
-      .from(groupMembers)
-      .where(eq(groupMembers.groupId, groupId));
-
-    const loggedToday = await tx
-      .select({ userId: deuceEntries.userId })
-      .from(deuceEntries)
-      .where(
-        and(
-          eq(deuceEntries.groupId, groupId),
-          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`
-        )
-      )
-      .groupBy(deuceEntries.userId);
-
-    const loggedUserIds = new Set(loggedToday.map(r => r.userId));
-    const allLoggedToday = members.every(m => loggedUserIds.has(m.userId));
-
-    if (!allLoggedToday) {
-      // Not everyone has logged today yet — but check if streak needs resetting
-      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-        await tx
-          .update(groups)
-          .set({ currentStreak: 0, updatedAt: new Date() })
-          .where(eq(groups.id, groupId));
-      }
-      return;
+  if (!allLoggedToday) {
+    // Not everyone has logged today yet — but check if streak needs resetting
+    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+      await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
     }
+    return;
+  }
 
-    // Everyone logged today
-    if (streak.lastStreakDate === today) {
-      // Already counted today — idempotent
-      return;
-    }
+  // Everyone logged today
+  if (streak.lastStreakDate === today) {
+    // Already counted today — idempotent
+    return;
+  }
 
-    let newStreak: number;
-    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-      newStreak = 1;
-    } else {
-      newStreak = streak.currentStreak + 1;
-    }
+  let newStreak: number;
+  if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
+    newStreak = 1;
+  } else {
+    newStreak = streak.currentStreak + 1;
+  }
 
-    const newLongest = Math.max(newStreak, streak.longestStreak);
-    await tx
-      .update(groups)
-      .set({ currentStreak: newStreak, longestStreak: newLongest, lastStreakDate: today, updatedAt: new Date() })
-      .where(eq(groups.id, groupId));
-  });
+  const newLongest = Math.max(newStreak, streak.longestStreak);
+  await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
 }
 
 /** Simple string hash for advisory lock keys */
@@ -222,6 +188,15 @@ function getTitle(totalLogs: number): string {
   if (totalLogs >= 50) return 'Veteran';
   if (totalLogs >= 10) return 'Regular';
   return 'Rookie';
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -409,12 +384,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       track("user_login", userId);
       const user = await storage.getUser(userId);
+      if (!user) {
+        return Errors.notFound(res, "User");
+      }
       res.json({
         ...user,
-        title: getTitle(user?.deuceCount ?? 0),
-        subscription: user?.subscription ?? 'free',
-        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
-        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+        title: getTitle(user.deuceCount ?? 0),
+        subscription: user.subscription ?? 'free',
+        subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user.streakInsuranceUsed ?? false,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -580,10 +558,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      console.log("Fetching groups for user:", userId);
       const groups = await storage.getUserGroups(userId);
-      console.log("User groups result:", groups);
-      res.json(groups);
+      res.status(200).json(groups);
     } catch (error) {
       console.error("Error fetching groups:", error);
       Errors.internal(res, "Failed to fetch groups");
@@ -601,14 +577,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const members = await storage.getGroupMembers(groupId);
       const entries = await storage.getGroupEntries(groupId);
-      
-      console.log("Group details - members:", members.length, "entries:", entries.length);
-      console.log("Members data:", members);
-      
       res.json({ group, members, entries });
     } catch (error) {
       console.error("Error fetching group details:", error);
       Errors.internal(res, "Failed to fetch group details");
+    }
+  });
+
+  // Remove a member from a group (admin only, or self-leave)
+  app.delete('/api/groups/:groupId/members/:userId', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+    try {
+      const requestingUserId = req.user.id;
+      const groupId = req.groupId;
+      const targetUserId = req.params.userId;
+
+      if (!targetUserId) {
+        return Errors.badRequest(res, "Missing user ID");
+      }
+
+      // Users can remove themselves, or admins can remove others
+      if (requestingUserId !== targetUserId) {
+        const members = await storage.getGroupMembers(groupId);
+        const requestingMember = members.find(m => m.userId === requestingUserId);
+        if (!requestingMember || requestingMember.role !== "admin") {
+          return Errors.forbidden(res, "Only admins can remove other members");
+        }
+      }
+
+      await storage.removeGroupMember(targetUserId, groupId);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error removing group member:", error);
+      Errors.internal(res, "Failed to remove member");
     }
   });
 
@@ -690,8 +690,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Referral landing: /join?ref=CODE → store code in session, redirect to /
   app.get('/join', (req: any, res) => {
     const ref = req.query.ref;
-    if (ref && req.session) {
-      req.session.referralCode = ref;
+    // Only store alphanumeric codes of reasonable length
+    if (ref && typeof ref === 'string' && /^[A-Z0-9]{4,20}$/i.test(ref) && req.session) {
+      req.session.referralCode = ref.toUpperCase();
     }
     res.redirect('/');
   });
@@ -802,7 +803,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
       const { entryId } = req.params;
+      const entry = await storage.getEntryById(entryId);
+      if (!entry) {
+        return Errors.notFound(res, "Entry not found");
+      }
+      const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
+      if (!isInGroup) {
+        return Errors.forbidden(res, "Not authorized to view reactions on this entry");
+      }
       const reactions = await storage.getEntryReactions(entryId);
       res.json(reactions);
     } catch (error) {
@@ -830,6 +840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         currentStreak,
         longestStreak: streak.longestStreak,
+        lastStreakDate: streak.lastStreakDate ?? null,
         memberCount: logsToday.length,
         logsToday: logsToday.map(m => ({
           userId: m.userId,
@@ -869,7 +880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Squad Spy Mode — typical log hour per member (premium)
-  app.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), async (req: any, res) => {
+  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('squad_spy'), requireGroupMember(), async (req: any, res) => {
     try {
       const groupId = req.groupId;
 
@@ -1091,15 +1102,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('<html><body><h1>Something went wrong</h1></body></html>');
     }
   });
-
-  function escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
 
   // Deuce feed route (free)
   app.get('/api/deuces', isAuthenticated, async (req: any, res) => {
@@ -1399,6 +1401,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.applyReferral(userId, referrer.id);
 
+      // Auto-grant 30 days premium when referrer reaches 3 referrals
+      const newReferralCount = (referrer.referralCount ?? 0) + 1;
+      if (newReferralCount >= 3) {
+        const isPremiumActive =
+          referrer.subscription === 'premium' &&
+          referrer.subscriptionExpiresAt &&
+          new Date(referrer.subscriptionExpiresAt) > new Date();
+        if (!isPremiumActive) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 30);
+          await storage.updateUserSubscription(referrer.id, 'premium', expiresAt);
+          track('premium_upgrade', referrer.id, { source: 'referral_reward', referralCount: newReferralCount });
+          console.log(`[referral] Auto-granted premium to ${referrer.id} for ${newReferralCount} referrals`);
+        }
+      }
+
       res.json({ ok: true, referrerUsername: referrer.username });
     } catch (error) {
       console.error('Error applying referral:', error);
@@ -1516,10 +1534,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Weekly Throne Report (premium)
+  // Weekly Throne Report (premium) — own data only
   app.get('/api/users/:userId/weekly-report', isAuthenticated, requiresPremiumFor('analytics'), async (req: any, res) => {
     try {
+      // Only allow access to own report — prevents IDOR
       const targetUserId = req.params.userId === 'me' ? req.user.id : req.params.userId;
+      if (targetUserId !== req.user.id) {
+        return Errors.forbidden(res, "Cannot access another user's report");
+      }
       const report = await storage.getWeeklyReport(targetUserId);
       res.json(report);
     } catch (error) {
@@ -1607,7 +1629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Throne Broadcast (premium) ---
-  app.post('/api/squads/:id/broadcast', isAuthenticated, requireGroupMember('id'), requiresPremiumFor('throne_broadcast'), async (req: any, res) => {
+  app.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), requireGroupMember('id'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -1718,7 +1740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       const data = await storage.getShareCardData(userId);
 
-      const displayName = data.username || 'Anonymous';
+      const displayName = escapeHtml(data.username || 'Anonymous');
       const memberSince = data.memberSince
         ? new Date(data.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : '';
