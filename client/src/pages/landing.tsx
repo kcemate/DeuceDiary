@@ -430,7 +430,7 @@ export default function Landing() {
         </div>
 
         {/* Login Form */}
-        {isAuthenticated ? (
+        {!isAuthenticated ? (
           <SignInButton mode="redirect" forceRedirectUrl="/app" afterSignInUrl="/app">
             <Button className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25">
               Enter the Throne Room
