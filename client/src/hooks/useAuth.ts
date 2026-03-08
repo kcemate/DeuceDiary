@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
 import type { User } from "@shared/schema";
 
@@ -30,6 +30,8 @@ function useDevAuth() {
 function useClerkAuthHook() {
   const { isSignedIn, isLoaded } = useUser();
   const { getToken } = useClerkAuth();
+  const queryClient = useQueryClient();
+  const prevSignedIn = useRef(false);
 
   // Keep the token getter in sync so queryClient can attach Bearer headers
   useEffect(() => {
@@ -41,12 +43,22 @@ function useClerkAuthHook() {
     return () => setTokenGetter(null);
   }, [isSignedIn, getToken]);
 
+  // When Clerk sign-in state changes, invalidate cached auth data
+  // This busts any stale 401 errors from before the user signed in
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !prevSignedIn.current) {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    }
+    prevSignedIn.current = !!isSignedIn;
+  }, [isLoaded, isSignedIn, queryClient]);
+
   // Fetch app-specific user data once signed in
   const { data: user, isLoading: appLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: 2,
-    retryDelay: 1000,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
     enabled: !!isSignedIn,
   });
 
