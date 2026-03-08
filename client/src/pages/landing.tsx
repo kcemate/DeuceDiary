@@ -221,8 +221,8 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto px-4 pt-16 pb-20 md:pt-24 md:pb-28 text-center">
           <div className="text-7xl md:text-8xl mb-6 animate-bounce">🚽</div>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight">
-            The <span className="text-primary">Strava</span> of
-            <br />Poop Tracking
+            Because your best ideas
+            <br />happen on the <span className="text-primary">throne</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Track your deuces. Build streaks. Compete with friends.
