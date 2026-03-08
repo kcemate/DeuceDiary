@@ -150,7 +150,7 @@ function Router() {
   // Handle invite links from URL params
   useEffect(() => {
     // Clerk sign-in redirects to /app — never redirect authenticated users away from /app
-    if (isAuthenticated && window.location.pathname.startsWith("/app")) {
+    if (isAuthenticated && (window.location.pathname.startsWith("/app") || location.startsWith("/app"))) {
       return;
     }
 
