@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -53,20 +53,7 @@ function AppRoutes({
         <Route path="/terms" component={Terms} />
         <Route path="/invite/:code" component={InviteLanding} />
         <Route path="/legacy/:username" component={Legacy} />
-        <Route path="*">
-          {error?.message?.includes("401") ? (
-            <div className="flex flex-col items-center justify-center min-h-96 space-y-4">
-              <p className="text-center text-muted-foreground">
-                Your session timed out — back to the throne!
-              </p>
-              <Button onClick={() => (window.location.href = "/api/login")}>
-                Log In Again
-              </Button>
-            </div>
-          ) : (
-            <NotFound />
-          )}
-        </Route>
+        <Route path="*"><Redirect to="/" /></Route>
       </Switch>
     );
   }
