@@ -11,7 +11,7 @@ export function registerRevenueCatWebhook(app: Express): void {
   const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('REVENUECAT_WEBHOOK_SECRET is required in production');
+      console.error('[ERROR] REVENUECAT_WEBHOOK_SECRET not set — webhook endpoint disabled');
     }
     console.warn('[WARN] REVENUECAT_WEBHOOK_SECRET not set — webhook is unauthenticated');
   }

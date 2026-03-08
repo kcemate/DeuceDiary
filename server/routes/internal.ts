@@ -32,7 +32,7 @@ export function createInternalRouter(): Router {
   const ADMIN_KEY = process.env.ADMIN_KEY;
   if (!ADMIN_KEY) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('ADMIN_KEY environment variable is required in production');
+      console.error('[ERROR] ADMIN_KEY not set in production — admin endpoints disabled');
     }
     console.warn('[WARN] ADMIN_KEY not set — admin endpoints will reject all requests in dev');
   }
@@ -54,7 +54,7 @@ export function createInternalRouter(): Router {
   const INTERNAL_KEY = process.env.INTERNAL_API_KEY;
   if (!INTERNAL_KEY) {
     if (process.env.NODE_ENV === 'production') {
-      throw new Error('INTERNAL_API_KEY environment variable is required in production');
+      console.error('[ERROR] INTERNAL_API_KEY not set — internal endpoints disabled');
     }
     console.warn('[WARN] INTERNAL_API_KEY not set — internal endpoints will reject all requests in dev');
   }
