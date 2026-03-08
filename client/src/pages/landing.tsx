@@ -6,20 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { SignInButton, useClerk } from "@clerk/clerk-react";
+import { SignInButton } from "@clerk/clerk-react";
 
 // Runtime check — true if ClerkProvider mounted with a valid key
-function useClerkEnabled() {
-  try {
-    const clerk = useClerk();
-    return !!clerk;
-  } catch {
-    return false;
-  }
-}
-
-// ── Demo feed data — realistic sample of the core loop ─────────────────────
-const DEMO_ENTRIES = [
   {
     username: "FlushKing99",
     avatar: "💪",
@@ -192,7 +181,7 @@ export default function Landing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
-  const CLERK_ENABLED = useClerkEnabled();
+  const { isAuthenticated } = useAuth();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -441,7 +430,7 @@ export default function Landing() {
         </div>
 
         {/* Login Form */}
-        {CLERK_ENABLED ? (
+        {isAuthenticated ? (
           <SignInButton mode="redirect" forceRedirectUrl="/app">
             <Button className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25">
               Enter the Throne Room
