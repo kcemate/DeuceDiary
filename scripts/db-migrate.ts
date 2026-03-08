@@ -168,7 +168,7 @@ export async function runMigrations() {
     }
   }
 
-  await pool.end();
+  // Don't close the pool — the server process needs it to stay open
 
   if (failed > 0) {
     console.error(`\n❌ Migration completed with ${failed} error(s). Server will start anyway.`);
