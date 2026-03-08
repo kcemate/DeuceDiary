@@ -149,7 +149,7 @@ function Router() {
 
   // Handle invite links from URL params
   useEffect(() => {
-    if (isAuthenticated && location === "/") {
+    if (isAuthenticated && (location === "/" || location === "")) {
       const urlParams = new URLSearchParams(window.location.search);
       const joinInviteId = urlParams.get("join");
 
