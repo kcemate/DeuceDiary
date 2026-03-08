@@ -473,6 +473,11 @@ const memStore = vi.hoisted(() => {
       return [];
     },
 
+    /* ---- Leaderboard ---- */
+    async getGroupLeaderboard(_groupId: string) {
+      return [];
+    },
+
     /* ---- test helpers ---- */
     _reset() {
       _users.clear();

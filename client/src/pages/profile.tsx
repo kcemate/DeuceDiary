@@ -15,6 +15,15 @@ import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { useToast } from "@/hooks/use-toast";
 import { AchievementBadge } from "@/components/Badge";
 
+interface BadgeData {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  unlocked: boolean;
+  tier: "free" | "premium";
+}
+
 interface Analytics {
   date: string;
   count: number;
@@ -44,7 +53,7 @@ export default function Profile() {
     queryKey: ["/api/groups"],
   });
 
-  const { data: badges = [] } = useQuery({
+  const { data: badges = [] } = useQuery<BadgeData[]>({
     queryKey: ["/api/user/badges"],
     enabled: !!user?.id,
   });
@@ -73,8 +82,9 @@ export default function Profile() {
             size="sm"
             onClick={() => setEditUsernameOpen(true)}
             className="h-6 w-6 p-0"
+            aria-label="Edit username"
           >
-            <Edit2 className="h-3 w-3" />
+            <Edit2 className="h-3 w-3" aria-hidden="true" />
           </Button>
         </div>
         <span className="inline-block mt-2 bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
@@ -108,8 +118,9 @@ export default function Profile() {
           onClick={() => setShareOpen(true)}
           variant="secondary"
           className="w-full rounded-xl font-bold"
+          aria-label="Share your streak card"
         >
-          <Share2 className="w-4 h-4 mr-2" />
+          <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
           Share Your Streak
         </Button>
       </div>
@@ -120,12 +131,12 @@ export default function Profile() {
           <Award className="h-4 w-4 text-amber-500" />
           <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Achievements</h3>
           <div className="flex-1 h-px bg-border"></div>
-          <span className="text-[10px] text-amber-500 font-medium">{badges.filter((b: any) => b.unlocked).length} UNLOCKED</span>
+          <span className="text-[10px] text-amber-500 font-medium">{badges.filter((b) => b.unlocked).length} UNLOCKED</span>
         </div>
         
         <div className="grid grid-cols-4 gap-4 bg-card border border-border rounded-3xl p-6">
           {badges.length > 0 ? (
-            badges.map((badge: any) => (
+            badges.map((badge) => (
               <AchievementBadge
                 key={badge.id}
                 id={badge.id}

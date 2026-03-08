@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ErrorBoundary } from "@/components/error-boundary";
 import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Groups from "@/pages/groups";
@@ -192,7 +193,7 @@ function Router() {
           <div className="bg-background border-b border-border px-4 py-3 flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-primary" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z" />
                 </svg>
               </div>
@@ -206,11 +207,13 @@ function Router() {
 
         {/* Content */}
         <div className="px-4">
-          <AppRoutes
-            isLoading={isLoading}
-            isAuthenticated={isAuthenticated}
-            error={error}
-          />
+          <ErrorBoundary>
+            <AppRoutes
+              isLoading={isLoading}
+              isAuthenticated={isAuthenticated}
+              error={error}
+            />
+          </ErrorBoundary>
         </div>
 
         {/* Bottom Navigation */}

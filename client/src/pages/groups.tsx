@@ -24,7 +24,7 @@ export default function Groups() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const isFree = user?.subscription !== "premium";
 
-  const { data: groups = [], isLoading } = useQuery<Group[]>({
+  const { data: groups = [], isLoading, isError } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
   });
 
@@ -110,6 +110,12 @@ export default function Groups() {
             </div>
           ))}
         </div>
+      ) : isError ? (
+        <div className="bg-card border border-border rounded-2xl p-8 text-center">
+          <p className="text-4xl mb-3">⚠️</p>
+          <p className="font-bold text-foreground mb-1">Couldn't load your squads.</p>
+          <p className="text-sm text-muted-foreground">Check your connection and try refreshing.</p>
+        </div>
       ) : groups.length > 0 ? (
         <div className="space-y-3">
           {groups.map((group) => (
@@ -145,7 +151,7 @@ export default function Groups() {
                   {group.entryCount} deuces • {getActivityTime(group.lastActivity)}
                 </p>
                 <Link href={`/groups/${group.id}`}>
-                  <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs border-border hover:border-primary/50">
+                  <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs border-border hover:border-primary/50" aria-label={`Open ${group.name}`}>
                     Open
                   </Button>
                 </Link>

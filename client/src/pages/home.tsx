@@ -27,7 +27,7 @@ export default function Home() {
   const [showLogModal, setShowLogModal] = useState(false);
   const isFree = user?.subscription !== "premium";
 
-  const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
+  const { data: groups = [], isLoading: groupsLoading, isError: groupsError } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
     enabled: !isFree,
   });
@@ -150,7 +150,7 @@ export default function Home() {
         <div className="relative z-10 flex items-center justify-between">
           <div>
             <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Total Deuces</p>
-            <p className="stat-number text-5xl text-foreground">{(user as any)?.deuceCount || 0}</p>
+            <p className="stat-number text-5xl text-foreground">{user?.deuceCount ?? 0}</p>
           </div>
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
             <span className="text-3xl">💩</span>
@@ -204,6 +204,12 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : groupsError ? (
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <p className="text-4xl mb-3">⚠️</p>
+            <p className="font-bold text-foreground mb-1">Couldn't load your squads.</p>
+            <p className="text-sm text-muted-foreground">Check your connection and try refreshing.</p>
           </div>
         ) : groups.length > 0 ? (
           <div className="space-y-3">

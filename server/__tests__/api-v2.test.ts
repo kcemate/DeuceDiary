@@ -589,6 +589,7 @@ let app: Express;
 let server: Server;
 
 beforeAll(async () => {
+  process.env.INTERNAL_API_KEY = "streak-check-secret";
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));

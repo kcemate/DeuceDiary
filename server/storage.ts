@@ -249,6 +249,17 @@ export interface IStorage {
     activeGroups: number;
     avgStreakLength: number;
   }>;
+
+  // Group leaderboard
+  getGroupLeaderboard(groupId: string): Promise<{
+    userId: string;
+    username: string | null;
+    profileImageUrl: string | null;
+    weekly: { totalDeuces: number; reactionsReceived: number };
+    monthly: { totalDeuces: number; reactionsReceived: number };
+    allTime: { totalDeuces: number; reactionsReceived: number; currentStreak: number };
+    isMvp: boolean;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {

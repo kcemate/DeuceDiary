@@ -8,12 +8,19 @@ import { track } from "../../lib/analytics";
  * Server-to-server — no session auth, validated via Authorization header bearing shared secret.
  */
 export function registerRevenueCatWebhook(app: Express): void {
+  const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('REVENUECAT_WEBHOOK_SECRET is required in production');
+    }
+    console.warn('[WARN] REVENUECAT_WEBHOOK_SECRET not set — webhook is unauthenticated');
+  }
+
   app.post(
     "/api/webhooks/revenuecat",
     express.json(),
     async (req: Request, res: Response) => {
       // --- Signature validation ---
-      const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
       if (secret) {
         const authHeader = req.headers["authorization"];
         if (!authHeader || authHeader !== `Bearer ${secret}`) {

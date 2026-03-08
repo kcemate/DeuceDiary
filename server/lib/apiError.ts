@@ -17,7 +17,7 @@ export function apiError(
   code: string,
   error: string
 ): void {
-  res.status(status).json({ error, code, status } satisfies ApiError);
+  res.status(status).json({ error, message: error, code, status } satisfies ApiError & { message: string });
 }
 
 // Common error factories
@@ -37,5 +37,5 @@ export const Errors = {
   internal: (res: any, msg = "Internal server error") =>
     apiError(res, 500, "INTERNAL_ERROR", msg),
   upgradRequired: (res: any, feature: string) =>
-    apiError(res, 403, "UPGRADE_REQUIRED", `Upgrade to Premium for ${feature}`),
+    res.status(403).json({ feature, message: "Premium required", upgrade: true }),
 };
