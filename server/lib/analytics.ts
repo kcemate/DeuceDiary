@@ -1,15 +1,19 @@
-import { db } from "../db";
-import { analyticsEvents } from "@shared/schema";
-
 export async function track(event: string, userId?: string, props?: Record<string, unknown>) {
   try {
-    await db.insert(analyticsEvents).values({
-      userId: userId ?? null,
-      event,
-      properties: props ? JSON.stringify(props) : null,
-    });
+    const { db } = await import("../db");
+    const { analyticsEvents } = await import("@shared/schema");
+    if (typeof db?.insert === "function") {
+      await db.insert(analyticsEvents).values({
+        userId: userId ?? null,
+        event,
+        properties: props ? JSON.stringify(props) : null,
+      });
+    }
   } catch (e) {
-    console.error("[analytics]", e);
+    // Analytics should never break the app — fail silently
+    if (process.env.NODE_ENV !== "test") {
+      console.error("[analytics]", e);
+    }
   }
 }
 
