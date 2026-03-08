@@ -1963,9 +1963,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Heartbeat: ping every 30s, kill connections that miss 2 pongs
+  const PING_INTERVAL_MS = 30_000;
+  const MAX_MISSED_PONGS = 2;
+
+  const pingInterval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      const client = ws as any;
+      if (client.missedPongs >= MAX_MISSED_PONGS) {
+        console.log(`WebSocket terminating dead connection (user ${client.userId}, missed ${client.missedPongs} pongs)`);
+        ws.terminate();
+        return;
+      }
+      client.missedPongs = (client.missedPongs ?? 0) + 1;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      }
+    });
+  }, PING_INTERVAL_MS);
+
+  // Dead connection sweep: every 60s remove terminated sockets from groupConnections
+  const sweepInterval = setInterval(() => {
+    for (const [groupId, conns] of groupConnections) {
+      for (const ws of conns) {
+        if (ws.readyState !== WebSocket.OPEN) {
+          conns.delete(ws);
+        }
+      }
+      if (conns.size === 0) {
+        groupConnections.delete(groupId);
+      }
+    }
+  }, 60_000);
+
+  wss.on('close', () => {
+    clearInterval(pingInterval);
+    clearInterval(sweepInterval);
+  });
+
   wss.on('connection', (ws: WebSocket, req) => {
     const userId = (ws as any).userId as string;
     console.log(`WebSocket connection authenticated for user ${userId}`);
+
+    // Heartbeat tracking
+    (ws as any).missedPongs = 0;
+    ws.on('pong', () => {
+      (ws as any).missedPongs = 0;
+    });
 
     ws.on('message', async (message) => {
       try {
