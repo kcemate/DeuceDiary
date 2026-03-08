@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { SignInButton } from "@clerk/clerk-react";
+
+const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 // ── Demo feed data — realistic sample of the core loop ─────────────────────
 const DEMO_ENTRIES = [
@@ -429,29 +432,39 @@ export default function Landing() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-3">
-          <Input
-            type="text"
-            placeholder="What do your dudes call you?"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-            autoFocus
-            className="rounded-xl border-border bg-card py-3 text-base"
-          />
-          {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-          <Button
-            type="submit"
-            disabled={loading || !username.trim()}
-            className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none"
-          >
-            {loading ? "Signing in…" : "Enter the Throne Room"}
-          </Button>
-        </form>
+        {CLERK_ENABLED ? (
+          <SignInButton mode="redirect" forceRedirectUrl="/app">
+            <Button className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25">
+              Enter the Throne Room
+            </Button>
+          </SignInButton>
+        ) : (
+          <>
+            <form onSubmit={handleLogin} className="space-y-3">
+              <Input
+                type="text"
+                placeholder="What do your dudes call you?"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                autoFocus
+                className="rounded-xl border-border bg-card py-3 text-base"
+              />
+              {error && <p className="text-sm text-destructive font-medium">{error}</p>}
+              <Button
+                type="submit"
+                disabled={loading || !username.trim()}
+                className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none"
+              >
+                {loading ? "Signing in…" : "Enter the Throne Room"}
+              </Button>
+            </form>
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          No email required. No password. Just vibes and bowel movements.
-        </p>
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              No email required. No password. Just vibes and bowel movements.
+            </p>
+          </>
+        )}
       </section>
 
       {/* ── Footer ── */}
