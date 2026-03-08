@@ -96,8 +96,11 @@ export function createGroupsRouter(): Router {
         return res.status(404).json({ message: "Group not found" });
       }
 
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
       const members = await storage.getGroupMembers(groupId);
-      const entries = await storage.getGroupEntries(groupId);
+      const entries = await storage.getGroupEntries(groupId, limit, offset);
 
       console.log("Group details - members:", members.length, "entries:", entries.length);
       console.log("Members data:", members);

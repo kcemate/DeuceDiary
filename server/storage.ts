@@ -64,7 +64,7 @@ export interface IStorage {
   
   // Deuce entry operations
   createDeuceEntry(entry: InsertDeuceEntry): Promise<DeuceEntry>;
-  getGroupEntries(groupId: string): Promise<(DeuceEntry & { user: User })[]>;
+  getGroupEntries(groupId: string, limit?: number, offset?: number): Promise<(DeuceEntry & { user: User })[]>;
   getUserDeucesByDate(userId: string): Promise<{ date: string; count: number }[]>;
   getEntryById(entryId: string): Promise<DeuceEntry | undefined>;
   
@@ -88,7 +88,7 @@ export interface IStorage {
   getEntryReactions(entryId: string): Promise<(Reaction & { user: User })[]>;
 
   // Feed operations
-  getFeedEntries(groupIds: string[], limit: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]>;
+  getFeedEntries(groupIds: string[], limit: number, offset?: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]>;
 
   // Streak operations
   getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
@@ -467,7 +467,7 @@ export class DatabaseStorage implements IStorage {
     return newEntry;
   }
 
-  async getGroupEntries(groupId: string): Promise<(DeuceEntry & { user: User })[]> {
+  async getGroupEntries(groupId: string, limit = 50, offset = 0): Promise<(DeuceEntry & { user: User })[]> {
     const entries = await db
       .select({
         entry: deuceEntries,
@@ -476,7 +476,9 @@ export class DatabaseStorage implements IStorage {
       .from(deuceEntries)
       .innerJoin(users, eq(deuceEntries.userId, users.id))
       .where(and(eq(deuceEntries.groupId, groupId), isNull(users.deletedAt)))
-      .orderBy(desc(deuceEntries.createdAt));
+      .orderBy(desc(deuceEntries.loggedAt))
+      .limit(limit)
+      .offset(offset);
 
     return entries.map(row => ({
       ...row.entry,
@@ -619,7 +621,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Feed operations
-  async getFeedEntries(groupIds: string[], limit: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]> {
+  async getFeedEntries(groupIds: string[], limit: number, offset = 0): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]> {
     if (groupIds.length === 0) return [];
 
     const entries = await db
@@ -634,8 +636,9 @@ export class DatabaseStorage implements IStorage {
       .from(deuceEntries)
       .innerJoin(users, eq(deuceEntries.userId, users.id))
       .where(and(inArray(deuceEntries.groupId, groupIds), isNull(users.deletedAt)))
-      .orderBy(desc(deuceEntries.createdAt))
-      .limit(limit);
+      .orderBy(desc(deuceEntries.loggedAt))
+      .limit(limit)
+      .offset(offset);
 
     // Batch-fetch reactions for all returned entries
     const entryIds = entries.map(r => r.entry.id);

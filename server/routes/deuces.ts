@@ -135,6 +135,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const userId = req.user.id;
       const { groupId } = req.query;
 
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
       let groupIds: string[];
 
       if (groupId) {
@@ -150,7 +153,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         groupIds = userGroups.map(g => g.id);
       }
 
-      const entries = await storage.getFeedEntries(groupIds, 50);
+      const entries = await storage.getFeedEntries(groupIds, limit, offset);
       res.json(entries);
     } catch (error) {
       console.error("Error fetching deuces feed:", error);
