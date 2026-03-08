@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SignInButton } from "@clerk/clerk-react";
+import { useAuth } from "@/hooks/useAuth";
 
-// Runtime check — true if ClerkProvider mounted with a valid key
+// ── Demo feed data — realistic sample of the core loop ─────────────────────
+const DEMO_ENTRIES = [
   {
     username: "FlushKing99",
     avatar: "💪",
