@@ -149,11 +149,12 @@ function Router() {
 
   // Handle invite links from URL params
   useEffect(() => {
+    // Clerk sign-in redirects to /app — never redirect authenticated users away from /app
+    if (isAuthenticated && window.location.pathname.startsWith("/app")) {
+      return;
+    }
+
     if (isAuthenticated && (location === "/" || location === "")) {
-      // Clerk sign-in redirects to /app — don't redirect authenticated users back to landing
-      if (window.location.pathname === "/app" || window.location.pathname.startsWith("/app")) {
-        return;
-      }
       const urlParams = new URLSearchParams(window.location.search);
       const joinInviteId = urlParams.get("join");
 
