@@ -168,6 +168,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   if (clerkEnabled) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
+      console.log(`[AUTH] 401 no-bearer: ${req.method} ${req.path} | auth header: ${authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING'}`);
       return res.status(401).json({ message: "Unauthorized" });
     }
     const token = authHeader.split(" ")[1];
@@ -175,7 +176,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
     try {
       payload = await clerk!.verifyToken(token);
     } catch (err) {
-      console.error("Clerk token verification failed:", err);
+      console.error(`[AUTH] 401 bad-token: ${req.method} ${req.path}`, err);
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -190,12 +191,12 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
           lastName: (payload as any).last_name ?? null,
           profileImageUrl: (payload as any).image_url ?? null,
         });
-        console.log(`Auto-created user from Clerk JWT: ${payload.sub}`);
+        console.log(`[AUTH] auto-created user: ${payload.sub}`);
       }
       req.user = user;
       return next();
     } catch (err) {
-      console.error("Auth middleware DB error for user", payload.sub, ":", err);
+      console.error(`[AUTH] 500 db-error: ${req.method} ${req.path} user=${payload.sub}`, err);
       return res.status(500).json({ message: "Internal auth error" });
     }
   }
