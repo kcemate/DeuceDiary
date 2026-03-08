@@ -151,7 +151,7 @@ function Router() {
   useEffect(() => {
     if (isAuthenticated && (location === "/" || location === "")) {
       // Clerk sign-in redirects to /app — don't redirect authenticated users back to landing
-      if (location === "/" && window.location.pathname === "/app") {
+      if (window.location.pathname === "/app" || window.location.pathname.startsWith("/app")) {
         return;
       }
       const urlParams = new URLSearchParams(window.location.search);
