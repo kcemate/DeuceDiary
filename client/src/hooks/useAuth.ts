@@ -66,6 +66,16 @@ function useClerkAuthHook() {
     enabled: !!isSignedIn && tokenReady,
   });
 
+  // Debug: log auth state to console (temporary)
+  const authState = {
+    isLoaded, isSignedIn: !!isSignedIn, tokenReady, appLoading,
+    hasUser: !!user, error: error?.message ?? null,
+  };
+  if (typeof window !== 'undefined') {
+    (window as any).__authDebug = authState;
+    console.log('[AUTH]', JSON.stringify(authState));
+  }
+
   return {
     user,
     isLoading: !isLoaded || (isSignedIn && (appLoading || !tokenReady)),

@@ -171,8 +171,15 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const token = authHeader.split(" ")[1];
+    let payload: any;
     try {
-      const payload = await clerk!.verifyToken(token);
+      payload = await clerk!.verifyToken(token);
+    } catch (err) {
+      console.error("Clerk token verification failed:", err);
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    try {
       let user = await storage.getUser(payload.sub);
       if (!user) {
         // Auto-create user on first Clerk login
@@ -187,8 +194,9 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       }
       req.user = user;
       return next();
-    } catch {
-      return res.status(401).json({ message: "Invalid token" });
+    } catch (err) {
+      console.error("Auth middleware DB error for user", payload.sub, ":", err);
+      return res.status(500).json({ message: "Internal auth error" });
     }
   }
 
