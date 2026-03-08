@@ -6,9 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { SignInButton } from "@clerk/clerk-react";
+import { SignInButton, useClerk } from "@clerk/clerk-react";
 
-const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+// Runtime check — true if ClerkProvider mounted with a valid key
+function useClerkEnabled() {
+  try {
+    const clerk = useClerk();
+    return !!clerk;
+  } catch {
+    return false;
+  }
+}
 
 // ── Demo feed data — realistic sample of the core loop ─────────────────────
 const DEMO_ENTRIES = [
@@ -184,6 +192,7 @@ export default function Landing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
+  const CLERK_ENABLED = useClerkEnabled();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
