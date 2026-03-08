@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
 import type { User } from "@shared/schema";
 
-const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const CLERK_ENABLED = true;
 
 // ---------- dev mode ----------
 
