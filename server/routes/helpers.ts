@@ -94,6 +94,27 @@ export function getYesterdayUTC(): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
+export function getTodayInZone(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+/** Get yesterday's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
+export function getYesterdayInZone(tz: string): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  } catch {
+    d.setUTCDate(d.getUTCDate());
+    return d.toISOString().slice(0, 10);
+  }
+}
+
 /** Simple string hash for advisory lock keys */
 export function hashCode(s: string): number {
   let hash = 0;
@@ -113,22 +134,27 @@ export async function recalculateStreak(groupId: string): Promise<void> {
     const lockKey = Math.abs(hashCode(groupId));
     await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
 
-    const today = getTodayUTC();
-    const yesterday = getYesterdayUTC();
-
-    // Read streak state within the same transaction
+    // Read streak state + group timezone within the same transaction
     const [streak] = await tx
       .select({
         currentStreak: groups.currentStreak,
         longestStreak: groups.longestStreak,
         lastStreakDate: groups.lastStreakDate,
+        timezone: groups.timezone,
       })
       .from(groups)
       .where(eq(groups.id, groupId));
 
     if (!streak) return;
 
-    // Check who has logged today within the same transaction
+    const tz = streak.timezone || 'UTC';
+    const today = getTodayInZone(tz);
+    const yesterday = getYesterdayInZone(tz);
+
+    // Idempotency: already counted today — skip
+    if (streak.lastStreakDate === today) return;
+
+    // Check who has logged today within the same transaction (using group timezone)
     const members = await tx
       .select({ userId: groupMembers.userId })
       .from(groupMembers)
@@ -140,7 +166,7 @@ export async function recalculateStreak(groupId: string): Promise<void> {
       .where(
         and(
           eq(deuceEntries.groupId, groupId),
-          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`
+          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE ${tz}) = ${today}`
         )
       )
       .groupBy(deuceEntries.userId);
@@ -159,12 +185,7 @@ export async function recalculateStreak(groupId: string): Promise<void> {
       return;
     }
 
-    // Everyone logged today
-    if (streak.lastStreakDate === today) {
-      // Already counted today — idempotent
-      return;
-    }
-
+    // Everyone logged today — advance streak
     let newStreak: number;
     if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
       newStreak = 1;

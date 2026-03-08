@@ -105,54 +105,25 @@ function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Get yesterday's date as YYYY-MM-DD in UTC */
-function getYesterdayUTC(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
+/** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
+function getTodayInZone(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
 }
 
-/**
- * After a deuce is logged, check if all group members have logged today.
- * If yes, advance the streak. If a day was missed, reset first.
- */
-async function recalculateStreak(groupId: string): Promise<void> {
-  const today = getTodayUTC();
-  const yesterday = getYesterdayUTC();
-
-  // Read current streak state via storage layer
-  const streak = await storage.getGroupStreak(groupId);
-  if (!streak) return;
-
-  // Check who has logged today
-  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
-  if (memberStatuses.length === 0) return;
-
-  const allLoggedToday = memberStatuses.every(m => m.hasLogged);
-
-  if (!allLoggedToday) {
-    // Not everyone has logged today yet — but check if streak needs resetting
-    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-      await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
-    }
-    return;
+/** Get yesterday's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
+function getYesterdayInZone(tz: string): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  } catch {
+    d.setUTCDate(d.getUTCDate());
+    return d.toISOString().slice(0, 10);
   }
-
-  // Everyone logged today
-  if (streak.lastStreakDate === today) {
-    // Already counted today — idempotent
-    return;
-  }
-
-  let newStreak: number;
-  if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-    newStreak = 1;
-  } else {
-    newStreak = streak.currentStreak + 1;
-  }
-
-  const newLongest = Math.max(newStreak, streak.longestStreak);
-  await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
 }
 
 /** Simple string hash for advisory lock keys */
@@ -162,6 +133,84 @@ function hashCode(s: string): number {
     hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
   }
   return hash;
+}
+
+/**
+ * After a deuce is logged, check if all group members have logged today.
+ * If yes, advance the streak. If a day was missed, reset first.
+ * Wrapped in a transaction with an advisory lock to prevent race conditions.
+ */
+async function recalculateStreak(groupId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    // Advisory lock on groupId hash — serializes streak updates per group
+    const lockKey = Math.abs(hashCode(groupId));
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
+
+    // Read streak state + group timezone within the same transaction
+    const [streak] = await tx
+      .select({
+        currentStreak: groups.currentStreak,
+        longestStreak: groups.longestStreak,
+        lastStreakDate: groups.lastStreakDate,
+        timezone: groups.timezone,
+      })
+      .from(groups)
+      .where(eq(groups.id, groupId));
+
+    if (!streak) return;
+
+    const tz = streak.timezone || 'UTC';
+    const today = getTodayInZone(tz);
+    const yesterday = getYesterdayInZone(tz);
+
+    // Idempotency: already counted today — skip
+    if (streak.lastStreakDate === today) return;
+
+    // Check who has logged today within the same transaction (using group timezone)
+    const members = await tx
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    const loggedToday = await tx
+      .select({ userId: deuceEntries.userId })
+      .from(deuceEntries)
+      .where(
+        and(
+          eq(deuceEntries.groupId, groupId),
+          sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE ${tz}) = ${today}`
+        )
+      )
+      .groupBy(deuceEntries.userId);
+
+    const loggedUserIds = new Set(loggedToday.map(r => r.userId));
+    const allLoggedToday = members.every(m => loggedUserIds.has(m.userId));
+
+    if (!allLoggedToday) {
+      // Not everyone has logged today yet — but check if streak needs resetting
+      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+        await tx
+          .update(groups)
+          .set({ currentStreak: 0, updatedAt: new Date() })
+          .where(eq(groups.id, groupId));
+      }
+      return;
+    }
+
+    // Everyone logged today — advance streak
+    let newStreak: number;
+    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
+      newStreak = 1;
+    } else {
+      newStreak = streak.currentStreak + 1;
+    }
+
+    const newLongest = Math.max(newStreak, streak.longestStreak);
+    await tx
+      .update(groups)
+      .set({ currentStreak: newStreak, longestStreak: newLongest, lastStreakDate: today, updatedAt: new Date() })
+      .where(eq(groups.id, groupId));
+  });
 }
 
 /**
