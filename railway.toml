@@ -1,6 +1,6 @@
 [build]
 builder = 'nixpacks'
-buildCommand = 'npm ci && VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY npm run build'
+buildCommand = 'npm ci && npm run build && npx esbuild scripts/db-migrate.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/migrate.js'
 
 [deploy]
 startCommand = 'node dist/migrate.js && node dist/index.js'
