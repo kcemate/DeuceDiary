@@ -1,6 +1,6 @@
 [build]
 builder = 'nixpacks'
-buildCommand = "npm ci && VITE_CLERK_PUBLISHABLE_KEY='pk_test_Y29uY2lzZS1lYWdsZS0yOS5jbGVyay5hY2NvdW50cy5kZXYk' npm run build"
+buildCommand = "npm ci && npm run build"
 
 [deploy]
 startCommand = 'node dist/index.js'
