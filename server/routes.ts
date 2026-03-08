@@ -277,6 +277,14 @@ function escapeHtml(str: string): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Public config endpoint — returns runtime config values for the frontend
+  // This lets us inject build-time values (like Clerk key) without baking them into the JS bundle
+  app.get('/api/config', (_req, res) => {
+    res.json({
+      clerkPublishableKey: process.env.VITE_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY || null,
+    });
+  });
+
   // Health check (no auth required) — checks DB connectivity + returns uptime
   app.get('/api/health', async (_req, res) => {
     try {
