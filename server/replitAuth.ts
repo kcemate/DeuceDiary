@@ -173,9 +173,17 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
     const token = authHeader.split(" ")[1];
     try {
       const payload = await clerk!.verifyToken(token);
-      const user = await storage.getUser(payload.sub);
+      let user = await storage.getUser(payload.sub);
       if (!user) {
-        return res.status(401).json({ message: "Unauthorized — user not synced" });
+        // Auto-create user on first Clerk login
+        user = await storage.upsertUser({
+          id: payload.sub,
+          email: (payload as any).email ?? null,
+          firstName: (payload as any).first_name ?? null,
+          lastName: (payload as any).last_name ?? null,
+          profileImageUrl: (payload as any).image_url ?? null,
+        });
+        console.log(`Auto-created user from Clerk JWT: ${payload.sub}`);
       }
       req.user = user;
       return next();

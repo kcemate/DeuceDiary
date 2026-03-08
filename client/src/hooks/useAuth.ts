@@ -44,7 +44,8 @@ function useClerkAuthHook() {
   // Fetch app-specific user data once signed in
   const { data: user, isLoading: appLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
-    retry: false,
+    retry: 2,
+    retryDelay: 1000,
     staleTime: 5 * 60 * 1000,
     enabled: !!isSignedIn,
   });
