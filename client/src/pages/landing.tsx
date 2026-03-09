@@ -231,10 +231,13 @@ export default function Landing() {
             Because your best ideas
             <br />happen on the <span className="text-primary">throne</span>
           </h1>
+          <p className="text-sm font-bold text-primary uppercase tracking-widest mb-3">
+            The Strava of Poop Tracking
+          </p>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Track your deuces. Build streaks. Compete with friends.
+            Build daily streaks. Compete with your squad. Climb the leaderboard.
             <br className="hidden md:block" />
-            Finally, a bowel tracker that's social, fun, <em>and</em> actually useful.
+            Everyone poops — now you can finally prove you're the best at it.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
