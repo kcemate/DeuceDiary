@@ -9,7 +9,7 @@ import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { ShareCardModal } from "@/components/ShareCardModal";
 import { StreakFrame } from "@/components/streak-frame";
-import { Edit2, Share2, Award, Flame } from "lucide-react";
+import { Edit2, Share2, Award, Flame, Bell, Palette, Gift, ChevronRight } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { useToast } from "@/hooks/use-toast";
@@ -522,16 +522,17 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Settings */}
-      <div className="bg-card border border-border rounded-2xl p-5 mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
+      {/* ── Settings ─────────────────────────────────────────────── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground px-5 pt-5 pb-3">
           Settings
         </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="divide-y divide-border">
+          <div className="flex items-center gap-3 px-5 py-3">
+            <Bell className="w-4 h-4 text-muted-foreground shrink-0" />
             <Label
               htmlFor="push-notifications"
-              className="text-sm font-medium text-foreground"
+              className="text-sm font-medium text-foreground flex-1"
             >
               Throne Alerts
             </Label>
@@ -543,19 +544,26 @@ export default function Profile() {
           </div>
           <button
             onClick={() => setLocation("/settings")}
-            className="flex items-center justify-between w-full"
+            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
           >
-            <span className="text-sm font-medium text-foreground">Theme</span>
-            <span className="text-sm text-muted-foreground">Customize →</span>
+            <Palette className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium text-foreground flex-1 text-left">Theme</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => setLocation("/referral")}
-            className="flex items-center justify-between w-full"
+            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
           >
-            <span className="text-sm font-medium text-foreground">
-              Refer Friends 🎁
+            <Gift className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium text-foreground flex-1 text-left">
+              Refer Friends
             </span>
-            <span className="text-sm text-muted-foreground">Share →</span>
+            {(user?.referralCount ?? 0) > 0 && (
+              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {user?.referralCount} referred
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
       </div>
