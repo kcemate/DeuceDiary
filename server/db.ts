@@ -13,5 +13,9 @@ export const pool = new pg.Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  // Enable SSL in production; allow override via DB_SSL=false for local dev without SSL
+  ssl: process.env.NODE_ENV === "production" && process.env.DB_SSL !== "false"
+    ? { rejectUnauthorized: false }
+    : undefined,
 });
 export const db = drizzle({ client: pool, schema });
