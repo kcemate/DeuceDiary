@@ -730,8 +730,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { inviteId } = req.params;
 
-      console.log("User attempting to join group:", userId, "invite:", inviteId);
-
       const invite = await storage.getInviteById(inviteId);
       if (!invite || invite.expiresAt < new Date()) {
         return Errors.badRequest(res, "Invalid or expired invite");
@@ -739,7 +737,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
       if (isAlreadyMember) {
-        console.log("User is already a member of group:", invite.groupId);
         const group = await storage.getGroupById(invite.groupId);
         return res.json({ group, message: "Already a member of this group" });
       }
@@ -752,9 +749,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log("Adding user to group:", userId, "group:", invite.groupId);
-      // User already exists (isAuthenticated ensures this), just add to group
-
       await storage.addGroupMember({
         groupId: invite.groupId,
         userId,
@@ -766,7 +760,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       track("group_joined", userId);
 
       const group = await storage.getGroupById(invite.groupId);
-      console.log("User successfully joined group:", group);
       res.json({ group });
     } catch (error) {
       console.error("Error joining group:", error);
