@@ -309,6 +309,31 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* ── Deuce Pace Insights ────────────────────────────────────── */}
+      {(() => {
+        const memberSince = user?.createdAt ? new Date(user.createdAt as unknown as string) : null;
+        const daysAsMember = memberSince
+          ? Math.max(1, Math.floor((Date.now() - memberSince.getTime()) / (1000 * 60 * 60 * 24)))
+          : 1;
+        const perDay = deuceCount / daysAsMember;
+        const projectedYearly = Math.round(perDay * 365);
+        return deuceCount > 0 ? (
+          <div className="flex items-center justify-center gap-3 mb-6 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              📅 <span className="font-semibold text-foreground">{daysAsMember}</span> days active
+            </span>
+            <span className="text-border">•</span>
+            <span className="flex items-center gap-1">
+              📈 <span className="font-semibold text-foreground">{perDay.toFixed(1)}</span>/day
+            </span>
+            <span className="text-border">•</span>
+            <span className="flex items-center gap-1">
+              🎯 <span className="font-semibold text-foreground">{projectedYearly}</span>/yr pace
+            </span>
+          </div>
+        ) : null;
+      })()}
+
       {/* ── Milestone Badges ─────────────────────────────────────────── */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
