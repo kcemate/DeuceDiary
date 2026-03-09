@@ -468,16 +468,19 @@ export class DatabaseStorage implements IStorage {
 
   // Group operations
   async createGroup(group: InsertGroup): Promise<Group> {
-    const [newGroup] = await db.insert(groups).values(group).returning();
-    
-    // Add creator as admin
-    await db.insert(groupMembers).values({
-      groupId: newGroup.id,
-      userId: group.createdBy,
-      role: "admin",
+    // Use transaction to ensure group + creator membership are created atomically
+    return await db.transaction(async (tx) => {
+      const [newGroup] = await tx.insert(groups).values(group).returning();
+
+      // Add creator as admin
+      await tx.insert(groupMembers).values({
+        groupId: newGroup.id,
+        userId: group.createdBy,
+        role: "admin",
+      });
+
+      return newGroup;
     });
-    
-    return newGroup;
   }
 
   async getUserGroups(userId: string): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]> {
