@@ -16,8 +16,8 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md text-center">
-        <p className="text-8xl mb-4">🧻</p>
+      <div className="w-full max-w-md text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <p className="text-8xl mb-4 animate-bounce" style={{ animationDuration: "2s" }}>🧻</p>
         <h1 className="text-5xl font-extrabold text-foreground mb-2">404</h1>
         <h2 className="text-xl font-bold text-foreground mb-3">This throne is out of order.</h2>
         <p className="text-muted-foreground mb-8">
@@ -30,7 +30,7 @@ export default function NotFound() {
         </p>
         <Button
           onClick={handleGoHome}
-          className="btn-shimmer text-white font-bold rounded-2xl px-8 py-4 text-lg shadow-lg shadow-primary/25"
+          className="btn-shimmer text-white font-bold rounded-2xl px-8 py-4 text-lg shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
         >
           {isAuthenticated ? "Back to the Throne Room" : "Log In"}
         </Button>
