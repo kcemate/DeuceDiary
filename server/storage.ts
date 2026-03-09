@@ -2150,6 +2150,11 @@ export class DatabaseStorage implements IStorage {
         .delete(groupMembers)
         .where(eq(groupMembers.userId, userId));
 
+      // Remove invites created by this user so they can't be used after deletion
+      await tx
+        .delete(invites)
+        .where(eq(invites.createdBy, userId));
+
       await tx
         .delete(pushTokens)
         .where(eq(pushTokens.userId, userId));
