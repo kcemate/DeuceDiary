@@ -660,8 +660,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return Errors.notFound(res, "Group not found");
       }
       
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
       const members = await storage.getGroupMembers(groupId);
-      const entries = await storage.getGroupEntries(groupId);
+      const entries = await storage.getGroupEntries(groupId, limit, offset);
       res.json({ group, members, entries });
     } catch (error) {
       console.error("Error fetching group details:", error);
