@@ -169,6 +169,10 @@ function Router() {
         return;
       }
 
+      // Refresh feed so the new entry appears
+      queryClient.invalidateQueries({ queryKey: ["/api/deuces"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+
       setNotificationMessage(lastMessage.message);
       setNotificationVisible(true);
     }

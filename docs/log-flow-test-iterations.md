@@ -98,3 +98,51 @@
 **Impact**: Critical UX fix — new deuces now immediately appear in the home feed after logging, giving instant feedback that the log was successful.
 
 ---
+
+## Iteration 6: Offline sync also missing feed invalidation
+
+**Date**: 2026-03-09
+
+**Issue**: Same bug as iteration 5, but in the offline sync path. When queued deuces synced after coming back online, `useOfflineSync.ts` invalidated `/api/groups`, `/api/analytics/most-deuces`, and `/api/auth/user` — but NOT `/api/deuces`. Synced entries wouldn't appear in the feed until manual refresh.
+
+**Fix**: Added `queryClient.invalidateQueries({ queryKey: ['/api/deuces'] })` to `useOfflineSync.ts` sync success handler.
+
+**Tests**: 466/466 pass. No regressions.
+
+**Impact**: Offline-synced deuces now appear in the feed immediately after sync completes.
+
+---
+
+## Iteration 7: Future date check missing from /api/deuces/sync endpoint
+
+**Date**: 2026-03-09
+
+**Issue**: The sync endpoint (`POST /api/deuces/sync`) was missed by iteration 2's future date fix because it uses a different code pattern (`results.push` + `continue` instead of `Errors.badRequest` + `return`). A crafted offline queue could submit future-dated entries via the sync endpoint.
+
+**Fix**: Added the same future date rejection (1-minute clock skew tolerance) to the sync endpoint.
+
+**Verification**: All 3 deuce creation endpoints now have consistent future date validation:
+- `POST /api/deuces` (main) ✅
+- `POST /api/deuces/bulk` ✅
+- `POST /api/deuces/sync` ✅ (fixed this iteration)
+- `server/routes/deuces.ts` POST /api/deuces ✅
+
+**Tests**: 466/466 pass. No regressions.
+
+---
+
+## Iteration 8: Auto-refresh feed on WebSocket deuce_logged events
+
+**Date**: 2026-03-09
+
+**Issue**: When a group member logs a deuce, the app shows a notification banner ("X logged a new deuce") via WebSocket, but the feed didn't update. The user had to manually pull-to-refresh to see the new entry.
+
+**Root cause**: The `deuce_logged` WebSocket handler in `App.tsx` only showed the notification banner — it didn't invalidate any queries.
+
+**Fix**: Added `queryClient.invalidateQueries` for `/api/deuces` and `/api/groups` when receiving a `deuce_logged` WebSocket event (skipped for the user's own events, which are already handled by the log mutation's onSuccess).
+
+**Tests**: 466/466 pass. No regressions.
+
+**Impact**: Real-time feed updates — when a group member logs a deuce, the feed auto-refreshes so you see it immediately alongside the notification banner.
+
+---

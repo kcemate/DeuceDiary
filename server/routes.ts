@@ -1589,6 +1589,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               results.push({ id: entry.id, status: 'error', reason: 'Invalid loggedAt date' });
               continue;
             }
+            // Reject future dates (allow up to 1 minute of clock skew)
+            if (parsedDate.getTime() > Date.now() + 60_000) {
+              results.push({ id: entry.id, status: 'error', reason: 'Cannot log a deuce in the future' });
+              continue;
+            }
             loggedAt = parsedDate;
           } else {
             loggedAt = new Date();
