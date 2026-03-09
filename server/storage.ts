@@ -1179,22 +1179,22 @@ export class DatabaseStorage implements IStorage {
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
     const weekOf = sevenDaysAgo.toISOString().slice(0, 10);
 
-    // 1. Total deuces in last 7 days
+    // 1. Total deuces in last 7 days (use loggedAt — the user-provided timestamp)
     const [totalResult] = await db
       .select({ total: sql<number>`COUNT(*)::int` })
       .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)));
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
     const totalDeuces = totalResult?.total ?? 0;
 
     // 2. Peak day (day with most deuces)
     const peakDayRows = await db
       .select({
-        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
         count: sql<number>`COUNT(*)::int`,
       })
       .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
-      .groupBy(sql`DATE(${deuceEntries.createdAt})`)
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(1);
     const peakDay = peakDayRows.length > 0
@@ -1209,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(deuceEntries)
       .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
       .groupBy(groups.name)
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(1);
@@ -1239,7 +1239,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(deuceEntries)
       .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)))
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
       .groupBy(deuceEntries.id, deuceEntries.thoughts)
       .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
       .limit(1);
@@ -1252,7 +1252,7 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sql<number>`COUNT(*)::int` })
       .from(reactions)
       .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.createdAt, sevenDaysAgo)));
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
     const totalReactionsReceived = reactionsResult?.total ?? 0;
 
     return {
