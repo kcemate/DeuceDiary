@@ -109,9 +109,17 @@ export function BottomNavigation() {
               }
 
               const active = isActive(item.path, item.exact);
+              const handleClick = (e: React.MouseEvent) => {
+                if (active) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              };
               return (
                 <Link key={item.path} href={item.path}>
-                  <a className={cn(
+                  <a
+                    onClick={handleClick}
+                    className={cn(
                     "nav-item flex flex-col items-center rounded-xl px-3 py-2 transition-all duration-200",
                     active
                       ? "text-primary bg-primary/10 scale-105"
