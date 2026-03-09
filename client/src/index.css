@@ -15,7 +15,7 @@
   --border: hsl(38, 18%, 83%);          /* warm border */
   --input: hsl(38, 18%, 83%);
   --primary: hsl(142, 71%, 45%);        /* green — CTAs only */
-  --primary-foreground: hsl(0, 0%, 100%);
+  --primary-foreground: hsl(0, 0%, 7%);  /* dark text on green for contrast */
   --secondary: hsl(25, 65%, 22%);       /* espresso brown */
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(45, 88%, 48%);          /* gold — streak badges */
@@ -44,7 +44,7 @@
   --border: hsl(0, 0%, 16%);
   --input: hsl(0, 0%, 16%);
   --primary: hsl(142, 71%, 45%);
-  --primary-foreground: hsl(0, 0%, 100%);
+  --primary-foreground: hsl(0, 0%, 7%);
   --secondary: hsl(30, 80%, 28%);
   --secondary-foreground: hsl(0, 0%, 100%);
   --accent: hsl(142, 50%, 60%);
@@ -70,7 +70,7 @@
   --border: hsl(25, 15%, 18%);
   --input: hsl(25, 15%, 18%);
   --primary: hsl(30, 85%, 50%);
-  --primary-foreground: hsl(0, 0%, 100%);
+  --primary-foreground: hsl(25, 20%, 8%);
   --secondary: hsl(25, 40%, 22%);
   --secondary-foreground: hsl(35, 25%, 88%);
   --accent: hsl(45, 90%, 55%);
