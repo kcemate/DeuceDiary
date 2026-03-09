@@ -13,6 +13,7 @@ import { registerClerkWebhook } from "./routes/webhooks";
 import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
 import { createBingoRouter } from "./routes/bingo";
 import { createPassportRouter } from "./routes/passport";
+import { createPremiumRouter } from "./routes/premium";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import sharp from "sharp";
@@ -2345,6 +2346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   }
+
+  // --- Premium routes (streak insurance, referral, analytics, etc.) ---
+  app.use(createPremiumRouter());
 
   // --- Bingo routes (premium) ---
   app.use(createBingoRouter());

@@ -95,14 +95,9 @@ export function ThroneAnalytics({ compact = false }: ThroneAnalyticsProps) {
       label: "Deuces This Week",
     },
     {
-      emoji: "🧪",
-      value: analytics?.avgBristolScore !== null && analytics?.avgBristolScore !== undefined
-        ? `${analytics.avgBristolScore.toFixed(1)}`
-        : "N/A",
-      label: "Avg Bristol Score",
-      sublabel: analytics?.avgBristolScore !== null && analytics?.avgBristolScore !== undefined
-        ? BristolLabel(analytics.avgBristolScore)
-        : undefined,
+      emoji: "🔥",
+      value: `${analytics?.currentStreak ?? 0}-day`,
+      label: "Current Streak",
     },
     {
       emoji: "📍",
