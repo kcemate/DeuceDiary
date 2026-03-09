@@ -420,7 +420,7 @@ export default function Home() {
             { href: "/profile", emoji: "🛡️", label: user?.streakInsuranceUsed ? "Insurance (Used)" : "Insurance" },
             { href: "/profile", emoji: "📊", label: "Analytics" },
             { href: "/passport", emoji: "🗺️", label: "Passport" },
-            { href: "/settings", emoji: "🎨", label: "Themes" },
+            { href: "/settings", emoji: "⚙️", label: "Settings" },
           ].map(({ href, emoji, label }) => (
             <Link key={label} href={href}>
               <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5 whitespace-nowrap cursor-pointer hover:border-primary/30 active:scale-[0.97] transition-all">

@@ -381,11 +381,11 @@ export default function Settings() {
       <div className="mt-4">
         <Button
           onClick={() => (window.location.href = "/api/logout")}
-          variant="destructive"
-          className="w-full rounded-xl font-bold"
+          variant="outline"
+          className="w-full rounded-xl font-bold text-muted-foreground"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Leave the Throne Room
+          Log Out
         </Button>
       </div>
 
