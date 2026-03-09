@@ -247,6 +247,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const isGhost = !!entryData.ghost;
 
       // Create entry for each selected group
+      const entries: any[] = [];
       for (const groupId of targetGroupIds) {
         // bristolScore validated by zod (1-7 int), but double-check for safety
         if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
