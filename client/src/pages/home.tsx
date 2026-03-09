@@ -410,68 +410,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Premium Perks Hub */}
-      <Card className="mb-8 border border-border rounded-2xl overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">👑</span>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-              Your Premium Perks
-            </h3>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/bingo">
-              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
-                <span className="text-2xl mb-1">🎯</span>
-                <span className="text-xs font-bold text-foreground">Deuce Bingo</span>
+      {/* Premium Quick Links — horizontal scroll strip */}
+      <div className="mb-6 -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {[
+            { href: "/bingo", emoji: "🎯", label: "Bingo" },
+            { href: "/profile", emoji: "🛡️", label: user?.streakInsuranceUsed ? "Insurance (Used)" : "Insurance" },
+            { href: "/profile", emoji: "📊", label: "Analytics" },
+            { href: "/passport", emoji: "🗺️", label: "Passport" },
+            { href: "/settings", emoji: "🎨", label: "Themes" },
+          ].map(({ href, emoji, label }) => (
+            <Link key={label} href={href}>
+              <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5 whitespace-nowrap cursor-pointer hover:border-primary/30 active:scale-[0.97] transition-all">
+                <span className="text-sm">{emoji}</span>
+                <span className="text-xs font-semibold text-foreground">{label}</span>
               </div>
             </Link>
-
-            <Link href="/profile">
-              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
-                <span className="text-2xl mb-1">🛡️</span>
-                <span className="text-xs font-bold text-foreground">Streak Insurance</span>
-                <span
-                  className={`text-[10px] font-bold mt-0.5 ${
-                    user?.streakInsuranceUsed ? "text-muted-foreground" : "text-green-500"
-                  }`}
-                >
-                  {user?.streakInsuranceUsed ? "Used" : "Active"}
-                </span>
-              </div>
-            </Link>
-
-            <Link href="/profile">
-              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
-                <span className="text-2xl mb-1">🏆</span>
-                <span className="text-xs font-bold text-foreground">Gold Badge</span>
-                <span
-                  className="text-[10px] font-bold mt-0.5"
-                  style={{ color: "hsl(45, 88%, 48%)" }}
-                >
-                  Yours
-                </span>
-              </div>
-            </Link>
-
-            <Link href="/profile">
-              <div className="bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
-                <span className="text-2xl mb-1">📊</span>
-                <span className="text-xs font-bold text-foreground">
-                  Throne Analytics
-                </span>
-              </div>
-            </Link>
-
-            <Link href="/settings">
-              <div className="col-span-2 bg-muted rounded-xl p-3 flex flex-col items-center text-center cursor-pointer hover:bg-muted/80 active:scale-[0.97] transition-all">
-                <span className="text-2xl mb-1">🎨</span>
-                <span className="text-xs font-bold text-foreground">Custom Themes</span>
-              </div>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Activity Feed */}
       <div className="mb-6">
