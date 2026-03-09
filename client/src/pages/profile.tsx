@@ -354,18 +354,25 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Share Streak */}
-      <div className="mb-6">
-        <Button
-          onClick={() => setShareOpen(true)}
-          variant="secondary"
-          className="w-full rounded-xl font-bold"
-          aria-label="Share your streak card"
-        >
-          <Share2 className="w-4 h-4 mr-2" aria-hidden="true" />
-          Share Your Streak
-        </Button>
-      </div>
+      {/* ── Share Your Profile ──────────────────────────────────── */}
+      <button
+        onClick={() => setShareOpen(true)}
+        className="w-full mb-6 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 text-left transition-all active:scale-[0.98]"
+        aria-label="Share your streak card"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Share2 className="w-5 h-5 text-primary" aria-hidden="true" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">Share Your Throne Card</p>
+            <p className="text-[11px] text-muted-foreground">
+              Show off your {maxStreak > 0 ? `${maxStreak}-day streak` : "profile"} to friends
+            </p>
+          </div>
+          <span className="text-muted-foreground text-sm">→</span>
+        </div>
+      </button>
 
       {/* Achievement Badges */}
       <div className="mb-8">
