@@ -445,11 +445,11 @@ export class DatabaseStorage implements IStorage {
   async updateUserUsername(userId: string, username: string): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ 
+      .set({
         username,
         updatedAt: new Date()
       })
-      .where(eq(users.id, userId))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .returning();
     return user;
   }
@@ -457,11 +457,11 @@ export class DatabaseStorage implements IStorage {
   async updateUserProfilePicture(userId: string, profileImageUrl: string): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ 
+      .set({
         profileImageUrl,
         updatedAt: new Date()
       })
-      .where(eq(users.id, userId))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .returning();
     return user;
   }
@@ -958,7 +958,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ reminderHour: hour, reminderMinute: minute, updatedAt: new Date() })
-      .where(eq(users.id, userId))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .returning();
     return user;
   }
@@ -1001,7 +1001,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ theme, updatedAt: new Date() })
-      .where(eq(users.id, userId))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .returning();
     return user;
   }
