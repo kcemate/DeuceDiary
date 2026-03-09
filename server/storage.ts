@@ -710,15 +710,15 @@ export class DatabaseStorage implements IStorage {
   async getUserPersonalRecord(userId: string): Promise<{ date: string; count: number } | undefined> {
     const result = await db
       .select({
-        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
         count: sql<number>`COUNT(*)::int`,
       })
       .from(deuceEntries)
       .where(eq(deuceEntries.userId, userId))
-      .groupBy(sql`DATE(${deuceEntries.createdAt})`)
+      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(1);
-    
+
     return result.length > 0 ? result[0] : undefined;
   }
 
