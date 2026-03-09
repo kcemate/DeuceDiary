@@ -13,6 +13,7 @@ import { Reactions } from "@/components/reactions";
 import { RankStrip } from "@/components/rank-strip";
 import { StreakStrip } from "@/components/streak-strip";
 import { NextBadgeTeaser } from "@/components/next-badge-teaser";
+import { BingoStrip } from "@/components/bingo-strip";
 
 interface Group {
   id: string;
@@ -203,6 +204,7 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/deuces"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/bingo/current"] }),
     ]);
   }, [queryClient]);
 
@@ -399,6 +401,7 @@ export default function Home() {
         <RankStrip deuceCount={user?.deuceCount ?? 0} />
         <StreakStrip maxStreak={Math.max(0, ...groups.map((g) => g.currentStreak ?? 0))} />
         <NextBadgeTeaser deuceCount={user?.deuceCount ?? 0} />
+        <BingoStrip />
       </div>
 
       {/* Log Deuce Button */}
