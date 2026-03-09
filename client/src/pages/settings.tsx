@@ -29,6 +29,7 @@ import {
   Info,
   Trash2,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -106,8 +107,30 @@ export default function Settings() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const isPremium = user?.subscription === "premium";
+
+  async function handleExportData() {
+    setIsExporting(true);
+    try {
+      const data = await apiRequest("/api/user/export");
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "deuce-diary-export.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Data exported" });
+    } catch {
+      toast({ title: "Failed to export data", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   async function handleDeleteAccount() {
     if (deleteConfirmText !== "DELETE") return;
@@ -240,6 +263,27 @@ export default function Settings() {
             </span>
           }
         />
+      </SettingsSection>
+
+      {/* ── Your Data ────────────────────────────────────────────── */}
+      <SettingsSection title="Your Data">
+        <button
+          onClick={handleExportData}
+          disabled={isExporting}
+          className="w-full transition-colors hover:bg-muted/50 active:bg-muted disabled:opacity-50"
+        >
+          <div className="flex items-center gap-3 px-5 py-3">
+            <Download className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 text-left">
+              <span className="text-sm font-medium text-foreground">
+                {isExporting ? "Exporting..." : "Export Your Data"}
+              </span>
+              <p className="text-[11px] text-muted-foreground">
+                Download a JSON file with your account data
+              </p>
+            </div>
+          </div>
+        </button>
       </SettingsSection>
 
       {/* ── Danger Zone ─────────────────────────────────────────── */}

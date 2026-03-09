@@ -608,6 +608,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Data export (GDPR right to data portability)
+  app.get('/api/user/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      const groups = await storage.getUserGroups(userId);
+      const badges = await storage.getUserBadges(userId);
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        account: {
+          username: user?.username,
+          email: user?.email,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          subscription: user?.subscription,
+          deuceCount: user?.deuceCount,
+          theme: user?.theme,
+          timezone: user?.timezone,
+          createdAt: user?.createdAt,
+        },
+        groups: groups.map((g: any) => ({
+          name: g.name,
+          memberCount: g.memberCount,
+          joinedAt: g.joinedAt,
+        })),
+        badges: badges.map((b: any) => ({
+          name: b.name,
+          unlocked: b.unlocked,
+        })),
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="deuce-diary-export.json"');
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      Errors.internal(res, "Failed to export data");
+    }
+  });
+
   // Account deletion (soft-delete with GDPR-compliant data removal)
   app.delete('/api/user/account', isAuthenticated, async (req: any, res) => {
     try {
