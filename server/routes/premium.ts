@@ -35,16 +35,18 @@ export function createPremiumRouter(): Router {
       }
       const { code } = parsed.data;
 
-      const referrer = await storage.getUserByReferralCode(code.toUpperCase());
+      // Fetch referrer and current user in parallel
+      const [referrer, currentUser] = await Promise.all([
+        storage.getUserByReferralCode(code.toUpperCase()),
+        storage.getUser(userId),
+      ]);
+
       if (!referrer) {
         return res.status(400).json({ message: 'Invalid referral code' });
       }
-
       if (referrer.id === userId) {
         return res.status(400).json({ message: 'Cannot use your own referral code' });
       }
-
-      const currentUser = await storage.getUser(userId);
       if (currentUser?.referredBy) {
         return res.status(400).json({ message: 'You have already used a referral code' });
       }
