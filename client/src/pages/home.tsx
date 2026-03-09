@@ -10,6 +10,9 @@ import { Link } from "wouter";
 import { LogDeuceModal } from "@/components/log-deuce-modal";
 import { Onboarding } from "@/components/Onboarding";
 import { Reactions } from "@/components/reactions";
+import { RankStrip } from "@/components/rank-strip";
+import { StreakStrip } from "@/components/streak-strip";
+import { NextBadgeTeaser } from "@/components/next-badge-teaser";
 
 interface Group {
   id: string;
@@ -17,6 +20,7 @@ interface Group {
   memberCount: number;
   entryCount: number;
   lastActivity?: string;
+  currentStreak?: number;
 }
 
 interface Analytics {
@@ -286,6 +290,12 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Motivation strips */}
+        <div className="space-y-2 mb-4">
+          <RankStrip deuceCount={user?.deuceCount ?? 0} />
+          <NextBadgeTeaser deuceCount={user?.deuceCount ?? 0} />
+        </div>
+
         {/* Log Deuce */}
         <div className="w-full mb-6">
           <Button
@@ -382,6 +392,13 @@ export default function Home() {
             ? "Your throne room awaits its first royal visit."
             : `${user?.deuceCount ?? 0} lifetime deuces and counting.`}
         </p>
+      </div>
+
+      {/* Motivation strips */}
+      <div className="space-y-2 mb-4">
+        <RankStrip deuceCount={user?.deuceCount ?? 0} />
+        <StreakStrip maxStreak={Math.max(0, ...groups.map((g) => g.currentStreak ?? 0))} />
+        <NextBadgeTeaser deuceCount={user?.deuceCount ?? 0} />
       </div>
 
       {/* Log Deuce Button */}
