@@ -28,6 +28,7 @@ import Settings from "@/pages/settings";
 import Legacy from "@/pages/legacy";
 import Referral from "@/pages/referral";
 import Bingo from "@/pages/bingo";
+import Passport from "@/pages/passport";
 
 function AppRoutes({
   isLoading,
@@ -72,6 +73,7 @@ function AppRoutes({
       <Route path="/settings">{() => <ErrorBoundary><Settings /></ErrorBoundary>}</Route>
       <Route path="/referral">{() => <ErrorBoundary><Referral /></ErrorBoundary>}</Route>
       <Route path="/bingo">{() => <ErrorBoundary><Bingo /></ErrorBoundary>}</Route>
+      <Route path="/passport">{() => <ErrorBoundary><Passport /></ErrorBoundary>}</Route>
       <Route path="/legacy/:username" component={Legacy} />
       <Route component={NotFound} />
     </Switch>

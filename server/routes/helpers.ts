@@ -28,6 +28,8 @@ export const createDeuceSchema = z.object({
   ghost: z.boolean().optional(),
   bristolScore: z.number().int().min(1).max(7).optional(),
   photoUrl: z.string().url().optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 export const reactionSchema = z.object({

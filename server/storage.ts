@@ -39,6 +39,8 @@ import {
   type BingoCard,
   type InsertBingoCard,
   type BingoSquare,
+  passportStamps,
+  type PassportStamp,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, sql, inArray, gte, lt, lte, isNull } from "drizzle-orm";
@@ -2172,6 +2174,94 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(users.id, userId));
     });
+  }
+
+  // --- Passport Stamps ---
+
+  async upsertPassportStamp(
+    userId: string,
+    city: string,
+    country: string,
+    region: string | null,
+    countryCode: string | null,
+    latitude: string,
+    longitude: string,
+  ): Promise<PassportStamp> {
+    // Try to find existing stamp for this user+city+country
+    const [existing] = await db
+      .select()
+      .from(passportStamps)
+      .where(
+        and(
+          eq(passportStamps.userId, userId),
+          eq(passportStamps.city, city),
+          eq(passportStamps.country, country),
+        ),
+      );
+
+    if (existing) {
+      const [updated] = await db
+        .update(passportStamps)
+        .set({
+          entryCount: existing.entryCount + 1,
+          lastVisitAt: new Date(),
+        })
+        .where(eq(passportStamps.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [stamp] = await db
+      .insert(passportStamps)
+      .values({
+        userId,
+        city,
+        country,
+        region,
+        countryCode,
+        latitude,
+        longitude,
+        entryCount: 1,
+        firstVisitAt: new Date(),
+        lastVisitAt: new Date(),
+      })
+      .returning();
+    return stamp;
+  }
+
+  async getPassportStamps(userId: string): Promise<PassportStamp[]> {
+    return db
+      .select()
+      .from(passportStamps)
+      .where(eq(passportStamps.userId, userId))
+      .orderBy(desc(passportStamps.lastVisitAt));
+  }
+
+  async getPassportStats(userId: string): Promise<{
+    totalCities: number;
+    totalCountries: number;
+    totalStampedDeuces: number;
+  }> {
+    const [result] = await db
+      .select({
+        totalCities: count(),
+        totalCountries: sql<number>`COUNT(DISTINCT ${passportStamps.country})`,
+        totalStampedDeuces: sql<number>`COALESCE(SUM(${passportStamps.entryCount}), 0)`,
+      })
+      .from(passportStamps)
+      .where(eq(passportStamps.userId, userId));
+
+    return {
+      totalCities: result?.totalCities ?? 0,
+      totalCountries: Number(result?.totalCountries ?? 0),
+      totalStampedDeuces: Number(result?.totalStampedDeuces ?? 0),
+    };
+  }
+
+  async deletePassportStamps(userId: string): Promise<void> {
+    await db
+      .delete(passportStamps)
+      .where(eq(passportStamps.userId, userId));
   }
 }
 

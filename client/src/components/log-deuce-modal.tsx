@@ -46,6 +46,9 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState(format(new Date(), "HH:mm"));
   const [showCustomLocation, setShowCustomLocation] = useState(false);
+  const [shareLocation, setShareLocation] = useState(false);
+  const [geoCoords, setGeoCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isOnline, syncQueue } = useOfflineSync();
@@ -89,7 +92,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   });
 
   const logDeuceMutation = useMutation({
-    mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string }) => {
+    mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string; latitude?: number; longitude?: number }) => {
       // Optimistically update the user's deuce count in the cache
       queryClient.setQueryData(["/api/auth/user"], (old: any) => {
         if (!old) return old;
@@ -138,6 +141,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/passport"] });
       }
       resetForm();
       onOpenChange(false);
@@ -170,6 +174,33 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     setSelectedDate(format(new Date(), "yyyy-MM-dd"));
     setSelectedTime(format(new Date(), "HH:mm"));
     setShowCustomLocation(false);
+    setShareLocation(false);
+    setGeoCoords(null);
+  };
+
+  const handleLocationToggle = () => {
+    if (shareLocation) {
+      setShareLocation(false);
+      setGeoCoords(null);
+      return;
+    }
+    if (!navigator.geolocation) {
+      toast({ title: "Not supported", description: "Geolocation is not supported by your browser", variant: "destructive" });
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setShareLocation(true);
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoLoading(false);
+        toast({ title: "Location denied", description: "Enable location access in your browser settings to use this feature", variant: "destructive" });
+      },
+      { enableHighAccuracy: false, timeout: 10000 },
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -215,12 +246,13 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
 
     const finalLocation = showCustomLocation ? customLocation.trim() : location;
     const loggedAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
-    
+
     logDeuceMutation.mutate({
       location: finalLocation,
       thoughts: thoughts.trim(),
       groupIds: selectedGroupIds,
       loggedAt,
+      ...(geoCoords ? { latitude: geoCoords.latitude, longitude: geoCoords.longitude } : {}),
     });
   };
 
@@ -407,6 +439,27 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Location sharing for Poop Passport */}
+          <div className="flex items-center justify-between bg-muted rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">📍</span>
+              <div>
+                <p className="text-sm font-medium text-foreground">Share Location</p>
+                <p className="text-xs text-muted-foreground">Add to your Poop Passport</p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant={shareLocation ? "default" : "outline"}
+              size="sm"
+              onClick={handleLocationToggle}
+              disabled={geoLoading}
+              className="shrink-0"
+            >
+              {geoLoading ? "..." : shareLocation ? "On" : "Off"}
+            </Button>
           </div>
 
           {!isOnline && (

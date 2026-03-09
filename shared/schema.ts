@@ -9,6 +9,7 @@ import {
   integer,
   boolean,
   unique,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -86,6 +87,8 @@ export const deuceEntries = pgTable("deuce_entries", {
   ghost: boolean("ghost").default(false).notNull(),
   bristolScore: integer("bristol_score"),
   photoUrl: text("photo_url"),
+  latitude: numeric("latitude"),
+  longitude: numeric("longitude"),
   loggedAt: timestamp("logged_at").notNull(),
   lastLoggedAt: timestamp("last_logged_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -221,6 +224,23 @@ export const bingoCompletions = pgTable("bingo_completions", {
   index("idx_bingo_completions_card").on(table.cardId),
 ]);
 
+export const passportStamps = pgTable("passport_stamps", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  city: varchar("city", { length: 200 }).notNull(),
+  region: varchar("region", { length: 200 }),
+  country: varchar("country", { length: 200 }).notNull(),
+  countryCode: varchar("country_code", { length: 10 }),
+  latitude: numeric("latitude").notNull(),
+  longitude: numeric("longitude").notNull(),
+  entryCount: integer("entry_count").default(1).notNull(),
+  firstVisitAt: timestamp("first_visit_at").defaultNow(),
+  lastVisitAt: timestamp("last_visit_at").defaultNow(),
+}, (table) => [
+  index("idx_passport_stamps_user").on(table.userId),
+  unique("uq_passport_stamps_user_city_country").on(table.userId, table.city, table.country),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupMemberships: many(groupMembers),
@@ -230,6 +250,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdLocations: many(locations),
   reactions: many(reactions),
   pushTokens: many(pushTokens),
+  passportStamps: many(passportStamps),
 }));
 
 export const groupsRelations = relations(groups, ({ one, many }) => ({
@@ -349,6 +370,10 @@ export const bingoCompletionsRelations = relations(bingoCompletions, ({ one }) =
   card: one(bingoCards, { fields: [bingoCompletions.cardId], references: [bingoCards.id] }),
 }));
 
+export const passportStampsRelations = relations(passportStamps, ({ one }) => ({
+  user: one(users, { fields: [passportStamps.userId], references: [users.id] }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -378,6 +403,8 @@ export type BingoCard = typeof bingoCards.$inferSelect;
 export type InsertBingoCard = typeof bingoCards.$inferInsert;
 export type BingoCompletion = typeof bingoCompletions.$inferSelect;
 export type InsertBingoCompletion = typeof bingoCompletions.$inferInsert;
+export type PassportStamp = typeof passportStamps.$inferSelect;
+export type InsertPassportStamp = typeof passportStamps.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({

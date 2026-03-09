@@ -12,6 +12,7 @@ import { requireGroupMember } from "./groupAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
 import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
 import { createBingoRouter } from "./routes/bingo";
+import { createPassportRouter } from "./routes/passport";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import sharp from "sharp";
@@ -24,6 +25,7 @@ import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
 import { apiError, Errors } from "./lib/apiError";
+import { reverseGeocode } from "./lib/geocode";
 
 // --- Zod Validation Schemas ---
 const loginSchema = z.object({
@@ -49,6 +51,8 @@ const createDeuceSchema = z.object({
   ghost: z.boolean().optional(),
   bristolScore: z.number().int().min(1).max(7).optional(),
   photoUrl: z.string().url().optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 const reactionSchema = z.object({
@@ -1242,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return Errors.badRequest(res, firstIssue);
       }
 
-      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed.data;
 
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -1285,6 +1289,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ghost: isGhost,
           bristolScore: bristolScore ?? null,
           photoUrl: photoUrl ?? null,
+          latitude: latitude != null ? String(latitude) : null,
+          longitude: longitude != null ? String(longitude) : null,
           groupId,
           userId,
           loggedAt,
@@ -1292,20 +1298,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         entries.push(entry);
       }
-      
+
       // Update user's deuce count (only increment once, not per group)
       await storage.updateUserDeuceCount(userId, 1);
 
       track("log_created", userId, { has_notes: !!entryData.thoughts });
-      
+
       // Get user info for WebSocket notification
       const user = await storage.getUser(userId);
-      
+
       // Create display name for notifications
-      const displayName = user?.username || 
+      const displayName = user?.username ||
                           (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
                           'Someone';
-      
+
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
         for (const groupId of targetGroupIds) {
@@ -1328,6 +1334,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Async: reverse geocode and create passport stamp (fire-and-forget)
+      if (latitude != null && longitude != null) {
+        reverseGeocode(latitude, longitude)
+          .then(async (geo) => {
+            if (geo) {
+              await storage.upsertPassportStamp(
+                userId,
+                geo.city,
+                geo.country,
+                geo.region,
+                geo.countryCode,
+                String(latitude),
+                String(longitude),
+              );
+            }
+          })
+          .catch((err) => {
+            console.error("[passport] Failed to create stamp:", err);
+          });
+      }
 
       res.json({ entries, count: entries.length });
     } catch (error) {
@@ -2260,6 +2286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Bingo routes (premium) ---
   app.use(createBingoRouter());
+
+  // --- Passport routes (premium) ---
+  app.use(createPassportRouter());
 
   // Cleanup expired invites periodically
   setInterval(async () => {

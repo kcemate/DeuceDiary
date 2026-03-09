@@ -13,6 +13,7 @@ import {
   getTodayUTC,
   recalculateStreak,
 } from "./helpers";
+import { reverseGeocode } from "../lib/geocode";
 
 type BroadcastFn = (groupId: string, message: any) => void;
 
@@ -215,7 +216,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: firstIssue });
       }
 
-      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed.data;
 
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -256,6 +257,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           ghost: isGhost,
           bristolScore: bristolScore ?? null,
           photoUrl: photoUrl ?? null,
+          latitude: latitude != null ? String(latitude) : null,
+          longitude: longitude != null ? String(longitude) : null,
           groupId,
           userId,
           loggedAt,
@@ -306,6 +309,26 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         }
       }
 
+      // Async: reverse geocode and create passport stamp (fire-and-forget)
+      if (latitude != null && longitude != null) {
+        reverseGeocode(latitude, longitude)
+          .then(async (geo) => {
+            if (geo) {
+              await storage.upsertPassportStamp(
+                userId,
+                geo.city,
+                geo.country,
+                geo.region,
+                geo.countryCode,
+                String(latitude),
+                String(longitude),
+              );
+            }
+          })
+          .catch((err) => {
+            console.error("[passport] Failed to create stamp:", err);
+          });
+      }
 
       res.json({ entries, count: entries.length });
     } catch (error) {
