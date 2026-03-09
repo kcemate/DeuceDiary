@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import { getTitle } from "./helpers";
+import { getTitle, escapeHtml } from "./helpers";
 
 export function createPublicRouter(): Router {
   const router = Router();
@@ -292,16 +292,6 @@ export function createPublicRouter(): Router {
   });
 
   return router;
-}
-
-/** Minimal HTML escaping for OG tags */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 /** Format a week range like "Mar 3 – Mar 9, 2025" from YYYY-MM-DD strings */

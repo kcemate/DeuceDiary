@@ -26,6 +26,14 @@ import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
 import { apiError, Errors } from "./lib/apiError";
 import { reverseGeocode } from "./lib/geocode";
+import {
+  isPremiumUser,
+  getTodayUTC,
+  getYesterdayUTC,
+  getTitle,
+  escapeHtml,
+  MAX_LOGS_PER_DAY,
+} from "./routes/helpers";
 
 // --- Zod Validation Schemas ---
 const loginSchema = z.object({
@@ -93,29 +101,6 @@ const unregisterPushSchema = z.object({
   token: z.string().min(1).max(500),
 });
 
-/** Check if a user has an active premium subscription */
-function isPremiumUser(user: any): boolean {
-  return (
-    user?.subscription === "premium" &&
-    user.subscriptionExpiresAt &&
-    new Date(user.subscriptionExpiresAt) > new Date()
-  );
-}
-
-// Per-user daily log rate limit (max 10 logs per user per UTC day)
-const MAX_LOGS_PER_DAY = 10;
-
-/** Get today's date as YYYY-MM-DD in UTC */
-function getTodayUTC(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-/** Get yesterday's date as YYYY-MM-DD in UTC */
-function getYesterdayUTC(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
 
 /** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
 function getTodayInZone(tz: string): string {
@@ -262,23 +247,6 @@ async function checkAndNotifyStreakRisk(groupId: string): Promise<{ atRisk: bool
   return { atRisk: false, missingMembers: [] };
 }
 
-/** Derive title from total log count. */
-function getTitle(totalLogs: number): string {
-  if (totalLogs >= 500) return 'Legend';
-  if (totalLogs >= 100) return 'Elite';
-  if (totalLogs >= 50) return 'Veteran';
-  if (totalLogs >= 10) return 'Regular';
-  return 'Rookie';
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Public config endpoint — returns runtime config values for the frontend

@@ -1,10 +1,6 @@
 import { storage } from "./storage";
 import { sendGroupPushNotification } from "./notifications";
-
-/** Get today's date as YYYY-MM-DD in UTC */
-function getTodayUTC(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { getTodayUTC } from "./routes/helpers";
 
 export interface StreakCheckSummary {
   groupsChecked: number;

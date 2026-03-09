@@ -230,3 +230,13 @@ export function getTitle(totalLogs: number): string {
   if (totalLogs >= 10) return 'Regular';
   return 'Rookie';
 }
+
+/** Minimal HTML escaping for OG tags and user-generated content in HTML responses. */
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
