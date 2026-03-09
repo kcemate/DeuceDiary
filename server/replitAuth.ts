@@ -192,6 +192,24 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
           profileImageUrl: (payload as any).image_url ?? null,
         });
         console.log(`[AUTH] auto-created user: ${payload.sub}`);
+
+        // Auto-create "Solo Deuces" default group
+        try {
+          const groups = await storage.getUserGroups(payload.sub);
+          if (groups.length === 0) {
+            const { v4: uuidv4 } = await import("uuid");
+            await storage.createGroup({
+              id: uuidv4(),
+              name: "Solo Deuces",
+              description: "Your personal throne log",
+              createdBy: payload.sub,
+            });
+            console.log(`[AUTH] auto-created Solo Deuces for: ${payload.sub}`);
+          }
+        } catch (groupErr) {
+          console.error(`[AUTH] failed to create Solo Deuces:`, groupErr);
+          // Non-fatal — user can still use the app
+        }
       }
       req.user = user;
       return next();

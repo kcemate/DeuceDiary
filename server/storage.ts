@@ -41,7 +41,7 @@ import {
   type BingoSquare,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql, inArray, gte, lt, isNull } from "drizzle-orm";
+import { eq, desc, and, or, count, sql, inArray, gte, lt, isNull } from "drizzle-orm";
 
 /** Internal helper — today as YYYY-MM-DD in UTC */
 function getTodayStorageUTC(): string {
@@ -188,6 +188,7 @@ export interface IStorage {
   
   // Location operations
   getLocations(): Promise<Location[]>;
+  getLocationsForUser(userId: string): Promise<Location[]>;
   createLocation(location: InsertLocation): Promise<Location>;
   getLocationByName(name: string): Promise<Location | undefined>;
   
@@ -676,6 +677,12 @@ export class DatabaseStorage implements IStorage {
   // Location operations
   async getLocations(): Promise<Location[]> {
     return await db.select().from(locations).orderBy(locations.isDefault, locations.name);
+  }
+
+  async getLocationsForUser(userId: string): Promise<Location[]> {
+    return await db.select().from(locations)
+      .where(or(eq(locations.isDefault, true), eq(locations.createdBy, userId)))
+      .orderBy(locations.isDefault, locations.name);
   }
 
   async createLocation(location: InsertLocation): Promise<Location> {
