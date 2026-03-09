@@ -469,13 +469,17 @@ export default function Profile() {
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
           Your Squads
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {groups.length > 0 ? (
-            groups.slice(0, 5).map((group) => {
+            groups.map((group) => {
               const gs = group.currentStreak ?? 0;
               const tier = getStreakTier(gs);
               return (
-                <div key={group.id} className="flex items-center gap-3">
+                <button
+                  key={group.id}
+                  onClick={() => setLocation(`/groups/${group.id}`)}
+                  className="flex items-center gap-3 w-full rounded-xl p-2 -mx-2 transition-colors hover:bg-muted/50 active:bg-muted text-left"
+                >
                   <div className="w-8 h-8 shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                     <span className="text-base">{tier.icon}</span>
                   </div>
@@ -484,7 +488,7 @@ export default function Profile() {
                       {group.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {group.entryCount} deuces
+                      {group.memberCount} members · {group.entryCount} deuces
                     </p>
                   </div>
                   <div className="text-right shrink-0">
@@ -501,7 +505,7 @@ export default function Profile() {
                       {tier.label}
                     </p>
                   </div>
-                </div>
+                </button>
               );
             })
           ) : (
