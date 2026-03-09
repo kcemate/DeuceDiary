@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -205,15 +204,6 @@ export default function Home() {
 
   const { isPulling, pullDistance, isRefreshing } = usePullToRefresh(handleRefresh);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   const getActivityTime = (lastActivity?: string) => {
     if (!lastActivity) return "Radio silence from the throne room.";
     const now = new Date();
@@ -283,9 +273,21 @@ export default function Home() {
   // ── Free tier ───────────────────────────────────────────────────────────
   if (isFree) {
     return (
-      <div className="pt-6 pb-24 flex flex-col items-center">
+      <div className="pt-6 pb-24">
+        {/* Personalized greeting */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-extrabold text-foreground">
+            {getGreeting()}, {user?.username || "friend"} 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {user?.deuceCount === 0
+              ? "Your throne room awaits its first royal visit."
+              : `${user?.deuceCount ?? 0} lifetime deuces and counting.`}
+          </p>
+        </div>
+
         {/* Log Deuce */}
-        <div className="w-full mb-10">
+        <div className="w-full mb-6">
           <Button
             onClick={() => setShowLogModal(true)}
             className="btn-shimmer w-full text-white py-6 text-xl font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
@@ -296,7 +298,7 @@ export default function Home() {
         </div>
 
         {/* Total Deuces */}
-        <div className="w-full relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-2xl mb-10 border border-border">
+        <div className="w-full relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-2xl mb-6 border border-border">
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">
@@ -485,11 +487,9 @@ export default function Home() {
                         </svg>
                         <span>{entry.location}</span>
                       </div>
-                      {entry.reactions.length > 0 && (
-                        <div className="mt-2">
-                          <Reactions entryId={entry.id} />
-                        </div>
-                      )}
+                      <div className="mt-2">
+                        <Reactions entryId={entry.id} />
+                      </div>
                     </div>
                   ))}
                 </div>

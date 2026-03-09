@@ -252,6 +252,15 @@
   transition: transform 0.1s ease;
 }
 
+/* Hide scrollbar for horizontal scroll strips */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Modal animations */
 .modal-overlay {
   animation: fadeIn 0.3s ease-out;
