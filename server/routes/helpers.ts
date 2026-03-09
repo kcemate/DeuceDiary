@@ -26,6 +26,8 @@ export const createDeuceSchema = z.object({
   thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
   ghost: z.boolean().optional(),
+  bristolScore: z.number().int().min(1).max(7).optional(),
+  photoUrl: z.string().url().optional(),
 });
 
 export const reactionSchema = z.object({
