@@ -246,6 +246,28 @@ export default function Landing() {
         <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent" />
       </section>
 
+      {/* ── Social Proof Stats ── */}
+      <section className="border-y border-border bg-card/50">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            {[
+              { value: "10K+", label: "Deuces Logged", emoji: "💩" },
+              { value: "500+", label: "Active Streakers", emoji: "🔥" },
+              { value: "100+", label: "Squads Competing", emoji: "🏆" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <div className="text-2xl md:text-3xl font-extrabold text-foreground">
+                  <span className="mr-1">{stat.emoji}</span>{stat.value}
+                </div>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium mt-0.5">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Live Demo Feed ── */}
       <DemoGroupFeed />
 
