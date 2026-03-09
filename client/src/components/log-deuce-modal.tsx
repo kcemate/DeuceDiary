@@ -70,6 +70,16 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     }
   }, [open, groups]);
 
+  // Auto-select last used location
+  useEffect(() => {
+    if (open && locations.length > 0 && !location) {
+      const lastUsed = localStorage.getItem("deuce_last_location");
+      if (lastUsed && locations.some((l) => l.name === lastUsed)) {
+        setLocation(lastUsed);
+      }
+    }
+  }, [open, locations]);
+
   const createLocationMutation = useMutation({
     mutationFn: async (name: string) => {
       return await apiRequest("/api/locations", {
@@ -237,6 +247,9 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
 
     const finalLocation = showCustomLocation ? customLocation.trim() : location;
     const loggedAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
+
+    // Remember location for next time
+    localStorage.setItem("deuce_last_location", finalLocation);
 
     logDeuceMutation.mutate({
       location: finalLocation,
