@@ -1609,24 +1609,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async applyReferral(refereeId: string, referrerId: string): Promise<Referral> {
-    // Set referredBy on referee
-    await db
-      .update(users)
-      .set({ referredBy: referrerId, updatedAt: new Date() })
-      .where(eq(users.id, refereeId));
+    // Wrap all three mutations in a transaction — if any step fails, all roll back
+    return await db.transaction(async (tx) => {
+      // Set referredBy on referee
+      await tx
+        .update(users)
+        .set({ referredBy: referrerId, updatedAt: new Date() })
+        .where(eq(users.id, refereeId));
 
-    // Increment referrer's referralCount
-    await db
-      .update(users)
-      .set({ referralCount: sql`${users.referralCount} + 1`, updatedAt: new Date() })
-      .where(eq(users.id, referrerId));
+      // Increment referrer's referralCount
+      await tx
+        .update(users)
+        .set({ referralCount: sql`${users.referralCount} + 1`, updatedAt: new Date() })
+        .where(eq(users.id, referrerId));
 
-    // Insert referral row
-    const [referral] = await db
-      .insert(referrals)
-      .values({ referrerId, refereeId })
-      .returning();
-    return referral;
+      // Insert referral row
+      const [referral] = await tx
+        .insert(referrals)
+        .values({ referrerId, refereeId })
+        .returning();
+      return referral;
+    });
   }
 
   async getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }> {
