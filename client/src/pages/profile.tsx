@@ -14,6 +14,10 @@ import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { useToast } from "@/hooks/use-toast";
 import { AchievementBadge } from "@/components/Badge";
+import { StreakInsuranceButton } from "@/components/streak-insurance-button";
+import { ThroneAnalytics } from "@/components/throne-analytics";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { GoldCrownBadge } from "@/components/gold-crown-badge";
 
 interface BadgeData {
   id: string;
@@ -134,8 +138,13 @@ export default function Profile() {
             <ProfilePictureUpload user={user} size="lg" />
           </StreakFrame>
         </div>
-        <h2 className="text-2xl font-extrabold text-foreground">
+        <h2 className="text-2xl font-extrabold text-foreground flex items-center justify-center gap-2">
           {user ? getUserDisplayName(user) : "User"}
+          <GoldCrownBadge
+            subscription={user?.subscription}
+            subscriptionExpiresAt={user?.subscriptionExpiresAt}
+            size="md"
+          />
         </h2>
         <div className="flex items-center justify-center gap-2 mt-1">
           <p className="text-muted-foreground">
@@ -313,12 +322,28 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Streak Insurance */}
+      <div className="mb-6">
+        <ErrorBoundary>
+          <StreakInsuranceButton />
+        </ErrorBoundary>
+      </div>
+
+      {/* Throne Analytics */}
+      <div className="mb-6">
+        <ErrorBoundary>
+          <ThroneAnalytics compact />
+        </ErrorBoundary>
+      </div>
+
       {/* Weekly Report */}
       <div className="mb-6">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
           Weekly Report
         </h3>
-        <WeeklyThroneReport />
+        <ErrorBoundary>
+          <WeeklyThroneReport />
+        </ErrorBoundary>
       </div>
 
       {/* ── Squads with streak status ─────────────────────────────── */}

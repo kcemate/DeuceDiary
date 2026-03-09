@@ -224,7 +224,7 @@ export function createGroupsRouter(): Router {
         memberCount: logsToday.length,
         logsToday: logsToday.map(m => ({
           userId: m.userId,
-          username: m.username || m.firstName || 'Unknown',
+          username: m.username || m.firstName || (m.email ? m.email.split('@')[0] : 'Unknown'),
           hasLogged: m.hasLogged,
           profileImageUrl: m.profileImageUrl,
         })),

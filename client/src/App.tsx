@@ -61,17 +61,17 @@ function AppRoutes({
 
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/groups" component={Groups} />
-      <Route path="/groups/:groupId" component={GroupDetail} />
+      <Route path="/">{() => <ErrorBoundary><Home /></ErrorBoundary>}</Route>
+      <Route path="/groups">{() => <ErrorBoundary><Groups /></ErrorBoundary>}</Route>
+      <Route path="/groups/:groupId">{(params) => <ErrorBoundary><GroupDetail /></ErrorBoundary>}</Route>
       <Route path="/invite/:code" component={InviteLanding} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/premium" component={Premium} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/referral" component={Referral} />
-      <Route path="/bingo" component={Bingo} />
+      <Route path="/profile">{() => <ErrorBoundary><Profile /></ErrorBoundary>}</Route>
+      <Route path="/premium">{() => <ErrorBoundary><Premium /></ErrorBoundary>}</Route>
+      <Route path="/settings">{() => <ErrorBoundary><Settings /></ErrorBoundary>}</Route>
+      <Route path="/referral">{() => <ErrorBoundary><Referral /></ErrorBoundary>}</Route>
+      <Route path="/bingo">{() => <ErrorBoundary><Bingo /></ErrorBoundary>}</Route>
       <Route path="/legacy/:username" component={Legacy} />
       <Route component={NotFound} />
     </Switch>

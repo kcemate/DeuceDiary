@@ -831,13 +831,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(groups.id, groupId));
   }
 
-  async getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; profileImageUrl: string | null; hasLogged: boolean }[]> {
+  async getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; email: string | null; profileImageUrl: string | null; hasLogged: boolean }[]> {
     // Get all members of the group
     const members = await db
       .select({
         userId: groupMembers.userId,
         username: users.username,
         firstName: users.firstName,
+        email: users.email,
         profileImageUrl: users.profileImageUrl,
       })
       .from(groupMembers)
@@ -862,6 +863,7 @@ export class DatabaseStorage implements IStorage {
       userId: m.userId,
       username: m.username,
       firstName: m.firstName,
+      email: m.email,
       profileImageUrl: m.profileImageUrl,
       hasLogged: loggedUserIds.has(m.userId),
     }));
