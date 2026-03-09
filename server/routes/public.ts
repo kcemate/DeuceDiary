@@ -303,3 +303,16 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/** Format a week range like "Mar 3 – Mar 9, 2025" from YYYY-MM-DD strings */
+function formatWeekRange(weekOf: string, weekEnding: string): string {
+  try {
+    const start = new Date(weekOf + 'T00:00:00Z');
+    const end = new Date(weekEnding + 'T00:00:00Z');
+    const fmtOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+    const year = end.getUTCFullYear();
+    return `${start.toLocaleDateString('en-US', fmtOpts)} – ${end.toLocaleDateString('en-US', { ...fmtOpts, year: 'numeric' })}`;
+  } catch {
+    return `${weekOf} – ${weekEnding}`;
+  }
+}
