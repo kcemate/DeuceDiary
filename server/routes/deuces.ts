@@ -220,8 +220,17 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         }
       }
 
-      const entries = [];
-      const loggedAt = new Date(entryData.loggedAt || new Date());
+      // Validate loggedAt if provided; fall back to now for missing/invalid dates
+      let loggedAt: Date;
+      if (entryData.loggedAt) {
+        const parsed = new Date(entryData.loggedAt);
+        if (isNaN(parsed.getTime())) {
+          return res.status(400).json({ message: "Invalid loggedAt date" });
+        }
+        loggedAt = parsed;
+      } else {
+        loggedAt = new Date();
+      }
       const isGhost = !!entryData.ghost;
 
       // Create entry for each selected group
