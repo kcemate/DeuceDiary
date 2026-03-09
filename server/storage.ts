@@ -743,16 +743,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEntryReactions(entryId: string): Promise<(Reaction & { user: User })[]> {
+    // Use innerJoin — reactions from deleted users are excluded via isNull(users.deletedAt),
+    // which is equivalent to an inner join and removes the unsafe non-null assertion
     const entryReactions = await db
       .select()
       .from(reactions)
-      .leftJoin(users, eq(reactions.userId, users.id))
-      .where(and(eq(reactions.entryId, entryId), isNull(users.deletedAt)))
+      .innerJoin(users, and(eq(reactions.userId, users.id), isNull(users.deletedAt)))
+      .where(eq(reactions.entryId, entryId))
       .orderBy(reactions.createdAt);
 
     return entryReactions.map(row => ({
       ...row.reactions,
-      user: row.users!,
+      user: row.users,
     }));
   }
 
