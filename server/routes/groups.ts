@@ -183,8 +183,9 @@ export function createGroupsRouter(): Router {
   // Referral landing: /join?ref=CODE -> store code in session, redirect to /
   router.get('/join', (req: any, res) => {
     const ref = req.query.ref;
-    if (ref && req.session) {
-      req.session.referralCode = ref;
+    // Only store alphanumeric codes of reasonable length (matches routes.ts validation)
+    if (ref && typeof ref === 'string' && /^[A-Z0-9]{4,20}$/i.test(ref) && req.session) {
+      req.session.referralCode = ref.toUpperCase();
     }
     res.redirect('/');
   });
