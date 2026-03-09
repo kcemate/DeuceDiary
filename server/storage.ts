@@ -1733,7 +1733,7 @@ export class DatabaseStorage implements IStorage {
         .where(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`),
       db.select({ count: sql<number>`COUNT(*)::int` }).from(deuceEntries),
       db.select({ count: sql<number>`COUNT(DISTINCT ${deuceEntries.groupId})::int` }).from(deuceEntries)
-        .where(gte(deuceEntries.createdAt, sevenDaysAgo)),
+        .where(gte(deuceEntries.loggedAt, sevenDaysAgo)),
       db.select({ avg: sql<number>`COALESCE(AVG(${groups.currentStreak}), 0)` }).from(groups),
     ]);
 
