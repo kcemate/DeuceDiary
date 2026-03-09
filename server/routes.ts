@@ -2202,6 +2202,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (data.type === 'join_group') {
           const groupId = data.groupId;
 
+          // Validate groupId before using it
+          if (!groupId || typeof groupId !== 'string') {
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid groupId' }));
+            return;
+          }
+
           // Verify user is a member of this group
           const isMember = await storage.isUserInGroup(userId, groupId);
           if (!isMember) {
