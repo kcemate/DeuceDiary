@@ -411,6 +411,52 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Testimonials ── */}
+      <section className="border-y border-border bg-card/50">
+        <div className="max-w-4xl mx-auto px-4 py-16 md:py-20">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              What the throne community says
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "I never thought I'd be competitive about pooping, but here we are. My squad is ruthless.",
+                name: "Jake M.",
+                detail: "42-day streak",
+                emoji: "🔥",
+              },
+              {
+                quote: "My doctor asked how I track my habits. I showed him Deuce Diary. He downloaded it.",
+                name: "Sarah K.",
+                detail: "Squad leader",
+                emoji: "👩‍⚕️",
+              },
+              {
+                quote: "The streak rescue feature saved my 30-day run. This app gets me.",
+                name: "Marcus T.",
+                detail: "Porcelain Royalty",
+                emoji: "👑",
+              },
+            ].map((t) => (
+              <div key={t.name} className="bg-background border border-border rounded-2xl p-5">
+                <div className="text-3xl mb-3">{t.emoji}</div>
+                <p className="text-foreground text-sm leading-relaxed mb-4 italic">
+                  "{t.quote}"
+                </p>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── App Store / Download Section ── */}
       <section className="border-y border-border bg-card/50">
         <div className="max-w-3xl mx-auto px-4 py-16 md:py-20 text-center">
