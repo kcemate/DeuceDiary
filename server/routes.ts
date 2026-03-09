@@ -431,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getGroupDeuceCount(invite.groupId),
         storage.getGroupStreak(invite.groupId),
         storage.getGroupMembers(invite.groupId),
-        storage.getGroupEntries(invite.groupId),
+        storage.getGroupEntries(invite.groupId, 3), // Only need 3 for recent activity preview
       ]);
       // Return slim public preview — no auth required
       res.json({
