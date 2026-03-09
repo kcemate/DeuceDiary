@@ -446,9 +446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })),
         recentActivity: entries.slice(0, 3).map(e => ({
           username: e.user.username || e.user.firstName || "Anon",
-          thoughts: e.thoughts,
           location: e.location,
           loggedAt: e.loggedAt,
+          // thoughts omitted — sensitive data on a public endpoint
         })),
       });
     } catch (error) {
