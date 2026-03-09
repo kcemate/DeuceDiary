@@ -13,6 +13,7 @@ import { getUserDisplayName, getInitials, getUserSecondaryInfo } from "@/lib/use
 import { StreakFrame } from "@/components/streak-frame";
 import { GoldCrownBadge } from "@/components/gold-crown-badge";
 import { GroupLeaderboard } from "@/components/group-leaderboard";
+import { GroupWeeklyReport } from "@/components/group-weekly-report";
 
 interface StreakData {
   currentStreak: number;
@@ -394,6 +395,9 @@ export default function GroupDetail() {
 
       {/* Leaderboard */}
       {groupId && <GroupLeaderboard groupId={groupId} />}
+
+      {/* Weekly Throne Report */}
+      {groupId && <GroupWeeklyReport groupId={groupId} />}
 
       {/* Members */}
       <Card className="shadow-sm mb-6">
