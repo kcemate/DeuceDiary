@@ -7,6 +7,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { LogDeuceModal } from "@/components/log-deuce-modal";
+import { Onboarding } from "@/components/Onboarding";
 
 interface Group {
   id: string;
@@ -67,6 +68,16 @@ export default function Home() {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
+
+  // ── New user onboarding: no username set yet ──
+  if (!user?.username) {
+    return (
+      <>
+        <Onboarding onComplete={() => setShowLogModal(true)} />
+        <LogDeuceModal open={showLogModal} onOpenChange={setShowLogModal} />
+      </>
+    );
+  }
 
   // ── Free tier: stripped-down home ──
   if (isFree) {
