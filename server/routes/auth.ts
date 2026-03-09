@@ -93,7 +93,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
-      if (error.message?.includes('duplicate key value')) {
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
         return res.status(400).json({ message: "Username already taken" });
       }
       res.status(500).json({ message: "Failed to update user" });

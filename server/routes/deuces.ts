@@ -94,7 +94,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       res.json(reaction);
     } catch (error) {
       console.error("Error adding reaction:", error);
-      if (error.message?.includes('duplicate key')) {
+      if (error instanceof Error && error.message.includes('duplicate key')) {
         return res.status(400).json({ message: "You've already reacted with this emoji" });
       }
       res.status(500).json({ message: "Failed to add reaction" });

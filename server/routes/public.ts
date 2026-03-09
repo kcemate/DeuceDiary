@@ -11,8 +11,8 @@ export function createPublicRouter(): Router {
       const { userId } = req.params;
       const data = await storage.getShareCardData(userId);
       res.json(data);
-    } catch (error: any) {
-      if (error.message === "User not found") {
+    } catch (error) {
+      if (error instanceof Error && error.message === "User not found") {
         return res.status(404).json({ message: "User not found" });
       }
       console.error('Error fetching share card data:', error);
@@ -143,8 +143,8 @@ export function createPublicRouter(): Router {
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
-    } catch (error: any) {
-      if (error.message === "User not found") {
+    } catch (error) {
+      if (error instanceof Error && error.message === "User not found") {
         return res.status(404).json({ message: "User not found" });
       }
       console.error('Error rendering OG share card:', error);
@@ -158,8 +158,8 @@ export function createPublicRouter(): Router {
       const { groupId } = req.params;
       const report = await storage.getGroupWeeklyReport(groupId);
       res.json(report);
-    } catch (error: any) {
-      if (error.message === "Group not found") {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Group not found") {
         return res.status(404).json({ message: "Group not found" });
       }
       console.error("Error fetching shareable group report:", error);
@@ -256,8 +256,8 @@ export function createPublicRouter(): Router {
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
-    } catch (error: any) {
-      if (error.message === "Group not found") {
+    } catch (error) {
+      if (error instanceof Error && error.message === "Group not found") {
         return res.status(404).json({ message: "Group not found" });
       }
       console.error("Error rendering group report OG card:", error);

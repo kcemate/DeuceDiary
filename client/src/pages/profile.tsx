@@ -7,7 +7,7 @@ import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { ShareCardModal } from "@/components/ShareCardModal";
 import { StreakFrame } from "@/components/streak-frame";
-import { Edit2, Share2, Award, Flame, ChevronRight } from "lucide-react";
+import { Edit2, Share2, Award, Flame, ChevronRight, Gift } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
 import { AchievementBadge } from "@/components/Badge";
@@ -400,6 +400,30 @@ export default function Profile() {
           <span className="text-muted-foreground text-sm">→</span>
         </div>
       </button>
+
+      {/* Referral Nudge */}
+      {(user?.referralCount ?? 0) < 3 && (
+        <button
+          onClick={() => setLocation("/referral")}
+          className="w-full mb-6 rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/5 via-accent/10 to-accent/5 p-4 text-left transition-all active:scale-[0.98]"
+          aria-label="Invite friends and earn Premium"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+              <Gift className="w-5 h-5 text-accent" aria-hidden="true" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">
+                Invite {3 - (user?.referralCount ?? 0)} friend{3 - (user?.referralCount ?? 0) === 1 ? "" : "s"}, get Premium free
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Share the movement. Earn 30 days of Porcelain Premium.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-accent shrink-0" />
+          </div>
+        </button>
+      )}
 
       {/* Achievement Badges */}
       <div className="mb-8">
