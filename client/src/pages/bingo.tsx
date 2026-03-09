@@ -407,7 +407,7 @@ export default function Bingo() {
                       {entry.profileImageUrl ? (
                         <img
                           src={entry.profileImageUrl}
-                          alt=""
+                          alt={`${entry.username || "User"}'s avatar`}
                           className="w-7 h-7 rounded-full object-cover"
                         />
                       ) : (

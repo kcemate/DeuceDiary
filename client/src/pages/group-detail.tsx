@@ -595,7 +595,7 @@ export default function GroupDetail() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-10">
+            <div className="bg-card border border-border rounded-2xl p-8 text-center">
               <p className="text-5xl mb-3">🫥</p>
               <p className="font-extrabold text-foreground text-lg">Dead air on the throne.</p>
               <p className="text-sm text-muted-foreground mt-1">No deuces in this squad yet. Be the first to drop one.</p>

@@ -343,7 +343,7 @@ export default function Referral() {
                 </span>
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
                   {entry.profileImageUrl ? (
-                    <img src={entry.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={entry.profileImageUrl} alt={`${entry.username || "User"}'s avatar`} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-xs font-bold text-muted-foreground">
                       {(entry.username ?? "?")[0]?.toUpperCase()}
@@ -364,9 +364,10 @@ export default function Referral() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-6">
-            <p className="text-4xl mb-2">🏆</p>
-            <p className="text-sm text-muted-foreground">No referrals yet. Be the first!</p>
+          <div className="bg-muted/50 rounded-xl p-8 text-center">
+            <p className="text-4xl mb-3">🏆</p>
+            <p className="font-bold text-foreground text-sm">No referrals yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">Be the first to share the throne!</p>
           </div>
         )}
       </div>
