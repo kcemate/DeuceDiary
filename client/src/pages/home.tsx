@@ -3,12 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { LogDeuceModal } from "@/components/log-deuce-modal";
 import { Onboarding } from "@/components/Onboarding";
+import { Reactions } from "@/components/reactions";
 
 interface Group {
   id: string;
@@ -21,6 +23,27 @@ interface Group {
 interface Analytics {
   date: string;
   count: number;
+}
+
+interface FeedEntry {
+  id: string;
+  userId: string;
+  groupId: string;
+  location: string;
+  thoughts: string | null;
+  ghost: boolean;
+  loggedAt: string;
+  user: {
+    id: string;
+    username: string | null;
+    profileImageUrl: string | null;
+  };
+  reactions: Array<{
+    id: number;
+    entryId: string;
+    userId: string;
+    emoji: string;
+  }>;
 }
 
 // ── Pull-to-refresh hook ────────────────────────────────────────────────────
@@ -120,6 +143,21 @@ function EmptyFeedState() {
   );
 }
 
+// ── Feed entry skeleton ──────────────────────────────────────────────────
+function FeedEntrySkeleton() {
+  return (
+    <div className="border-l-4 border-muted pl-3 py-2">
+      <div className="flex items-center gap-2 mb-2">
+        <Skeleton className="w-7 h-7 rounded-full" />
+        <Skeleton className="h-3.5 w-24 rounded" />
+        <Skeleton className="h-3 w-12 rounded ml-auto" />
+      </div>
+      <Skeleton className="h-3 w-3/4 rounded mb-1.5" />
+      <Skeleton className="h-3 w-16 rounded" />
+    </div>
+  );
+}
+
 export default function Home() {
   const { user } = useAuth();
   const { joinGroup } = useWebSocket();
@@ -148,11 +186,20 @@ export default function Home() {
     enabled: !isFree,
   });
 
+  const {
+    data: feedEntries = [],
+    isLoading: feedLoading,
+  } = useQuery<FeedEntry[]>({
+    queryKey: ["/api/deuces", { limit: 15 }],
+    enabled: !isFree,
+  });
+
   // Pull-to-refresh handler
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] }),
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] }),
+      queryClient.invalidateQueries({ queryKey: ["/api/deuces"] }),
     ]);
   }, [queryClient]);
 
@@ -201,6 +248,37 @@ export default function Home() {
     if (hour < 21) return "Good evening";
     return "Late night";
   };
+
+  // Feed helpers
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const getDateGroup = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const entryDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (entryDate.getTime() === today.getTime()) return "Today";
+    if (entryDate.getTime() === yesterday.getTime()) return "Yesterday";
+    return date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  };
+
+  // Build group name lookup from loaded groups
+  const groupNameMap = new Map(groups.map(g => [g.id, g.name]));
+
+  // Group feed entries by date
+  const groupedFeedEntries = feedEntries.reduce((acc, entry) => {
+    const group = getDateGroup(entry.loggedAt);
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(entry);
+    return acc;
+  }, {} as Record<string, FeedEntry[]>);
 
   // ── Free tier ───────────────────────────────────────────────────────────
   if (isFree) {
@@ -394,6 +472,83 @@ export default function Home() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Activity Feed */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
+          Recent Drops
+        </h3>
+
+        {feedLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <FeedEntrySkeleton key={i} />
+            ))}
+          </div>
+        ) : feedEntries.length > 0 ? (
+          <div className="space-y-1">
+            {Object.entries(groupedFeedEntries).map(([dateLabel, entries]) => (
+              <div key={dateLabel}>
+                <div className="flex items-center gap-2 py-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{dateLabel}</span>
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">{entries.length}</span>
+                </div>
+                <div className="space-y-3 mb-3">
+                  {entries.map((entry) => (
+                    <div key={entry.id} className="border-l-4 border-primary pl-3 py-1.5">
+                      <div className="flex items-center mb-1.5">
+                        <Avatar className="w-7 h-7 mr-2">
+                          <AvatarImage src={entry.ghost ? undefined : (entry.user.profileImageUrl || undefined)} />
+                          <AvatarFallback className="text-xs">
+                            {entry.ghost ? "👻" : (entry.user.username || "?")[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium text-foreground">
+                          {entry.ghost ? "Ghost Drop" : (entry.user.username || "Anonymous")}
+                        </span>
+                        {groupNameMap.get(entry.groupId) && (
+                          <Link href={`/groups/${entry.groupId}`}>
+                            <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
+                              {groupNameMap.get(entry.groupId)}
+                            </Badge>
+                          </Link>
+                        )}
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {formatTime(entry.loggedAt)}
+                        </span>
+                      </div>
+                      {entry.thoughts && !entry.ghost && (
+                        <p className="text-sm text-foreground mb-1.5">{entry.thoughts}</p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <svg className="w-3 h-3" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{entry.location}</span>
+                      </div>
+                      {entry.reactions.length > 0 && (
+                        <div className="mt-2">
+                          <Reactions entryId={entry.id} />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <p className="text-3xl mb-2">🫥</p>
+            <p className="font-bold text-foreground text-sm">No drops yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Be the first to log — your squads are waiting!
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Groups List */}
       <div className="mb-6">
