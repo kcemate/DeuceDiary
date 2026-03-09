@@ -61,7 +61,7 @@ export function createNotificationsRouter(): Router {
   });
 
   // --- Throne Broadcast (premium) ---
-  router.post('/api/squads/:id/broadcast', isAuthenticated, requireGroupMember('id'), requiresPremiumFor('throne_broadcast'), async (req: any, res) => {
+  router.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), requireGroupMember('id'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
