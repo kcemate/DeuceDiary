@@ -2100,7 +2100,7 @@ export class DatabaseStorage implements IStorage {
   async getBingoLeaderboard(groupIds: string[], month: string): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; completedCount: number }[]> {
     if (groupIds.length === 0) return [];
 
-    // Get all user IDs in these groups
+    // Get all member IDs in these groups (one query)
     const members = await db
       .selectDistinct({ userId: groupMembers.userId })
       .from(groupMembers)
@@ -2109,31 +2109,26 @@ export class DatabaseStorage implements IStorage {
     const memberIds = members.map(m => m.userId);
     if (memberIds.length === 0) return [];
 
-    // Get bingo cards for this month
-    const cards = await db
-      .select()
+    // Fetch bingo cards + user info in a single JOIN query (two fewer round-trips than before)
+    const rows = await db
+      .select({
+        userId: bingoCards.userId,
+        username: users.username,
+        profileImageUrl: users.profileImageUrl,
+        completedSquares: bingoCards.completedSquares,
+      })
       .from(bingoCards)
-      .where(and(
-        inArray(bingoCards.userId, memberIds),
-        eq(bingoCards.month, month),
-      ));
+      .innerJoin(users, and(eq(bingoCards.userId, users.id), isNull(users.deletedAt)))
+      .where(and(inArray(bingoCards.userId, memberIds), eq(bingoCards.month, month)));
 
-    // Get user info
-    const userRows = await db
-      .select({ id: users.id, username: users.username, profileImageUrl: users.profileImageUrl })
-      .from(users)
-      .where(inArray(users.id, memberIds));
-
-    const userMap = new Map(userRows.map(u => [u.id, u]));
-
-    const result = cards.map(card => ({
-      userId: card.userId,
-      username: userMap.get(card.userId)?.username ?? null,
-      profileImageUrl: userMap.get(card.userId)?.profileImageUrl ?? null,
-      completedCount: ((card.completedSquares as number[]) || []).length,
-    }));
-
-    return result.sort((a, b) => b.completedCount - a.completedCount);
+    return rows
+      .map(row => ({
+        userId: row.userId,
+        username: row.username ?? null,
+        profileImageUrl: row.profileImageUrl ?? null,
+        completedCount: ((row.completedSquares as number[]) || []).length,
+      }))
+      .sort((a, b) => b.completedCount - a.completedCount);
   }
 
   async softDeleteUser(userId: string): Promise<void> {
