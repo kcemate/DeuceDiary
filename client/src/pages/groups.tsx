@@ -16,6 +16,8 @@ interface Group {
   memberCount: number;
   entryCount: number;
   lastActivity?: string;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 export default function Groups() {
@@ -119,44 +121,53 @@ export default function Groups() {
       ) : groups.length > 0 ? (
         <div className="space-y-3">
           {groups.map((group) => (
-            <div key={group.id} className="bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-foreground">{group.name}</h3>
-                <Badge variant={group.lastActivity ? "default" : "secondary"} className="rounded-full text-xs font-bold">
-                  {group.lastActivity ? "Active" : "Quiet"}
-                </Badge>
-              </div>
+            <Link key={group.id} href={`/groups/${group.id}`}>
+              <div className="bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-foreground truncate">{group.name}</h3>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {group.currentStreak > 0 && (
+                      <Badge variant="secondary" className="rounded-full text-xs font-bold bg-orange-100 text-orange-700 border-orange-200">
+                        🔥 {group.currentStreak}d
+                      </Badge>
+                    )}
+                    <Badge variant={group.lastActivity ? "default" : "secondary"} className="rounded-full text-xs font-bold">
+                      {group.lastActivity ? "Active" : "Quiet"}
+                    </Badge>
+                  </div>
+                </div>
 
-              <div className="flex items-center mb-3">
-                <div className="flex -space-x-2">
-                  {Array.from({ length: Math.min(group.memberCount, 3) }).map((_, i) => (
-                    <Avatar key={i} className="w-8 h-8 border-2 border-background">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${group.id}-${i}`} />
-                      <AvatarFallback className="text-xs">M{i + 1}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {group.memberCount > 3 && (
-                    <div className="w-8 h-8 bg-muted rounded-full border-2 border-background flex items-center justify-center">
-                      <span className="text-xs font-bold text-muted-foreground">+{group.memberCount - 3}</span>
-                    </div>
+                <div className="flex items-center mb-2">
+                  <div className="flex -space-x-2">
+                    {Array.from({ length: Math.min(group.memberCount, 3) }).map((_, i) => (
+                      <Avatar key={i} className="w-7 h-7 border-2 border-background">
+                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${group.id}-${i}`} />
+                        <AvatarFallback className="text-xs">M{i + 1}</AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {group.memberCount > 3 && (
+                      <div className="w-7 h-7 bg-muted rounded-full border-2 border-background flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-muted-foreground">+{group.memberCount - 3}</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground ml-2 font-medium">
+                    {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {group.entryCount} deuce{group.entryCount !== 1 ? "s" : ""} • {getActivityTime(group.lastActivity)}
+                  </p>
+                  {group.longestStreak > 0 && group.longestStreak > group.currentStreak && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Best: {group.longestStreak}d
+                    </p>
                   )}
                 </div>
-                <span className="text-sm text-muted-foreground ml-3 font-medium">
-                  {group.memberCount} members
-                </span>
               </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {group.entryCount} deuces • {getActivityTime(group.lastActivity)}
-                </p>
-                <Link href={`/groups/${group.id}`}>
-                  <Button variant="outline" size="sm" className="rounded-xl font-bold text-xs border-border hover:border-primary/50" aria-label={`Open ${group.name}`}>
-                    Open
-                  </Button>
-                </Link>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (
