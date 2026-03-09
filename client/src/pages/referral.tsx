@@ -6,8 +6,16 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Copy, Share2, Users, Award, Clock } from "lucide-react";
+import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
+
+const SHARE_MESSAGES = [
+  "I track my poops and I'm not ashamed. Join me on Deuce Diary — the Strava of poop tracking.",
+  "Just logged my 💩 on Deuce Diary. Yes it's an app. Yes it's amazing. Join me:",
+  "My poop game has never been more organized. Deuce Diary — track, share, compete.",
+  "Finally an app that takes my bathroom habits as seriously as I do. Join Deuce Diary:",
+  "I'm on a 🔥 streak (the poop kind). Join me on Deuce Diary and start yours:",
+];
 
 interface ReferralInfo {
   code: string;
@@ -32,6 +40,9 @@ export default function Referral() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [applyCode, setApplyCode] = useState("");
+  const [messageIndex, setMessageIndex] = useState(() =>
+    Math.floor(Math.random() * SHARE_MESSAGES.length)
+  );
 
   const { data: referral, isLoading } = useQuery<ReferralInfo>({
     queryKey: ["/api/referral"],
@@ -78,11 +89,19 @@ export default function Referral() {
     },
   });
 
+  const getShareText = () => {
+    if (!referral) return "";
+    return `${SHARE_MESSAGES[messageIndex]}\n\n${referral.referralLink}`;
+  };
+
+  const shuffleMessage = () => {
+    setMessageIndex((prev) => (prev + 1) % SHARE_MESSAGES.length);
+  };
+
   const copyToClipboard = async () => {
     if (!referral) return;
-    const text = `Join me on Deuce Diary! Use my code ${referral.code} or link: ${referral.referralLink}`;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(getShareText());
       toast({ title: "Copied to clipboard!" });
     } catch {
       toast({
@@ -95,10 +114,13 @@ export default function Referral() {
 
   const shareLink = async () => {
     if (!referral) return;
-    const text = `Join me on Deuce Diary! Use my code ${referral.code} or link: ${referral.referralLink}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Deuce Diary", text });
+        await navigator.share({
+          title: "Deuce Diary",
+          text: SHARE_MESSAGES[messageIndex],
+          url: referral.referralLink,
+        });
       } catch {
         // user cancelled — ignore
       }
@@ -188,10 +210,7 @@ export default function Referral() {
       {/* Share Card */}
       <div className="bg-card border-2 border-accent/40 rounded-2xl p-6 mb-6 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/50 via-accent to-accent/50" />
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">
-          Join me on Deuce Diary
-        </p>
-        <p className="text-4xl font-extrabold text-primary tracking-widest font-mono my-3">
+        <p className="text-4xl font-extrabold text-primary tracking-widest font-mono mt-2 mb-1">
           {referral?.code}
         </p>
         <p className="text-sm text-muted-foreground mb-4">
@@ -199,6 +218,21 @@ export default function Referral() {
             ? "No friends joined yet \u2014 share your code!"
             : `${referral?.referralCount} friend${referral?.referralCount === 1 ? "" : "s"} joined`}
         </p>
+
+        {/* Message preview */}
+        <div className="bg-muted/50 rounded-xl p-3 mb-4 text-left relative">
+          <p className="text-xs text-muted-foreground italic pr-8 leading-relaxed">
+            &ldquo;{SHARE_MESSAGES[messageIndex]}&rdquo;
+          </p>
+          <button
+            onClick={shuffleMessage}
+            className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-muted transition-colors"
+            title="Try a different message"
+          >
+            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
+
         <div className="flex gap-3">
           <Button
             onClick={copyToClipboard}
@@ -206,7 +240,7 @@ export default function Referral() {
             className="flex-1 rounded-xl font-bold"
           >
             <Copy className="h-4 w-4 mr-2" />
-            Copy Link
+            Copy
           </Button>
           <Button
             onClick={shareLink}
