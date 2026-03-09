@@ -14,6 +14,7 @@ import { RankStrip } from "@/components/rank-strip";
 import { StreakStrip } from "@/components/streak-strip";
 import { NextBadgeTeaser } from "@/components/next-badge-teaser";
 import { BingoStrip } from "@/components/bingo-strip";
+import { BingoNudge } from "@/components/bingo-nudge";
 
 interface Group {
   id: string;
@@ -463,6 +464,10 @@ export default function Home() {
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
           Recent Drops
         </h3>
+
+        <div className="mb-4">
+          <BingoNudge />
+        </div>
 
         {feedLoading ? (
           <div className="space-y-3">
