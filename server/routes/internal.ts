@@ -38,7 +38,7 @@ export function createInternalRouter(): Router {
   }
   router.get('/api/admin/stats', async (req, res) => {
     const key = req.headers['x-admin-key'];
-    if (key !== ADMIN_KEY) {
+    if (!ADMIN_KEY || key !== ADMIN_KEY) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     try {
@@ -60,7 +60,7 @@ export function createInternalRouter(): Router {
   }
   router.post('/api/internal/streak-check', async (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     try {
@@ -75,7 +75,7 @@ export function createInternalRouter(): Router {
   // --- Error log endpoint (internal) ---
   router.get('/api/internal/errors', (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -86,7 +86,7 @@ export function createInternalRouter(): Router {
   // --- Detailed health endpoint (internal) ---
   router.get('/api/internal/health/detailed', async (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
     try {
