@@ -1069,8 +1069,9 @@ export class DatabaseStorage implements IStorage {
     const totalDeuces = totalResult?.total ?? 0;
 
     // Avg per week: total / weeks since first entry (min 1 week)
+    // Use loggedAt for consistency with other analytics queries
     const [firstEntry] = await db
-      .select({ earliest: sql<Date>`MIN(${deuceEntries.createdAt})` })
+      .select({ earliest: sql<Date>`MIN(${deuceEntries.loggedAt})` })
       .from(deuceEntries)
       .where(eq(deuceEntries.userId, userId));
     const weeks = firstEntry?.earliest
