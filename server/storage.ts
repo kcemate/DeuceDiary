@@ -481,52 +481,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserGroups(userId: string): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]> {
-    try {
-      console.log("Getting groups for user:", userId);
-      
-      // First, get all groups the user is a member of
-      const userGroupMemberships = await db
-        .select({
-          groupId: groupMembers.groupId,
-        })
-        .from(groupMembers)
-        .where(eq(groupMembers.userId, userId));
-      
-      console.log("User group memberships:", userGroupMemberships);
-      
-      if (userGroupMemberships.length === 0) {
-        return [];
-      }
-      
-      const groupIds = userGroupMemberships.map(m => m.groupId);
-      
-      // Get group details with counts
-      const userGroups = await db
-        .select({
-          group: groups,
-          memberCount: sql<number>`COUNT(DISTINCT ${groupMembers.id})`,
-          entryCount: sql<number>`COUNT(DISTINCT ${deuceEntries.id})`,
-          lastActivity: sql<Date>`MAX(${deuceEntries.createdAt})`,
-        })
-        .from(groups)
-        .leftJoin(groupMembers, eq(groups.id, groupMembers.groupId))
-        .leftJoin(deuceEntries, eq(groups.id, deuceEntries.groupId))
-        .where(inArray(groups.id, groupIds))
-        .groupBy(groups.id)
-        .orderBy(desc(sql`MAX(${deuceEntries.createdAt})`));
+    // Get all groups the user is a member of
+    const userGroupMemberships = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
 
-      console.log("User groups with counts:", userGroups);
-
-      return userGroups.map(row => ({
-        ...row.group,
-        memberCount: Number(row.memberCount),
-        entryCount: Number(row.entryCount),
-        lastActivity: row.lastActivity,
-      }));
-    } catch (error) {
-      console.error("Error in getUserGroups:", error);
-      throw error;
+    if (userGroupMemberships.length === 0) {
+      return [];
     }
+
+    const groupIds = userGroupMemberships.map(m => m.groupId);
+
+    // Get group details with counts in a single query
+    const userGroups = await db
+      .select({
+        group: groups,
+        memberCount: sql<number>`COUNT(DISTINCT ${groupMembers.id})`,
+        entryCount: sql<number>`COUNT(DISTINCT ${deuceEntries.id})`,
+        lastActivity: sql<Date>`MAX(${deuceEntries.createdAt})`,
+      })
+      .from(groups)
+      .leftJoin(groupMembers, eq(groups.id, groupMembers.groupId))
+      .leftJoin(deuceEntries, eq(groups.id, deuceEntries.groupId))
+      .where(inArray(groups.id, groupIds))
+      .groupBy(groups.id)
+      .orderBy(desc(sql`MAX(${deuceEntries.createdAt})`));
+
+    return userGroups.map(row => ({
+      ...row.group,
+      memberCount: Number(row.memberCount),
+      entryCount: Number(row.entryCount),
+      lastActivity: row.lastActivity,
+    }));
   }
 
   async getGroupById(groupId: string): Promise<Group | undefined> {
