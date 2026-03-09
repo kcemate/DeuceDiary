@@ -78,13 +78,6 @@ function useClerkAuthHook() {
     enabled: !!isSignedIn && isLoaded,
   });
 
-  // Debug logging (temporary)
-  if (typeof window !== 'undefined') {
-    const state = { isLoaded, isSignedIn: !!isSignedIn, appLoading, hasUser: !!user, error: error?.message ?? null };
-    (window as any).__authDebug = state;
-    console.log('[AUTH]', JSON.stringify(state));
-  }
-
   return {
     user,
     isLoading: !isLoaded || (isSignedIn === true && appLoading),
