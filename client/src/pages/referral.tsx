@@ -372,10 +372,20 @@ export default function Referral() {
             })}
           </div>
         ) : (
-          <div className="bg-muted/50 rounded-xl p-8 text-center">
+          <div className="bg-muted/50 rounded-xl p-6 text-center">
             <p className="text-4xl mb-3">🏆</p>
-            <p className="font-bold text-foreground text-sm">No referrals yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Be the first to share the throne!</p>
+            <p className="font-bold text-foreground text-sm">The throne awaits its first champion</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Share your code above to claim the #1 spot
+            </p>
+            <Button
+              onClick={shareLink}
+              size="sm"
+              className="rounded-xl font-bold"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />
+              Be First
+            </Button>
           </div>
         )}
       </div>
@@ -399,6 +409,30 @@ export default function Referral() {
           >
             {applyMutation.isPending ? "..." : "Apply"}
           </Button>
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
+          How It Works
+        </h3>
+        <div className="space-y-3">
+          {[
+            { step: "1", label: "Share your code", desc: "Send your unique link to friends" },
+            { step: "2", label: "Friends join", desc: "They sign up using your referral link" },
+            { step: "3", label: "You both win", desc: "Hit 3 referrals = 30 days Premium free" },
+          ].map((item) => (
+            <div key={item.step} className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-xs font-bold text-primary">{item.step}</span>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">{item.label}</p>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

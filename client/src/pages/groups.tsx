@@ -121,9 +121,12 @@ export default function Groups() {
         </div>
       ) : groups.length > 0 ? (
         <div className="space-y-3">
-          {groups.map((group) => (
+          {groups.map((group, idx) => (
             <Link key={group.id} href={`/groups/${group.id}`}>
-              <div className="bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer">
+              <div
+                className="feed-entry bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
+                style={{ animationDelay: `${idx * 60}ms` }}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-foreground truncate">{group.name}</h3>
                   <div className="flex items-center gap-2 shrink-0">
