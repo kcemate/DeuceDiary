@@ -215,7 +215,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: firstIssue });
       }
 
-      const { groupIds, groupId, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
 
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -247,9 +247,15 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       // Create entry for each selected group
       for (const groupId of targetGroupIds) {
+        // bristolScore validated by zod (1-7 int), but double-check for safety
+        if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
+          return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
+        }
         const entry = await storage.createDeuceEntry({
           ...entryData,
           ghost: isGhost,
+          bristolScore: bristolScore ?? null,
+          photoUrl: photoUrl ?? null,
           groupId,
           userId,
           loggedAt,
