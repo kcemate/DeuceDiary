@@ -613,15 +613,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserDeucesByDate(userId: string): Promise<{ date: string; count: number }[]> {
+    // Use loggedAt (user-provided timestamp) not createdAt — consistent with getUserBestDay
     const result = await db
       .select({
-        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
         count: count(deuceEntries.id),
       })
       .from(deuceEntries)
       .where(eq(deuceEntries.userId, userId))
-      .groupBy(sql`DATE(${deuceEntries.createdAt})`)
-      .orderBy(desc(sql`DATE(${deuceEntries.createdAt})`));
+      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+      .orderBy(desc(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`));
 
     return result;
   }
