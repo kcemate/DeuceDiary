@@ -51,7 +51,28 @@ const SUCCESS_MESSAGES = [
   "That's a wrap!",
 ];
 
-function getSuccessMessage(streak: number, count: number): { title: string; description: string } {
+const DEUCE_MILESTONES: Record<number, string> = {
+  10: "Double digits!",
+  25: "Quarter centurion!",
+  50: "Half century of deuces!",
+  69: "Nice.",
+  100: "Triple digits! Legend!",
+  200: "Bicentennial throne!",
+  365: "A year's worth of deuces!",
+  420: "Blaze it (on the throne)!",
+  500: "High five hundred!",
+  1000: "The Thousand Throne Club!",
+};
+
+function getSuccessMessage(streak: number, count: number, totalDeuces?: number): { title: string; description: string } {
+  // Check for milestone first
+  if (totalDeuces && DEUCE_MILESTONES[totalDeuces]) {
+    return {
+      title: `Deuce #${totalDeuces}!`,
+      description: DEUCE_MILESTONES[totalDeuces],
+    };
+  }
+
   const msg = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
   const groupText = count > 1 ? ` to ${count} groups` : "";
   const streakText = streak >= 2 ? ` | ${streak}-day streak!` : "";
@@ -179,7 +200,8 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         // Kick off sync in background (no-op if still offline)
         syncQueue();
       } else {
-        const { title, description } = getSuccessMessage(response.streak || 0, count);
+        const userData = queryClient.getQueryData<{ deuceCount?: number }>(["/api/auth/user"]);
+        const { title, description } = getSuccessMessage(response.streak || 0, count, userData?.deuceCount);
         toast({ title, description });
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
