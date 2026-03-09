@@ -286,6 +286,35 @@ export default function GroupDetail() {
         </Button>
       </div>
 
+      {/* New member onboarding — shown if current user has never logged in this group */}
+      {groupDetail.entries.length > 0 &&
+        !groupDetail.entries.some(e => e.user.id === user?.id) && (
+        <Card className="shadow-sm mb-4 border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950/20">
+          <CardContent className="p-4 flex items-start gap-3">
+            <span className="text-3xl mt-0.5">👋</span>
+            <div>
+              <p className="font-bold text-foreground text-sm">Welcome to {groupDetail.group.name}!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Log your first deuce to show up on the leaderboard and help the squad's streak. Head to the home page and drop one!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* First-ever group entry prompt — shown when no one has logged yet */}
+      {groupDetail.entries.length === 0 && groupDetail.members.length > 0 && (
+        <Card className="shadow-sm mb-4 border-primary/20 bg-primary/5">
+          <CardContent className="p-4 text-center">
+            <p className="text-3xl mb-2">🚀</p>
+            <p className="font-bold text-foreground text-sm">Fresh squad, zero deuces.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Be the first to log and kick off this squad's journey. Every streak starts with one.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Streak Card */}
       {streakData && (
         <Card className="shadow-sm mb-6 border-orange-200 dark:border-orange-900">
