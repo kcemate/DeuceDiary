@@ -182,6 +182,15 @@ export default function Landing() {
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
+  const [showStickyCta, setShowStickyCta] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setShowStickyCta(window.scrollY > 600);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -213,7 +222,7 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground pb-16 md:pb-0">
       {/* ── Hero Section ── */}
       <section className="relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 pt-16 pb-20 md:pt-24 md:pb-28 text-center">
@@ -552,6 +561,17 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* ── Sticky Mobile CTA ── */}
+      {!isAuthenticated && showStickyCta && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom">
+          <SignInButton mode="redirect" forceRedirectUrl="/" afterSignInUrl="/">
+            <Button className="btn-shimmer w-full text-white font-bold py-3 text-base rounded-xl shadow-lg shadow-primary/25">
+              Start Your Streak — Free
+            </Button>
+          </SignInButton>
+        </div>
+      )}
     </div>
   );
 }
