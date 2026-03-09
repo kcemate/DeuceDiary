@@ -145,13 +145,22 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/locations"] });
+      setLocation(customLocation.trim());
       setShowCustomLocation(false);
       setCustomLocation("");
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      // If location already exists, just select it and close the custom input
+      const msg = error?.message || "";
+      if (msg.toLowerCase().includes("already exists")) {
+        setLocation(customLocation.trim());
+        setShowCustomLocation(false);
+        setCustomLocation("");
+        return;
+      }
       toast({
         title: "Error",
-        description: error.message || "Failed to create location",
+        description: msg || "Failed to create location",
         variant: "destructive",
       });
     },
