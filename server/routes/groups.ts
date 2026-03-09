@@ -55,10 +55,14 @@ export function createGroupsRouter(): Router {
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
       }
-      const groupData = insertGroupSchema.parse({
+      const insertParsed = insertGroupSchema.safeParse({
         ...parsed.data,
         createdBy: userId,
       });
+      if (!insertParsed.success) {
+        return res.status(400).json({ message: "Invalid group data" });
+      }
+      const groupData = insertParsed.data;
 
       const group = await storage.createGroup({
         ...groupData,
