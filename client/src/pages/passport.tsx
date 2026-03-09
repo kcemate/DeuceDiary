@@ -132,18 +132,18 @@ export default function Passport() {
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-card rounded-xl p-3 text-center border border-border">
-            <p className="text-2xl font-bold text-primary">{stats.totalCities}</p>
-            <p className="text-xs text-muted-foreground">Cities</p>
+            <p className="stat-number text-2xl text-primary">{stats.totalCities}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Cities</p>
           </div>
           <div className="bg-card rounded-xl p-3 text-center border border-border">
-            <p className="text-2xl font-bold text-primary">{stats.totalCountries}</p>
-            <p className="text-xs text-muted-foreground">Countries</p>
+            <p className="stat-number text-2xl text-primary">{stats.totalCountries}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Countries</p>
           </div>
           <div className="bg-card rounded-xl p-3 text-center border border-border">
-            <p className="text-2xl font-bold text-primary">
+            <p className="stat-number text-2xl text-primary">
               {stamps.length > 0 ? continentCount(stamps) : 0}
             </p>
-            <p className="text-xs text-muted-foreground">Continents</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Continents</p>
           </div>
         </div>
 
@@ -168,7 +168,7 @@ export default function Passport() {
             <span className="text-destructive">Failed to load passport data</span>
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden border border-border" style={{ height: 300 }}>
+          <div className="rounded-xl overflow-hidden border border-border h-[300px]">
             <MapContainer
               center={center}
               zoom={zoom}

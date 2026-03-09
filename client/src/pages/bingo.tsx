@@ -131,7 +131,7 @@ function PlaceholderBingoGrid() {
             <p className="text-sm text-muted-foreground">This Month</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-black text-foreground">7/25</p>
+            <p className="stat-number text-2xl text-foreground">7/25</p>
           </div>
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -331,7 +331,7 @@ export default function Bingo() {
                 <p className="text-sm text-muted-foreground">{formatMonth(data.month)}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-black text-foreground">{data.completedCount}/25</p>
+                <p className="stat-number text-2xl text-foreground">{data.completedCount}/25</p>
                 {data.hasBingo && (
                   <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">
                     BINGO!
