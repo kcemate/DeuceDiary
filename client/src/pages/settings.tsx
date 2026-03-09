@@ -8,6 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { GoldCrownBadge } from "@/components/gold-crown-badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Bell,
   Palette,
   Gift,
@@ -17,8 +27,11 @@ import {
   Shield,
   FileText,
   Info,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 const THEMES: {
   id: ThemeName;
@@ -90,8 +103,23 @@ export default function Settings() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isPremium = user?.subscription === "premium";
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== "DELETE") return;
+    setIsDeleting(true);
+    try {
+      await apiRequest("/api/user/account", { method: "DELETE" });
+      window.location.href = "/";
+    } catch {
+      toast({ title: "Failed to delete account", variant: "destructive" });
+      setIsDeleting(false);
+    }
+  }
 
   function handleThemeSelect(t: (typeof THEMES)[number]) {
     if (t.premium && !isPremium) {
@@ -214,8 +242,33 @@ export default function Settings() {
         />
       </SettingsSection>
 
+      {/* ── Danger Zone ─────────────────────────────────────────── */}
+      <div className="bg-card border border-destructive/30 rounded-2xl overflow-hidden mb-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-destructive px-5 pt-4 pb-2">
+          Danger Zone
+        </h3>
+        <div className="divide-y divide-border">
+          <button
+            onClick={() => setDeleteDialogOpen(true)}
+            className="w-full transition-colors hover:bg-destructive/5 active:bg-destructive/10"
+          >
+            <div className="flex items-center gap-3 px-5 py-3">
+              <Trash2 className="w-4 h-4 text-destructive shrink-0" />
+              <div className="flex-1 text-left">
+                <span className="text-sm font-medium text-destructive">
+                  Delete Account
+                </span>
+                <p className="text-[11px] text-muted-foreground">
+                  Permanently remove your data
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* ── Logout ──────────────────────────────────────────────── */}
-      <div className="mt-6">
+      <div className="mt-4">
         <Button
           onClick={() => (window.location.href = "/api/logout")}
           variant="destructive"
@@ -230,6 +283,57 @@ export default function Settings() {
       <p className="text-center text-[11px] text-muted-foreground mt-6">
         Made with 💩 by Deuce Diary
       </p>
+
+      {/* ── Delete Account Dialog ─────────────────────────────── */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="rounded-2xl mx-4">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                This will permanently delete your account and all associated
+                data, including your deuce history, badges, and squad
+                memberships.
+              </span>
+              <span className="block font-semibold text-foreground">
+                This action cannot be undone.
+              </span>
+              <span className="block mt-3">
+                Type <span className="font-mono font-bold text-destructive">DELETE</span> to
+                confirm:
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <input
+            type="text"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Type DELETE"
+            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-destructive"
+            autoComplete="off"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteConfirmText("");
+                setDeleteDialogOpen(false);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "DELETE" || isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              {isDeleting ? "Deleting..." : "Delete Account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

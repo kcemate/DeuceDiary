@@ -608,6 +608,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Account deletion (soft-delete with GDPR-compliant data removal)
+  app.delete('/api/user/account', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.softDeleteUser(req.user.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      Errors.internal(res, "Failed to delete account");
+    }
+  });
+
   // Group routes (free — squad limit for free users)
   app.post('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
