@@ -494,6 +494,40 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── FAQ / Objection Handling ── */}
+      <section className="max-w-2xl mx-auto px-4 py-16 md:py-20">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+            You've got questions. We've got answers.
+          </h2>
+        </div>
+        <div className="space-y-4">
+          {[
+            {
+              q: "Is this actually a poop tracking app?",
+              a: "Yes. And it's glorious. Think of it as Duolingo meets Strava — but for your bowel movements. We made it social, competitive, and genuinely fun.",
+            },
+            {
+              q: "Is my data private?",
+              a: "Your logs are only visible to squads you choose to join. We don't sell your data. What happens on the throne stays on the throne.",
+            },
+            {
+              q: "Is it really free?",
+              a: "The core experience — logging, streaks, squads, leaderboards — is 100% free. Porcelain Premium adds power features for the truly dedicated.",
+            },
+            {
+              q: "Will my friends judge me?",
+              a: "They'll be too busy protecting their own streaks. Besides, everyone poops — now you can finally prove you're the best at it.",
+            },
+          ].map((faq) => (
+            <div key={faq.q} className="bg-card border border-border rounded-xl p-5">
+              <h3 className="font-bold text-foreground mb-1.5">{faq.q}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Final CTA + Login Form ── */}
       <section id="login-section" className="max-w-md mx-auto px-4 py-16 md:py-24">
         <div className="text-center mb-8">
