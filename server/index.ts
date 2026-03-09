@@ -72,7 +72,7 @@ app.use("/api", globalLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  max: process.env.NODE_ENV === "test" ? 10000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many auth attempts, please try again later." },
@@ -83,7 +83,7 @@ app.use("/api/webhooks", authLimiter);
 
 const logLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 30,
+  max: process.env.NODE_ENV === "test" ? 10000 : 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many log requests, please try again later." },
@@ -101,8 +101,8 @@ app.use("/api/notifications/register", pushLimiter);
 app.use("/api/push/unregister", pushLimiter);
 
 // --- Body parsers ---
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // --- Response time tracking (must be before routes) ---
 app.use(responseTimeMiddleware);

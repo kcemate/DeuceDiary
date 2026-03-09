@@ -43,8 +43,8 @@ const createLocationSchema = z.object({
 const createDeuceSchema = z.object({
   groupIds: z.array(z.string()).optional(),
   groupId: z.string().optional(),
-  location: z.string().min(1).max(200),
-  thoughts: z.string().optional(),
+  location: z.string().min(1).max(100),
+  thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
   ghost: z.boolean().optional(),
   bristolScore: z.number().int().min(1).max(7).optional(),
@@ -1231,7 +1231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
-        return Errors.badRequest(res, "Invalid deuce entry data");
+        const firstIssue = parsed.error.issues[0]?.message || "Invalid deuce entry data";
+        return Errors.badRequest(res, firstIssue);
       }
 
       const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
@@ -1241,11 +1242,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (targetGroupIds.length === 0) {
         return Errors.badRequest(res, "At least one group must be selected");
-      }
-
-      // Validate thought length
-      if (entryData.thoughts && entryData.thoughts.length > 500) {
-        return Errors.badRequest(res, "Thought must be 500 characters or less");
       }
 
       // bristolScore validated by zod (1-7 int), but double-check for safety
@@ -1337,7 +1333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
-        return Errors.badRequest(res, "Invalid deuce entry data");
+        const firstIssue = parsed.error.issues[0]?.message || "Invalid deuce entry data";
+        return Errors.badRequest(res, firstIssue);
       }
 
       const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
@@ -1349,11 +1346,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       if (targetGroupIds.length === 1) {
         return Errors.badRequest(res, "Use /api/deuces for single group logging. Bulk requires multiple groups.");
-      }
-
-      // Validate thought length
-      if (entryData.thoughts && entryData.thoughts.length > 500) {
-        return Errors.badRequest(res, "Thought must be 500 characters or less");
       }
 
       // bristolScore validated by zod (1-7 int), but double-check for safety
@@ -1447,8 +1439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const syncDeuceSchema = z.object({
     entries: z.array(z.object({
       id: z.string(),           // client-local ID (for result mapping)
-      location: z.string().min(1).max(200),
-      thoughts: z.string().max(500).optional(),
+      location: z.string().min(1).max(100),
+      thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
       groupIds: z.array(z.string()).min(1),
       loggedAt: z.union([z.string(), z.null()]).optional(),
     })).min(1).max(50),

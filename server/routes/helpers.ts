@@ -22,8 +22,8 @@ export const createLocationSchema = z.object({
 export const createDeuceSchema = z.object({
   groupIds: z.array(z.string()).optional(),
   groupId: z.string().optional(),
-  location: z.string().min(1).max(200),
-  thoughts: z.string().optional(),
+  location: z.string().min(1).max(100),
+  thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
   ghost: z.boolean().optional(),
 });
