@@ -9,6 +9,28 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
 
+const REFERRAL_TIERS = [
+  { name: "Newcomer", min: 0, emoji: "🌱", color: "text-muted-foreground" },
+  { name: "Bronze Recruiter", min: 1, emoji: "🥉", color: "text-amber-700" },
+  { name: "Silver Recruiter", min: 5, emoji: "🥈", color: "text-slate-400" },
+  { name: "Gold Recruiter", min: 10, emoji: "🥇", color: "text-amber-500" },
+  { name: "Diamond Recruiter", min: 25, emoji: "💎", color: "text-cyan-400" },
+] as const;
+
+function getReferralTier(count: number) {
+  for (let i = REFERRAL_TIERS.length - 1; i >= 0; i--) {
+    if (count >= REFERRAL_TIERS[i].min) return REFERRAL_TIERS[i];
+  }
+  return REFERRAL_TIERS[0];
+}
+
+function getNextTier(count: number) {
+  for (const tier of REFERRAL_TIERS) {
+    if (count < tier.min) return tier;
+  }
+  return null;
+}
+
 const SHARE_MESSAGES = [
   "I track my poops and I'm not ashamed. Join me on Deuce Diary — the Strava of poop tracking.",
   "Just logged my 💩 on Deuce Diary. Yes it's an app. Yes it's amazing. Join me:",
@@ -203,6 +225,37 @@ export default function Referral() {
                 ? "You earned 30 days of Porcelain Premium. Keep sharing to stay golden!"
                 : `Invite ${goal - count} more friend${goal - count === 1 ? "" : "s"} to earn 30 days of Porcelain Premium`}
             </p>
+          </div>
+        );
+      })()}
+
+      {/* Recruiter Tier Badge */}
+      {(() => {
+        const count = stats?.totalReferrals ?? referral?.referralCount ?? 0;
+        const tier = getReferralTier(count);
+        const next = getNextTier(count);
+        return (
+          <div className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 mb-6">
+            <span className="text-3xl">{tier.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-bold ${tier.color}`}>{tier.name}</p>
+              {next ? (
+                <p className="text-xs text-muted-foreground">
+                  {next.min - count} more to reach {next.emoji} {next.name}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Maximum tier reached — legendary status!
+                </p>
+              )}
+            </div>
+            {next && (
+              <div className="text-right shrink-0">
+                <span className="text-xs font-bold text-muted-foreground">
+                  {count}/{next.min}
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}
