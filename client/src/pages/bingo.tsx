@@ -91,6 +91,108 @@ function Confetti({ show }: { show: boolean }) {
   );
 }
 
+// Static placeholder squares for premium gate preview
+const PLACEHOLDER_SQUARES = [
+  { title: "Back-to-Back", description: "Two deuces in one day" },
+  { title: "Power Hour", description: "Deuce between 12–1pm" },
+  { title: "Morning Glory", description: "First deuce before 9am" },
+  { title: "Night Owl", description: "Late night deuce after 11pm" },
+  { title: "Streak Week", description: "7 days straight" },
+  { title: "Double Down", description: "Log two sessions today" },
+  { title: "Speed Demon", description: "Under 3 minutes" },
+  { title: "The Legend", description: "Longest session ever" },
+  { title: "Social Butterfly", description: "Deuce at a friend's place" },
+  { title: "Road Warrior", description: "Deuce while traveling" },
+  { title: "Lunch Break", description: "Noon deuce on a weekday" },
+  { title: "Zen Mode", description: "No phone during deuce" },
+  { title: "FREE", description: "Center square" },
+  { title: "Marathon", description: "20+ minute session" },
+  { title: "Early Bird", description: "Before sunrise" },
+  { title: "Holiday Deuce", description: "On a public holiday" },
+  { title: "Work From Home", description: "Home office special" },
+  { title: "Gym Hero", description: "Post-workout deuce" },
+  { title: "Coffee Chaser", description: "Right after coffee" },
+  { title: "Weekend Warrior", description: "Saturday or Sunday" },
+  { title: "Perfect Week", description: "Every day Mon–Sun" },
+  { title: "Soundtrack", description: "With music playing" },
+  { title: "Reading Time", description: "With a book or article" },
+  { title: "New Location", description: "Somewhere new" },
+  { title: "Blackout!", description: "Complete all 25 squares" },
+];
+
+function PlaceholderBingoGrid() {
+  const completedIndices = new Set([0, 4, 6, 12, 18, 20, 24]);
+  return (
+    <div className="pb-24 pt-4">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Deuce Bingo</h2>
+            <p className="text-sm text-muted-foreground">This Month</p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-black text-foreground">7/25</p>
+          </div>
+        </div>
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary rounded-full" style={{ width: "28%" }} />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 text-right">28% complete</p>
+      </div>
+      <div className="grid grid-cols-5 gap-1 mb-4">
+        {PLACEHOLDER_SQUARES.map((sq, index) => {
+          const done = completedIndices.has(index);
+          return (
+            <div
+              key={index}
+              className={cn(
+                "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center min-h-[64px]",
+                done
+                  ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
+                  : "border-border bg-card",
+              )}
+            >
+              {done ? (
+                <>
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl">
+                    <svg className="w-8 h-8 text-amber-700 opacity-30" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                  </div>
+                  <p className="text-[9px] font-bold text-amber-800 leading-tight z-10 line-clamp-2">{sq.title}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">{sq.title}</p>
+                  <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">{sq.description}</p>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1 h-10 rounded-xl bg-primary/80 flex items-center justify-center">
+          <span className="text-sm font-bold text-primary-foreground">Check Progress</span>
+        </div>
+        <div className="h-10 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+          <span className="text-sm font-bold text-foreground">Leaderboard</span>
+        </div>
+      </div>
+      <div className="rounded-2xl border border-border bg-card p-3">
+        <p className="text-xs font-bold text-muted-foreground mb-2">How to play</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Complete challenges by logging deuces throughout the month. Hit{" "}
+          <span className="font-bold text-foreground">Check Progress</span> to update your card.
+          Complete a row, column, or diagonal for{" "}
+          <span className="font-bold text-yellow-600">BINGO!</span> Complete all 25 for a{" "}
+          <span className="font-bold text-amber-600">BLACKOUT!</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function BingoSquareCell({
   square,
   index,
@@ -209,7 +311,9 @@ export default function Bingo() {
   const isPremiumError =
     error instanceof Error && (error.message.includes("Premium") || error.message.includes("upgrade"));
 
-  const BingoContent = (
+  const BingoContent = isPremiumError ? (
+    <PlaceholderBingoGrid />
+  ) : (
     <div className="pb-24 pt-4">
       {isLoading && (
         <div className="flex items-center justify-center py-20">
