@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import { useTheme, type ThemeName } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { BackHeader } from "@/components/back-header";
 
 const THEMES: {
   id: ThemeName;
@@ -35,16 +35,7 @@ export default function Settings() {
 
   return (
     <div className="pt-6 pb-24">
-      {/* Back to profile */}
-      <button
-        onClick={() => setLocation("/profile")}
-        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground mb-6 hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Profile
-      </button>
-
-      <h2 className="text-2xl font-extrabold text-foreground mb-6">Theme</h2>
+      <BackHeader to="/profile" label="Profile" title="Theme" />
 
       <div className="grid grid-cols-4 gap-3 sm:gap-4">
         {THEMES.map((t) => (

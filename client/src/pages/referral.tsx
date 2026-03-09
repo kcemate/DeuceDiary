@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Copy, Share2, Users, Award, Clock } from "lucide-react";
+import { BackHeader } from "@/components/back-header";
 
 interface ReferralInfo {
   code: string;
@@ -116,6 +117,7 @@ export default function Referral() {
 
   return (
     <div className="pt-6 pb-24">
+      <BackHeader to="/profile" label="Profile" />
       {/* Hero */}
       <div className="text-center mb-6">
         <p className="text-6xl mb-4">🎁</p>
@@ -259,15 +261,6 @@ export default function Referral() {
         </div>
       </div>
 
-      {/* Back Link */}
-      <div className="text-center">
-        <button
-          onClick={() => setLocation("/profile")}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          &larr; Back to Profile
-        </button>
-      </div>
     </div>
   );
 }

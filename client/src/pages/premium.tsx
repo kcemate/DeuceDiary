@@ -5,6 +5,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { BackHeader } from "@/components/back-header";
 import { StreakInsuranceButton } from "@/components/streak-insurance-button";
 import { ThroneAnalytics } from "@/components/throne-analytics";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -72,6 +73,7 @@ export default function Premium() {
   if (upgraded || user?.subscription === "premium") {
     return (
       <div className="pt-6 pb-24 space-y-6">
+        <BackHeader to="/profile" label="Profile" />
         {/* Header */}
         <div className="text-center">
           <p className="text-7xl mb-4">👑</p>
@@ -132,12 +134,6 @@ export default function Premium() {
           </Button>
         </div>
 
-        <Button
-          onClick={() => setLocation("/profile")}
-          className="w-full rounded-2xl font-bold py-4"
-        >
-          Back to Profile
-        </Button>
       </div>
     );
   }
