@@ -64,9 +64,8 @@ function evaluateBingoCondition(
       return entries.some(e => e.loggedAt.getUTCHours() >= conditionValue);
     case 'streak_days':
       return groups.some(g => g.currentStreak >= conditionValue);
-    case 'high_rating_count': {
-      const c = entries.filter(e => e.bristolScore !== null && e.bristolScore >= 6).length;
-      return c >= conditionValue;
+    case 'monthly_logs': {
+      return entries.length >= conditionValue;
     }
     case 'unique_locations': {
       const locs = new Set(entries.map(e => e.location.toLowerCase().trim()));
@@ -92,9 +91,23 @@ function evaluateBingoCondition(
     }
     case 'group_streak_min':
       return groups.some(g => g.currentStreak >= conditionValue);
-    case 'perfect_bristol': {
-      const c = entries.filter(e => e.bristolScore === 4).length;
-      return c >= conditionValue;
+    case 'consistent_time': {
+      // Check if user logged at roughly the same hour for conditionValue consecutive days
+      const sorted = [...entries].sort((a, b) => a.loggedAt.getTime() - b.loggedAt.getTime());
+      let streak = 1;
+      for (let i = 1; i < sorted.length; i++) {
+        const prev = sorted[i - 1];
+        const curr = sorted[i];
+        const dayDiff = Math.round((curr.loggedAt.getTime() - prev.loggedAt.getTime()) / 86400000);
+        const hourDiff = Math.abs(curr.loggedAt.getUTCHours() - prev.loggedAt.getUTCHours());
+        if (dayDiff === 1 && hourDiff <= 1) {
+          streak++;
+          if (streak >= conditionValue) return true;
+        } else {
+          streak = 1;
+        }
+      }
+      return false;
     }
     case 'monthly_days': {
       const days = new Set(entries.map(e => e.loggedAt.toISOString().slice(0, 10)));

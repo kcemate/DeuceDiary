@@ -9,7 +9,7 @@ import type { BingoSquare } from "@shared/schema";
 const BINGO_CHALLENGES: Omit<BingoSquare, 'id' | 'completed'>[] = [
   { title: 'Early Bird',        description: 'Log before 7am',                          condition_type: 'time_before',       condition_value: 7  },
   { title: 'Consistency King',  description: '5-day squad streak',                      condition_type: 'streak_days',       condition_value: 5  },
-  { title: 'Bristol Elite',     description: 'Rate 3 deuces 6 or higher',               condition_type: 'high_rating_count', condition_value: 3  },
+  { title: 'Throne Veteran',     description: 'Log 10 deuces this month',                 condition_type: 'monthly_logs',      condition_value: 10 },
   { title: 'Night Owl',         description: 'Log after 10pm',                          condition_type: 'time_after',        condition_value: 22 },
   { title: 'Marathon Session',  description: 'Maintain a 7-day squad streak',           condition_type: 'streak_days',       condition_value: 7  },
   { title: 'Location Scout',    description: 'Log from 3 different locations',          condition_type: 'unique_locations',  condition_value: 3  },
@@ -17,7 +17,7 @@ const BINGO_CHALLENGES: Omit<BingoSquare, 'id' | 'completed'>[] = [
   { title: 'Double Flush',      description: 'Log twice in one day',                    condition_type: 'daily_count',       condition_value: 2  },
   { title: 'Weekend Warrior',   description: 'Log both Sat and Sun this month',         condition_type: 'weekend_both',      condition_value: 1  },
   { title: 'Group Legend',      description: 'Squad streak hits 10+',                  condition_type: 'group_streak_min',  condition_value: 10 },
-  { title: 'Perfect Form',      description: 'Log 5 perfect Bristol 4s',               condition_type: 'perfect_bristol',   condition_value: 5  },
+  { title: 'Creature of Habit', description: 'Log at the same time (±1hr) 3 days in a row', condition_type: 'consistent_time', condition_value: 3  },
   { title: 'Early Riser',       description: 'Log before 6am',                         condition_type: 'time_before',       condition_value: 6  },
   { title: 'Hat Trick',         description: 'Log 3 times in one day',                 condition_type: 'daily_count',       condition_value: 3  },
   { title: 'Globetrotter',      description: 'Log from 5 different locations',         condition_type: 'unique_locations',  condition_value: 5  },
