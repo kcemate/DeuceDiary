@@ -191,6 +191,26 @@ export default function GroupDetail() {
   const isAdmin = (member: { role: string }) => member.role === "admin";
   const isCurrentUserAdmin = groupDetail?.members.find(m => m.user.id === user?.id)?.role === "admin";
 
+  const getDateGroup = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const entryDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (entryDate.getTime() === today.getTime()) return "Today";
+    if (entryDate.getTime() === yesterday.getTime()) return "Yesterday";
+    return date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  };
+
+  const groupedEntries = (groupDetail?.entries ?? []).reduce((acc, entry) => {
+    const group = getDateGroup(entry.loggedAt);
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(entry);
+    return acc;
+  }, {} as Record<string, typeof groupDetail.entries>);
+
   if (isLoading) {
     return (
       <div className="pt-6 pb-24">
@@ -462,39 +482,53 @@ export default function GroupDetail() {
         <CardContent className="p-4">
           <h3 className="font-semibold text-foreground mb-4">Recent Drops</h3>
           {groupDetail.entries.length > 0 ? (
-            <div className="space-y-4">
-              {groupDetail.entries.map((entry) => (
-                <div key={entry.id} className="border-l-4 border-primary pl-4 py-2">
-                  <div className="flex items-center mb-2">
-                    <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="mr-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={entry.user.profileImageUrl || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {getInitials(entry.user)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </StreakFrame>
-                    <span className="text-sm font-medium text-foreground flex items-center gap-1">
-                      {getUserDisplayName(entry.user)}
-                      <GoldCrownBadge
-                        subscription={entry.user.subscription}
-                        subscriptionExpiresAt={entry.user.subscriptionExpiresAt}
-                      />
-                    </span>
-                    <div className="text-xs text-muted-foreground ml-auto text-right">
-                      <div>{formatDate(entry.loggedAt)}</div>
-                      <div>{formatTime(entry.loggedAt)}</div>
-                    </div>
+            <div className="space-y-1">
+              {Object.entries(groupedEntries).map(([dateLabel, entries]) => (
+                <div key={dateLabel}>
+                  <div className="flex items-center gap-2 py-2">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{dateLabel}</span>
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">{entries.length}</span>
                   </div>
-                  <p className="text-sm text-foreground mb-2">{entry.thoughts}</p>
-                  <div className="flex items-center text-xs text-muted-foreground mb-2">
-                    <svg className="w-3 h-3 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>{entry.location}</span>
+                  <div className="space-y-3 mb-3">
+                    {entries.map((entry) => (
+                      <div key={entry.id} className="border-l-4 border-primary pl-3 py-1.5">
+                        <div className="flex items-center mb-1.5">
+                          <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="mr-2">
+                            <Avatar className="w-6 h-6">
+                              <AvatarImage src={entry.user.profileImageUrl || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {getInitials(entry.user)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </StreakFrame>
+                          <span className="text-sm font-medium text-foreground flex items-center gap-1">
+                            {getUserDisplayName(entry.user)}
+                            <GoldCrownBadge
+                              subscription={entry.user.subscription}
+                              subscriptionExpiresAt={entry.user.subscriptionExpiresAt}
+                            />
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {formatTime(entry.loggedAt)}
+                          </span>
+                        </div>
+                        {entry.thoughts && (
+                          <p className="text-sm text-foreground mb-1.5">{entry.thoughts}</p>
+                        )}
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <svg className="w-3 h-3 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>{entry.location}</span>
+                          </div>
+                        </div>
+                        <Reactions entryId={entry.id} />
+                      </div>
+                    ))}
                   </div>
-                  <Reactions entryId={entry.id} />
                 </div>
               ))}
             </div>
