@@ -139,6 +139,7 @@ export default function Profile() {
   const [shareOpen, setShareOpen] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const isPremium = user?.subscription === "premium";
 
   const { data: analytics } = useQuery<Analytics>({
     queryKey: ["/api/analytics/most-deuces"],
@@ -519,6 +520,38 @@ export default function Profile() {
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── Quick Links (features not in bottom nav) ──────────────── */}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground px-5 pt-5 pb-3">
+          Features
+        </h3>
+        <div className="divide-y divide-border">
+          <button
+            onClick={() => setLocation("/bingo")}
+            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
+          >
+            <span className="text-base shrink-0">🎯</span>
+            <span className="text-sm font-medium text-foreground flex-1 text-left">Deuce Bingo</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => setLocation("/premium")}
+            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
+          >
+            <span className="text-base shrink-0">👑</span>
+            <span className="text-sm font-medium text-foreground flex-1 text-left">
+              {isPremium ? "Throne Room" : "Go Premium"}
+            </span>
+            {!isPremium && (
+              <span className="text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                Upgrade
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
