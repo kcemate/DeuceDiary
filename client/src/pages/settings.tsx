@@ -30,6 +30,7 @@ import {
   Trash2,
   AlertTriangle,
   Download,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -108,8 +109,21 @@ export default function Settings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const userTimezone = user?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const isPremium = user?.subscription === "premium";
+
+  async function handleTimezoneChange(tz: string) {
+    try {
+      await apiRequest("/api/user/timezone", {
+        method: "PUT",
+        body: JSON.stringify({ timezone: tz }),
+      });
+      toast({ title: "Timezone updated" });
+    } catch {
+      toast({ title: "Failed to update timezone", variant: "destructive" });
+    }
+  }
 
   async function handleExportData() {
     setIsExporting(true);
@@ -239,6 +253,25 @@ export default function Settings() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="px-5 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="w-4 h-4 text-muted-foreground" />
+            <Label className="text-sm font-medium text-foreground">
+              Timezone
+            </Label>
+          </div>
+          <select
+            value={userTimezone}
+            onChange={(e) => handleTimezoneChange(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {Intl.supportedValuesOf("timeZone").map((tz) => (
+              <option key={tz} value={tz}>
+                {tz.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
         </div>
       </SettingsSection>
 

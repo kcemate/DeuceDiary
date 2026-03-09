@@ -4,8 +4,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
 import { storage } from "./storage";
 import { db, pool } from "./db";
-import { groups, groupMembers, deuceEntries, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
 import { requireGroupMember } from "./groupAuth";
@@ -646,6 +646,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error exporting data:", error);
       Errors.internal(res, "Failed to export data");
+    }
+  });
+
+  // Timezone preference
+  app.put('/api/user/timezone', isAuthenticated, async (req: any, res) => {
+    try {
+      const { timezone } = req.body;
+      if (!timezone || typeof timezone !== 'string') {
+        return Errors.badRequest(res, "Invalid timezone");
+      }
+      // Validate it's a real IANA timezone
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: timezone });
+      } catch {
+        return Errors.badRequest(res, "Invalid timezone identifier");
+      }
+      const [user] = await db
+        .update(users)
+        .set({ timezone, updatedAt: new Date() })
+        .where(and(eq(users.id, req.user.id), isNull(users.deletedAt)))
+        .returning();
+      res.json({ timezone: user.timezone });
+    } catch (error) {
+      console.error("Error updating timezone:", error);
+      Errors.internal(res, "Failed to update timezone");
     }
   });
 
