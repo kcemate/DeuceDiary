@@ -2025,8 +2025,10 @@ export class DatabaseStorage implements IStorage {
     if (!card) return { completedSquares: [], hasBlackout: false };
 
     const [year, mon] = month.split('-').map(Number);
-    const monthStart = new Date(year, mon - 1, 1);
-    const monthEnd = new Date(year, mon, 1);
+    // Use Date.UTC to ensure month boundaries are computed in UTC, consistent with
+    // how loggedAt is stored and queried throughout the codebase
+    const monthStart = new Date(Date.UTC(year, mon - 1, 1));
+    const monthEnd = new Date(Date.UTC(year, mon, 1));
 
     // Fetch all user entries for this month
     const entries = await db
