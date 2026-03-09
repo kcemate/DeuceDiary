@@ -41,7 +41,7 @@ import {
   type BingoSquare,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, count, sql, inArray, gte, lt, isNull } from "drizzle-orm";
+import { eq, desc, and, or, count, sql, inArray, gte, lt, lte, isNull } from "drizzle-orm";
 
 /** Internal helper — today as YYYY-MM-DD in UTC */
 function getTodayStorageUTC(): string {
@@ -1709,7 +1709,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(deuceEntries.userId, userId),
           gte(deuceEntries.createdAt, startOfDay),
-          sql`${deuceEntries.createdAt} <= ${endOfDay}`
+          lte(deuceEntries.createdAt, endOfDay)
         )
       );
     return result?.count ?? 0;
