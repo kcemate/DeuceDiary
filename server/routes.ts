@@ -2070,8 +2070,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const totalLogs = user.deuceCount ?? 0;
-      const longestStreak = await storage.getUserLongestStreak(user.id);
-      const bestDay = await storage.getUserBestDay(user.id);
+      const [longestStreak, bestDay] = await Promise.all([
+        storage.getUserLongestStreak(user.id),
+        storage.getUserBestDay(user.id),
+      ]);
 
       res.json({
         totalLogs,
