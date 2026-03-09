@@ -84,8 +84,12 @@ export function createAuthRouter(uploadsDir: string): Router {
   router.put('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const userData = updateUserSchema.parse(req.body);
-      const updatedUser = await storage.updateUserUsername(userId, userData.username);
+      const parsed = updateUserSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const msg = parsed.error.issues[0]?.message || "Invalid user data";
+        return res.status(400).json({ message: msg });
+      }
+      const updatedUser = await storage.updateUserUsername(userId, parsed.data.username);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
