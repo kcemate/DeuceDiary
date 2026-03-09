@@ -33,18 +33,20 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
     if (missingRaw.length === 0) continue;
 
     // Filter out members who have premium + unused streak insurance (covered)
-    const missing: typeof missingRaw = [];
-    for (const m of missingRaw) {
-      const sub = await storage.getUserSubscription(m.userId);
+    // Fetch all subscriptions in parallel instead of sequentially
+    const subscriptions = await Promise.all(
+      missingRaw.map(m => storage.getUserSubscription(m.userId))
+    );
+    const now = new Date();
+    const missing = missingRaw.filter((_, i) => {
+      const sub = subscriptions[i];
       const hasCoverage =
         sub.subscription === "premium" &&
         sub.subscriptionExpiresAt &&
-        new Date(sub.subscriptionExpiresAt) > new Date() &&
+        new Date(sub.subscriptionExpiresAt) > now &&
         !sub.streakInsuranceUsed;
-      if (!hasCoverage) {
-        missing.push(m);
-      }
-    }
+      return !hasCoverage;
+    });
 
     if (missing.length === 0) continue;
 
