@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -9,10 +7,9 @@ import { EditUsernameModal } from "@/components/edit-username-modal";
 import { ProfilePictureUpload } from "@/components/profile-picture-upload";
 import { ShareCardModal } from "@/components/ShareCardModal";
 import { StreakFrame } from "@/components/streak-frame";
-import { Edit2, Share2, Award, Flame, Bell, Palette, Gift, ChevronRight } from "lucide-react";
+import { Edit2, Share2, Award, Flame, ChevronRight } from "lucide-react";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { WeeklyThroneReport } from "@/components/WeeklyThroneReport";
-import { useToast } from "@/hooks/use-toast";
 import { AchievementBadge } from "@/components/Badge";
 import { StreakInsuranceButton } from "@/components/streak-insurance-button";
 import { ThroneAnalytics } from "@/components/throne-analytics";
@@ -134,10 +131,8 @@ function formatMemberSince(dateStr?: string | null): string {
 
 export default function Profile() {
   const { user } = useAuth();
-  const [pushNotifications, setPushNotifications] = useState(true);
   const [editUsernameOpen, setEditUsernameOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const isPremium = user?.subscription === "premium";
 
@@ -556,61 +551,23 @@ export default function Profile() {
       </div>
 
       {/* ── Settings ─────────────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground px-5 pt-5 pb-3">
-          Settings
-        </h3>
-        <div className="divide-y divide-border">
-          <div className="flex items-center gap-3 px-5 py-3">
-            <Bell className="w-4 h-4 text-muted-foreground shrink-0" />
-            <Label
-              htmlFor="push-notifications"
-              className="text-sm font-medium text-foreground flex-1"
-            >
-              Throne Alerts
-            </Label>
-            <Switch
-              id="push-notifications"
-              checked={pushNotifications}
-              onCheckedChange={setPushNotifications}
-            />
+      <button
+        onClick={() => setLocation("/settings")}
+        className="w-full bg-card border border-border rounded-2xl overflow-hidden mb-6 transition-colors hover:bg-muted/50 active:bg-muted"
+      >
+        <div className="flex items-center gap-3 px-5 py-4">
+          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <span className="text-base">⚙️</span>
           </div>
-          <button
-            onClick={() => setLocation("/settings")}
-            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
-          >
-            <Palette className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium text-foreground flex-1 text-left">Theme</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={() => setLocation("/referral")}
-            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
-          >
-            <Gift className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium text-foreground flex-1 text-left">
-              Refer Friends
-            </span>
-            {(user?.referralCount ?? 0) > 0 && (
-              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                {user?.referralCount} referred
-              </span>
-            )}
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
+          <div className="flex-1 text-left">
+            <span className="text-sm font-bold text-foreground">Settings</span>
+            <p className="text-[11px] text-muted-foreground">
+              Theme, notifications, account, privacy
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </div>
-      </div>
-
-      {/* Logout */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <Button
-          onClick={() => (window.location.href = "/api/logout")}
-          variant="destructive"
-          className="w-full rounded-xl font-bold"
-        >
-          Leave the Throne Room
-        </Button>
-      </div>
+      </button>
 
       <EditUsernameModal
         open={editUsernameOpen}
