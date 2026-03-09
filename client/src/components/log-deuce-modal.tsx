@@ -38,6 +38,29 @@ interface Location {
   createdBy?: string;
 }
 
+const SUCCESS_MESSAGES = [
+  "Another one for the books!",
+  "Throne session complete!",
+  "Royal flush!",
+  "Mission accomplished!",
+  "Deposit confirmed!",
+  "The deed is done!",
+  "Logged and loaded!",
+  "You're on a roll!",
+  "Business handled!",
+  "That's a wrap!",
+];
+
+function getSuccessMessage(streak: number, count: number): { title: string; description: string } {
+  const msg = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
+  const groupText = count > 1 ? ` to ${count} groups` : "";
+  const streakText = streak >= 2 ? ` | ${streak}-day streak!` : "";
+  return {
+    title: msg,
+    description: `Deuce logged${groupText}${streakText}`,
+  };
+}
+
 export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const [location, setLocation] = useState("");
   const [customLocation, setCustomLocation] = useState("");
@@ -134,7 +157,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         throw err;
       }
     },
-    onSuccess: (response: { count?: number; queued?: boolean }) => {
+    onSuccess: (response: { count?: number; queued?: boolean; streak?: number }) => {
       const count = response.count || 1;
       if (response.queued) {
         toast({
@@ -144,10 +167,8 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         // Kick off sync in background (no-op if still offline)
         syncQueue();
       } else {
-        toast({
-          title: "Success",
-          description: `Deuce logged successfully to ${count} group${count > 1 ? 's' : ''}!`,
-        });
+        const { title, description } = getSuccessMessage(response.streak || 0, count);
+        toast({ title, description });
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

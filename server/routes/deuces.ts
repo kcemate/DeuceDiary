@@ -296,11 +296,13 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       // Recalculate streaks for all affected groups
       const STREAK_MILESTONES = [7, 30, 100, 365];
+      let maxStreak = 0;
       for (const groupId of targetGroupIds) {
         try {
           await recalculateStreak(groupId);
           // Fire streak_milestone event when a milestone is hit
           const { currentStreak } = await storage.getGroupStreak(groupId);
+          if (currentStreak > maxStreak) maxStreak = currentStreak;
           if (STREAK_MILESTONES.includes(currentStreak)) {
             Events.streakMilestone(userId, groupId, currentStreak);
           }
@@ -330,7 +332,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           });
       }
 
-      res.json({ entries, count: entries.length });
+      res.json({ entries, count: entries.length, streak: maxStreak });
     } catch (error) {
       console.error("Error creating deuce entry:", error);
       res.status(500).json({ message: "Failed to create deuce entry" });
