@@ -81,9 +81,7 @@ export function createGroupsRouter(): Router {
   router.get('/api/groups', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      console.log("Fetching groups for user:", userId);
       const groups = await storage.getUserGroups(userId);
-      console.log("User groups result:", groups);
       res.json(groups);
     } catch (error) {
       console.error("Error fetching groups:", error);
@@ -105,9 +103,6 @@ export function createGroupsRouter(): Router {
 
       const members = await storage.getGroupMembers(groupId);
       const entries = await storage.getGroupEntries(groupId, limit, offset);
-
-      console.log("Group details - members:", members.length, "entries:", entries.length);
-      console.log("Members data:", members);
 
       res.json({ group, members, entries });
     } catch (error) {
@@ -147,8 +142,6 @@ export function createGroupsRouter(): Router {
       const userId = req.user.id;
       const { inviteId } = req.params;
 
-      console.log("User attempting to join group:", userId, "invite:", inviteId);
-
       const invite = await storage.getInviteById(inviteId);
       if (!invite || invite.expiresAt < new Date()) {
         return res.status(400).json({ message: "Invalid or expired invite" });
@@ -156,7 +149,6 @@ export function createGroupsRouter(): Router {
 
       const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
       if (isAlreadyMember) {
-        console.log("User is already a member of group:", invite.groupId);
         const group = await storage.getGroupById(invite.groupId);
         return res.json({ group, message: "Already a member of this group" });
       }
@@ -168,9 +160,6 @@ export function createGroupsRouter(): Router {
           return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
         }
       }
-
-      console.log("Adding user to group:", userId, "group:", invite.groupId);
-      // User already exists (isAuthenticated ensures this), just add to group
 
       await storage.addGroupMember({
         groupId: invite.groupId,
@@ -184,7 +173,6 @@ export function createGroupsRouter(): Router {
       Events.groupJoined(userId, invite.groupId);
 
       const group = await storage.getGroupById(invite.groupId);
-      console.log("User successfully joined group:", group);
       res.json({ group });
     } catch (error) {
       console.error("Error joining group:", error);
