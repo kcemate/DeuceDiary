@@ -132,13 +132,58 @@ export default function Referral() {
         </p>
       </div>
 
-      {/* Incentive Banner */}
-      <div className="bg-accent/10 border border-accent/30 rounded-2xl p-4 mb-6 text-center">
-        <p className="text-sm font-bold text-accent">
-          Invite friends &rarr; unlock Porcelain Premium for a month when 3 friends join
-        </p>
-        {/* TODO: Backend logic for auto-granting premium reward at 3 referrals */}
-      </div>
+      {/* Reward Progress */}
+      {(() => {
+        const count = referral?.referralCount ?? 0;
+        const goal = 3;
+        const progress = Math.min(count / goal, 1);
+        const unlocked = count >= goal;
+        return (
+          <div className={`border rounded-2xl p-5 mb-6 ${unlocked ? "bg-accent/15 border-accent/50" : "bg-accent/5 border-accent/20"}`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-bold text-foreground">
+                {unlocked ? "🎉 Premium Unlocked!" : "Unlock Porcelain Premium"}
+              </p>
+              <span className="text-xs font-bold text-accent">
+                {Math.min(count, goal)}/{goal} friends
+              </span>
+            </div>
+            {/* Progress bar */}
+            <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${Math.max(progress * 100, count > 0 ? 8 : 0)}%`,
+                  background: unlocked
+                    ? "linear-gradient(90deg, var(--accent), #d4a846)"
+                    : "linear-gradient(90deg, var(--primary), var(--accent))",
+                }}
+              />
+            </div>
+            {/* Milestone dots */}
+            <div className="flex justify-between px-1 mb-1">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex flex-col items-center">
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      count >= n
+                        ? "bg-accent text-white"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {count >= n ? "✓" : n}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              {unlocked
+                ? "You earned 30 days of Porcelain Premium. Keep sharing to stay golden!"
+                : `Invite ${goal - count} more friend${goal - count === 1 ? "" : "s"} to earn 30 days of Porcelain Premium`}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Share Card */}
       <div className="bg-card border-2 border-accent/40 rounded-2xl p-6 mb-6 text-center relative overflow-hidden">
