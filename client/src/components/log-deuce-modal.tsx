@@ -64,7 +64,13 @@ const DEUCE_MILESTONES: Record<number, string> = {
   1000: "The Thousand Throne Club!",
 };
 
-function getSuccessMessage(streak: number, count: number, totalDeuces?: number): { title: string; description: string } {
+const BINGO_NUDGES = [
+  "🎯 Check your Bingo board!",
+  "🎯 Did that count for Bingo?",
+  "🎯 Bingo progress updated!",
+];
+
+function getSuccessMessage(streak: number, count: number, totalDeuces?: number, isPremium?: boolean): { title: string; description: string } {
   // Check for milestone first
   if (totalDeuces && DEUCE_MILESTONES[totalDeuces]) {
     return {
@@ -76,9 +82,13 @@ function getSuccessMessage(streak: number, count: number, totalDeuces?: number):
   const msg = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
   const groupText = count > 1 ? ` to ${count} groups` : "";
   const streakText = streak >= 2 ? ` | ${streak}-day streak!` : "";
+  // ~30% chance to show bingo nudge for premium users
+  const bingoText = isPremium && Math.random() < 0.3
+    ? ` | ${BINGO_NUDGES[Math.floor(Math.random() * BINGO_NUDGES.length)]}`
+    : "";
   return {
     title: msg,
-    description: `Deuce logged${groupText}${streakText}`,
+    description: `Deuce logged${groupText}${streakText}${bingoText}`,
   };
 }
 
@@ -209,14 +219,16 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         // Kick off sync in background (no-op if still offline)
         syncQueue();
       } else {
-        const userData = queryClient.getQueryData<{ deuceCount?: number }>(["/api/auth/user"]);
-        const { title, description } = getSuccessMessage(response.streak || 0, count, userData?.deuceCount);
+        const userData = queryClient.getQueryData<{ deuceCount?: number; subscription?: string }>(["/api/auth/user"]);
+        const isPremium = userData?.subscription === "premium";
+        const { title, description } = getSuccessMessage(response.streak || 0, count, userData?.deuceCount, isPremium);
         toast({ title, description });
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
         queryClient.invalidateQueries({ queryKey: ["/api/deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/passport"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/bingo/current"] });
       }
       resetForm();
       onOpenChange(false);
