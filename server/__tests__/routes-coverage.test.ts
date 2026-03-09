@@ -385,6 +385,13 @@ const memStore = vi.hoisted(() => {
         lastStreakDate: null as string | null,
       };
     },
+    async getGroupStreaksBatch(groupIds: string[]) {
+      const map = new Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>();
+      for (const id of groupIds) {
+        map.set(id, await this.getGroupStreak(id));
+      }
+      return map;
+    },
     async updateGroupStreak(
       _groupId: string,
       _currentStreak: number,

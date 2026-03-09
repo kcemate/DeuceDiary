@@ -200,6 +200,13 @@ const memStore = vi.hoisted(() => {
 
     /* ---- Streak ops ---- */
     async getGroupStreak(_groupId: string) { return { currentStreak: 0, longestStreak: 0, lastStreakDate: null as string | null }; },
+    async getGroupStreaksBatch(groupIds: string[]) {
+      const map = new Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>();
+      for (const id of groupIds) {
+        map.set(id, await this.getGroupStreak(id));
+      }
+      return map;
+    },
     async updateGroupStreak() {},
     async getMembersLogStatusToday(groupId: string, _today: string) {
       const memberIds = _members.filter((m) => m.groupId === groupId).map((m) => m.userId);
