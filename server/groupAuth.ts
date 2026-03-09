@@ -23,7 +23,14 @@ export function requireGroupMember(paramName = "groupId"): RequestHandler {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const isMember = await storage.isUserInGroup(userId, groupId);
+    let isMember: boolean;
+    try {
+      isMember = await storage.isUserInGroup(userId, groupId);
+    } catch (err) {
+      console.error("[groupAuth] isUserInGroup error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+
     if (!isMember) {
       return res.status(403).json({ message: "Not authorized" });
     }
