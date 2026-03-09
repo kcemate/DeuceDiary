@@ -11,6 +11,7 @@ import { startCronJobs } from "./cron";
 import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
+import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
 if (process.env.SENTRY_DSN) {
@@ -100,6 +101,14 @@ const pushLimiter = rateLimit({
 app.use("/api/notifications/register", pushLimiter);
 app.use("/api/push/unregister", pushLimiter);
 
+// --- Request ID (trace each request through logs & error responses) ---
+app.use((req, res, next) => {
+  const id = (req.headers['x-request-id'] as string) || crypto.randomUUID();
+  req.headers['x-request-id'] = id;
+  res.setHeader('X-Request-Id', id);
+  next();
+});
+
 // --- Body parsers ---
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
@@ -125,7 +134,8 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      const rid = req.headers['x-request-id'] as string | undefined;
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms${rid ? ` [${rid.slice(0, 8)}]` : ''}`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -156,16 +166,17 @@ app.use((req, res, next) => {
   app.use(errorTrackingMiddleware);
 
   // --- Global Error Handler ---
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = status === 500 ? "Internal Server Error" : err.message || "Internal Server Error";
+    const requestId = req.headers['x-request-id'] as string | undefined;
 
     if (status === 500) {
-      console.error("[UNHANDLED ERROR]", err.stack || err);
+      console.error("[UNHANDLED ERROR]", requestId ? `[${requestId}]` : '', err.stack || err);
     }
 
     if (!res.headersSent) {
-      res.status(status).json({ message });
+      res.status(status).json({ message, ...(requestId && { requestId }) });
     }
   });
 
