@@ -120,7 +120,19 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
   router.get('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
       const { entryId } = req.params;
+
+      // Verify the entry exists and the user can access it
+      const entry = await storage.getEntryById(entryId);
+      if (!entry) {
+        return res.status(404).json({ message: "Entry not found" });
+      }
+      const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
+      if (!isInGroup) {
+        return res.status(403).json({ message: "Not authorized to view reactions for this entry" });
+      }
+
       const reactions = await storage.getEntryReactions(entryId);
       res.json(reactions);
     } catch (error) {
