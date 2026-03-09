@@ -12,6 +12,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { getUserDisplayName, getInitials, getUserSecondaryInfo } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
 import { GoldCrownBadge } from "@/components/gold-crown-badge";
+import { GroupLeaderboard } from "@/components/group-leaderboard";
 
 interface StreakData {
   currentStreak: number;
@@ -390,6 +391,9 @@ export default function GroupDetail() {
           </CardContent>
         </Card>
       )}
+
+      {/* Leaderboard */}
+      {groupId && <GroupLeaderboard groupId={groupId} />}
 
       {/* Members */}
       <Card className="shadow-sm mb-6">
