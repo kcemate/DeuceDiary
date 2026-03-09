@@ -986,12 +986,12 @@ export class DatabaseStorage implements IStorage {
   async getUserBestDay(userId: string): Promise<{ date: string; count: number } | undefined> {
     const rows = await db
       .select({
-        date: sql<string>`DATE(${deuceEntries.loggedAt})`,
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
         count: sql<number>`COUNT(*)::int`,
       })
       .from(deuceEntries)
       .where(eq(deuceEntries.userId, userId))
-      .groupBy(sql`DATE(${deuceEntries.loggedAt})`)
+      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
       .orderBy(desc(sql<number>`COUNT(*)::int`))
       .limit(1);
     return rows.length > 0 ? rows[0] : undefined;
