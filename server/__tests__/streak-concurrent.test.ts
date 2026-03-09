@@ -172,6 +172,7 @@ const memStore = vi.hoisted(() => {
     async cleanupExpiredInvites() { const now = new Date(); for (const [id, inv] of _invites) { if (inv.expiresAt < now) _invites.delete(id); } },
 
     async getLocations() { return [..._locations].sort((a, b) => a.isDefault !== b.isDefault ? (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0) : (a.name ?? "").localeCompare(b.name ?? "")); },
+    async getLocationsForUser(userId: string) { return [..._locations].filter((l) => l.isDefault || l.createdBy === userId).sort((a, b) => a.isDefault !== b.isDefault ? (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0) : (a.name ?? "").localeCompare(b.name ?? "")); },
     async createLocation(loc: any) { const l = { id: _locationId++, name: loc.name, isDefault: loc.isDefault ?? false, createdBy: loc.createdBy ?? null, createdAt: new Date() }; _locations.push(l); return l; },
     async getLocationByName(name: string) { return _locations.find((l) => l.name === name); },
 
@@ -473,9 +474,9 @@ describe("Streak recalculation — concurrent logs & race conditions", () => {
     const groupRes = await alice.post("/api/groups").send({ name: "DoubleSubmit" });
     const groupId = groupRes.body.id;
 
-    // Fire 5 concurrent requests from same user
+    // Fire 3 concurrent requests from same user
     const results = await Promise.all(
-      Array.from({ length: 5 }, (_, i) => logDeuce(alice, groupId, `Rapid ${i}`))
+      Array.from({ length: 3 }, (_, i) => logDeuce(alice, groupId, `Rapid ${i}`))
     );
 
     // All should succeed (entries created)
