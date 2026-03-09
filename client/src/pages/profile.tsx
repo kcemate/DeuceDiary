@@ -283,6 +283,37 @@ export default function Profile() {
             </div>
           </div>
         </div>
+        {/* Next tier progress */}
+        {(() => {
+          const tiers = [0, 7, 30, 90, 365] as const;
+          const currentIdx = tiers.findLastIndex((t) => maxStreak >= t);
+          const nextThreshold = currentIdx < tiers.length - 1 ? tiers[currentIdx + 1] : null;
+          const prevThreshold = tiers[currentIdx];
+          if (!nextThreshold) return null;
+          const progress = ((maxStreak - prevThreshold) / (nextThreshold - prevThreshold)) * 100;
+          const nextTier = getStreakTier(nextThreshold);
+          return (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  Next: {nextTier.icon} {nextTier.label}
+                </span>
+                <span className="text-[10px] font-bold" style={{ color: nextTier.color }}>
+                  {nextThreshold - maxStreak}d to go
+                </span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(progress, 100)}%`,
+                    backgroundColor: streakTier.color,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Stats Row */}
