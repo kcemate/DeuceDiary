@@ -47,8 +47,12 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && process.env.NODE_ENV === "production") {
+    console.warn("[AUTH] WARNING: SESSION_SECRET is not set in production — using insecure default");
+  }
   return session({
-    secret: process.env.SESSION_SECRET || "local-dev-secret",
+    secret: sessionSecret || "local-dev-secret",
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
