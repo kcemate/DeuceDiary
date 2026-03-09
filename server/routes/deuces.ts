@@ -259,6 +259,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         }
         const entry = await storage.createDeuceEntry({
           ...entryData,
+          thoughts: entryData.thoughts ?? "",
           ghost: isGhost,
           bristolScore: bristolScore ?? null,
           photoUrl: photoUrl ?? null,

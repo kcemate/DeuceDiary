@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const entries = [];
+      const entries: any[] = [];
       // Validate loggedAt if provided; reject clearly invalid date strings
       let loggedAt: Date;
       if (entryData.loggedAt) {
@@ -1335,6 +1335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const groupId of targetGroupIds) {
         const entry = await storage.createDeuceEntry({
           ...entryData,
+          thoughts: entryData.thoughts ?? "",
           ghost: isGhost,
           bristolScore: bristolScore ?? null,
           photoUrl: photoUrl ?? null,
@@ -1429,7 +1430,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return Errors.badRequest(res, firstIssue);
       }
 
-      const { groupIds, groupId, bristolScore, photoUrl, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed.data;
 
       // Must provide multiple groupIds for bulk endpoint
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -1453,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const entries = [];
+      const entries: any[] = [];
       // Validate loggedAt if provided; reject clearly invalid date strings
       let loggedAt: Date;
       if (entryData.loggedAt) {
@@ -1478,9 +1479,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .insert(deuceEntries)
             .values({
               ...entryData,
+              thoughts: entryData.thoughts ?? "",
               ghost: isGhost,
               bristolScore: bristolScore ?? null,
               photoUrl: photoUrl ?? null,
+              latitude: latitude != null ? String(latitude) : null,
+              longitude: longitude != null ? String(longitude) : null,
               groupId,
               userId,
               loggedAt,
@@ -2264,8 +2268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Dead connection sweep: every 60s remove terminated sockets from groupConnections
   const sweepInterval = setInterval(() => {
-    for (const [groupId, conns] of groupConnections) {
-      for (const ws of conns) {
+    for (const [groupId, conns] of Array.from(groupConnections)) {
+      for (const ws of Array.from(conns)) {
         if (ws.readyState !== WebSocket.OPEN) {
           conns.delete(ws);
         }

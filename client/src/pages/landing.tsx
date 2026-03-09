@@ -545,7 +545,7 @@ export default function Landing() {
 
         {/* Login Form */}
         {!isAuthenticated ? (
-          <SignInButton mode="redirect" forceRedirectUrl="/" afterSignInUrl="/">
+          <SignInButton mode="redirect" forceRedirectUrl="/">
             <Button className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25">
               Enter the Throne Room
             </Button>
@@ -602,7 +602,7 @@ export default function Landing() {
       {/* ── Sticky Mobile CTA ── */}
       {!isAuthenticated && showStickyCta && (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom">
-          <SignInButton mode="redirect" forceRedirectUrl="/" afterSignInUrl="/">
+          <SignInButton mode="redirect" forceRedirectUrl="/">
             <Button className="btn-shimmer w-full text-white font-bold py-3 text-base rounded-xl shadow-lg shadow-primary/25">
               Start Your Streak — Free
             </Button>

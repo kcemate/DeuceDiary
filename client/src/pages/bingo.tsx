@@ -262,7 +262,7 @@ export default function Bingo() {
     onSuccess: (result) => {
       const newSet = new Set(result.completedSquares);
       const fresh = new Set<number>();
-      for (const idx of newSet) {
+      for (const idx of Array.from(newSet)) {
         if (!prevCompleted.current.has(idx)) fresh.add(idx);
       }
       setNewlyCompleted(fresh);

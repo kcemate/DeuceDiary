@@ -106,7 +106,7 @@ export async function sendGroupPushNotification(
   }
 
   // Deduplicate by userId to prevent sending to the same user twice
-  const userIds = [...new Set(tokens.map((t) => t.userId))];
+  const userIds = Array.from(new Set(tokens.map((t) => t.userId)));
   let totalSent = 0;
   let totalFailed = 0;
 

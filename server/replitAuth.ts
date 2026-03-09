@@ -25,16 +25,18 @@ const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 export let clerkEnabled = !!CLERK_SECRET_KEY;
 
 export let clerk: any = null;
-if (clerkEnabled) {
-  try {
-    const mod = await import("@clerk/clerk-sdk-node");
-    const { createClerkClient } = mod;
-    clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
-  } catch (err) {
-    console.warn("[AUTH] Clerk SDK failed to initialise — falling back to session auth:", (err as Error).message);
-    clerkEnabled = false;
+await (async () => {
+  if (clerkEnabled) {
+    try {
+      const mod = await import("@clerk/clerk-sdk-node");
+      const { createClerkClient } = mod;
+      clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
+    } catch (err) {
+      console.warn("[AUTH] Clerk SDK failed to initialise — falling back to session auth:", (err as Error).message);
+      clerkEnabled = false;
+    }
   }
-}
+})();
 
 // --------------- session setup (dev mode) ---------------
 

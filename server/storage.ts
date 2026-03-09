@@ -1062,6 +1062,8 @@ export class DatabaseStorage implements IStorage {
     currentStreak: number;
     bestDay: { day: string; count: number };
     groupRankings: { groupId: string; groupName: string; rank: number; total: number }[];
+    avgBristolScore: number | null;
+    mostUsedLocation: string | null;
   }> {
     // Total deuces (all time, deduplicated — count distinct loggedAt timestamps)
     const [totalResult] = await db

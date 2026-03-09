@@ -47,8 +47,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apiRequest<{ theme: string }>("/api/user/theme")
       .then((res) => {
-        if (res.theme && VALID_THEMES.includes(res.theme)) {
-          setThemeState(res.theme);
+        if (res.theme && VALID_THEMES.includes(res.theme as ThemeName)) {
+          setThemeState(res.theme as ThemeName);
         }
       })
       .catch(() => {

@@ -209,7 +209,7 @@ export default function GroupDetail() {
     if (!acc[group]) acc[group] = [];
     acc[group].push(entry);
     return acc;
-  }, {} as Record<string, typeof groupDetail.entries>);
+  }, {} as Record<string, GroupDetail["entries"]>);
 
   if (isLoading) {
     return (

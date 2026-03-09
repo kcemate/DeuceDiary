@@ -14,7 +14,7 @@ export const THRONE_RANKS = [
 ] as const;
 
 export function getThroneRank(deuceCount: number) {
-  let rank = THRONE_RANKS[0];
+  let rank: (typeof THRONE_RANKS)[number] = THRONE_RANKS[0];
   let nextRank: (typeof THRONE_RANKS)[number] | null = THRONE_RANKS[1];
   for (let i = THRONE_RANKS.length - 1; i >= 0; i--) {
     if (deuceCount >= THRONE_RANKS[i].min) {
