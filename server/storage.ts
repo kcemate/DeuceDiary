@@ -1497,7 +1497,8 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
 
     const memberNames = memberRows.map(m => m.username ?? m.firstName ?? 'Member').filter(Boolean);
-    const memberCount = memberRows.length;
+    // Query actual member count separately — memberRows is limited to 10 for display
+    const memberCount = await this.getGroupMemberCount(invite.groupId);
 
     const [countRow] = await db
       .select({ total: sql<number>`COUNT(*)::int` })
