@@ -129,6 +129,30 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     }
   });
 
+  // Delete a deuce entry (owner only — IDOR protection)
+  router.delete('/api/deuces/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      const entry = await storage.getEntryById(id);
+      if (!entry) {
+        return res.status(404).json({ message: "Entry not found" });
+      }
+
+      // IDOR protection: only the owner can delete their own entry
+      if (entry.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to delete this entry" });
+      }
+
+      await storage.deleteDeuceEntry(id);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error deleting deuce entry:", error);
+      res.status(500).json({ message: "Failed to delete entry" });
+    }
+  });
+
   // Deuce feed route (free)
   router.get('/api/deuces', isAuthenticated, async (req: any, res) => {
     try {
@@ -175,7 +199,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid deuce entry data" });
+        const firstIssue = parsed.error.issues[0]?.message || "Invalid deuce entry data";
+        return res.status(400).json({ message: firstIssue });
       }
 
       const { groupIds, groupId, ...entryData } = parsed.data;
@@ -185,11 +210,6 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       if (targetGroupIds.length === 0) {
         return res.status(400).json({ message: "At least one group must be selected" });
-      }
-
-      // Validate thought length
-      if (entryData.thoughts && entryData.thoughts.length > 500) {
-        return res.status(400).json({ message: "Thought must be 500 characters or less" });
       }
 
       // Check if user is in all selected groups

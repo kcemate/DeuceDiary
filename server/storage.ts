@@ -179,7 +179,8 @@ export interface IStorage {
   getGroupEntries(groupId: string, limit?: number, offset?: number): Promise<(DeuceEntry & { user: User })[]>;
   getUserDeucesByDate(userId: string): Promise<{ date: string; count: number }[]>;
   getEntryById(entryId: string): Promise<DeuceEntry | undefined>;
-  
+  deleteDeuceEntry(entryId: string): Promise<void>;
+
   // Invite operations
   createInvite(invite: InsertInvite): Promise<Invite>;
   getInviteById(inviteId: string): Promise<Invite | undefined>;
@@ -623,6 +624,10 @@ export class DatabaseStorage implements IStorage {
   async getEntryById(entryId: string): Promise<DeuceEntry | undefined> {
     const [entry] = await db.select().from(deuceEntries).where(eq(deuceEntries.id, entryId));
     return entry;
+  }
+
+  async deleteDeuceEntry(entryId: string): Promise<void> {
+    await db.delete(deuceEntries).where(eq(deuceEntries.id, entryId));
   }
 
   // Invite operations
