@@ -18,4 +18,13 @@ export const pool = new pg.Pool({
     ? { rejectUnauthorized: false }
     : undefined,
 });
+
+// Prevent idle client errors from crashing the process.
+// pg.Pool emits 'error' when a backend terminates an idle connection
+// (e.g. Railway restarts, PgBouncer timeout). Without this handler the
+// event becomes an uncaughtException and kills the server.
+pool.on('error', (err) => {
+  console.error('[DB POOL] Unexpected error on idle client:', err.message);
+});
+
 export const db = drizzle({ client: pool, schema });
