@@ -103,6 +103,52 @@
   --ring: hsl(280, 70%, 55%);
 }
 
+/* ── Theme: Ocean "Splash Zone" — deep teal + aqua ────────────────── */
+[data-theme="ocean"] {
+  --background: hsl(195, 40%, 7%);
+  --foreground: hsl(190, 25%, 90%);
+  --muted: hsl(195, 35%, 12%);
+  --muted-foreground: hsl(195, 15%, 50%);
+  --popover: hsl(195, 38%, 9%);
+  --popover-foreground: hsl(190, 25%, 90%);
+  --card: hsl(195, 35%, 11%);
+  --card-foreground: hsl(190, 25%, 90%);
+  --border: hsl(195, 25%, 18%);
+  --input: hsl(195, 25%, 18%);
+  --primary: hsl(175, 75%, 45%);
+  --primary-foreground: hsl(195, 40%, 7%);
+  --secondary: hsl(200, 45%, 22%);
+  --secondary-foreground: hsl(190, 25%, 90%);
+  --accent: hsl(185, 80%, 55%);
+  --accent-foreground: hsl(195, 40%, 7%);
+  --destructive: hsl(0, 60%, 40%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(175, 75%, 45%);
+}
+
+/* ── Theme: Retro "Log Cabin" — warm amber + wood tones ───────────── */
+[data-theme="retro"] {
+  --background: hsl(30, 30%, 8%);
+  --foreground: hsl(40, 30%, 88%);
+  --muted: hsl(30, 25%, 13%);
+  --muted-foreground: hsl(35, 15%, 48%);
+  --popover: hsl(30, 28%, 10%);
+  --popover-foreground: hsl(40, 30%, 88%);
+  --card: hsl(30, 25%, 12%);
+  --card-foreground: hsl(40, 30%, 88%);
+  --border: hsl(30, 20%, 19%);
+  --input: hsl(30, 20%, 19%);
+  --primary: hsl(35, 90%, 50%);
+  --primary-foreground: hsl(30, 30%, 8%);
+  --secondary: hsl(20, 45%, 22%);
+  --secondary-foreground: hsl(40, 30%, 88%);
+  --accent: hsl(15, 80%, 55%);
+  --accent-foreground: hsl(40, 30%, 88%);
+  --destructive: hsl(0, 65%, 40%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(35, 90%, 50%);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -165,8 +211,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* Settings theme grid: 2-col */
-  .grid.grid-cols-4.gap-4 {
+  /* Settings theme grid: 2-col on tiny screens */
+  .grid.grid-cols-3.gap-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -358,12 +404,16 @@
 
 [data-theme="default"] ::-webkit-scrollbar-thumb,
 [data-theme="dark"] ::-webkit-scrollbar-thumb,
-[data-theme="midnight"] ::-webkit-scrollbar-thumb {
+[data-theme="midnight"] ::-webkit-scrollbar-thumb,
+[data-theme="ocean"] ::-webkit-scrollbar-thumb,
+[data-theme="retro"] ::-webkit-scrollbar-thumb {
   background: hsl(0, 0%, 55%);
 }
 
 [data-theme="default"] ::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover {
+[data-theme="midnight"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="ocean"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="retro"] ::-webkit-scrollbar-thumb:hover {
   background: hsl(0, 0%, 70%);
 }

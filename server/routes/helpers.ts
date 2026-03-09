@@ -55,7 +55,7 @@ export const reminderSchema = z.object({
 });
 
 export const themeSchema = z.object({
-  theme: z.enum(["default", "dark", "cream", "midnight"]),
+  theme: z.enum(["default", "dark", "cream", "midnight", "ocean", "retro"]),
 });
 
 export const broadcastSchema = z.object({
@@ -72,7 +72,7 @@ export const unregisterPushSchema = z.object({
 
 // --- Constants ---
 export const MAX_LOGS_PER_DAY = 10;
-export const VALID_THEMES = ['default', 'dark', 'cream', 'midnight'] as const;
+export const VALID_THEMES = ['default', 'dark', 'cream', 'midnight', 'ocean', 'retro'] as const;
 export const MAX_PUSH_TOKENS_PER_USER = 10;
 
 // --- Utility Functions ---

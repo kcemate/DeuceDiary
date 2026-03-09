@@ -549,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Theme routes
-  const VALID_THEMES = ['default', 'dark', 'cream', 'midnight'] as const;
+  const VALID_THEMES = ['default', 'dark', 'cream', 'midnight', 'ocean', 'retro'] as const;
 
   app.get('/api/user/theme', isAuthenticated, requiresPremiumFor('custom_themes'), async (req: any, res) => {
     try {

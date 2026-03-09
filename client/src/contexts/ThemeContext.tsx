@@ -8,7 +8,7 @@ import {
 } from "react";
 import { apiRequest } from "@/lib/queryClient";
 
-export type ThemeName = "default" | "dark" | "cream" | "midnight";
+export type ThemeName = "default" | "dark" | "cream" | "midnight" | "ocean" | "retro";
 
 interface ThemeContextValue {
   theme: ThemeName;
@@ -18,7 +18,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 const STORAGE_KEY = "deuce-theme";
-const VALID_THEMES: ThemeName[] = ["default", "dark", "cream", "midnight"];
+const VALID_THEMES: ThemeName[] = ["default", "dark", "cream", "midnight", "ocean", "retro"];
 
 function getStoredTheme(): ThemeName {
   const stored = localStorage.getItem(STORAGE_KEY);

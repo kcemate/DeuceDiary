@@ -48,6 +48,8 @@ const THEMES: {
   { id: "cream", name: "Porcelain", color: "#F5F0E8", accent: "#22C55E", premium: true },
   { id: "dark", name: "Sewer Pipe", color: "#1A1410", accent: "#E68A2E", premium: false },
   { id: "midnight", name: "Royal Flush", color: "#150B22", accent: "#A855F7", premium: true },
+  { id: "ocean", name: "Splash Zone", color: "#0D1A1F", accent: "#2DD4BF", premium: true },
+  { id: "retro", name: "Log Cabin", color: "#1A1410", accent: "#F59E0B", premium: true },
 ];
 
 function SettingsSection({
@@ -232,7 +234,7 @@ export default function Settings() {
             <Palette className="w-4 h-4 text-muted-foreground" />
             <Label className="text-sm font-medium text-foreground">Theme</Label>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {THEMES.map((t) => (
               <button
                 key={t.id}
