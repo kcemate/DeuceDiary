@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { LogDeuceModal } from "@/components/log-deuce-modal";
 
 // Separate filled/outline icon paths for clear active state distinction
@@ -42,9 +42,40 @@ const navItems = [
   },
 ];
 
+function useHideOnScroll() {
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+  const ticking = useRef(false);
+
+  const onScroll = useCallback(() => {
+    if (ticking.current) return;
+    ticking.current = true;
+    requestAnimationFrame(() => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+      // Only hide after scrolling down 10px+ to avoid jitter
+      if (delta > 10 && currentY > 80) {
+        setHidden(true);
+      } else if (delta < -5) {
+        setHidden(false);
+      }
+      lastScrollY.current = currentY;
+      ticking.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [onScroll]);
+
+  return hidden;
+}
+
 export function BottomNavigation() {
   const [location] = useLocation();
   const [showLogModal, setShowLogModal] = useState(false);
+  const hidden = useHideOnScroll();
 
   const isActive = (path: string, exact: boolean) => {
     if (exact) return location === path;
@@ -53,7 +84,10 @@ export function BottomNavigation() {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-xl border-t border-border z-40">
+      <nav className={cn(
+        "fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-xl border-t border-border z-40 transition-transform duration-300 ease-out",
+        hidden && "translate-y-full"
+      )}>
         <div className="max-w-md mx-auto px-2">
           <div className="flex items-center justify-around py-2 pb-[env(safe-area-inset-bottom,8px)]">
             {navItems.map((item, i) => {
