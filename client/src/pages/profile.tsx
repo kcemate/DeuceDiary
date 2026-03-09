@@ -571,6 +571,19 @@ export default function Profile() {
             )}
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
+          <button
+            onClick={() => setLocation("/referral")}
+            className="flex items-center gap-3 w-full px-5 py-3 transition-colors hover:bg-muted/50 active:bg-muted"
+          >
+            <span className="text-base shrink-0">🎁</span>
+            <span className="text-sm font-medium text-foreground flex-1 text-left">Refer Friends</span>
+            {(user?.referralCount ?? 0) > 0 && (
+              <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                {user?.referralCount} referred
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
