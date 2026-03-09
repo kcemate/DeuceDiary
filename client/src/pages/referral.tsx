@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
+import { useAuth } from "@/hooks/useAuth";
 
 const REFERRAL_TIERS = [
   { name: "Newcomer", min: 0, emoji: "🌱", color: "text-muted-foreground" },
@@ -60,6 +61,7 @@ interface LeaderboardEntry {
 
 export default function Referral() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [applyCode, setApplyCode] = useState("");
   const [messageIndex, setMessageIndex] = useState(() =>

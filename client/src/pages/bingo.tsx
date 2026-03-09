@@ -434,7 +434,7 @@ export default function Bingo() {
           )}
 
           {/* Legend */}
-          <div className="rounded-2xl border border-border bg-card p-3">
+          <div className="rounded-2xl border border-border bg-card p-5">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">How to play</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Complete challenges by logging deuces throughout the month. Hit{" "}

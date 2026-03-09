@@ -291,6 +291,7 @@ export default function Home() {
           <Button
             onClick={() => setShowLogModal(true)}
             className="btn-shimmer w-full text-white py-6 text-xl font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+            aria-label="Log a new deuce"
           >
             <span className="text-3xl mr-3">🚽</span>
             Log a Deuce
@@ -388,6 +389,7 @@ export default function Home() {
         <Button
           onClick={() => setShowLogModal(true)}
           className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          aria-label="Log a new deuce"
         >
           <span className="text-2xl mr-3">🚽</span>
           Log a Deuce

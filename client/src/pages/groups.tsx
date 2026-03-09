@@ -86,7 +86,8 @@ export default function Groups() {
       <div className="mb-6">
         <Button
           onClick={() => setShowCreateModal(true)}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-base font-bold rounded-2xl shadow-lg shadow-primary/20"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          aria-label="Start a new squad"
         >
           <span className="mr-2">+</span> Start a Squad
         </Button>
