@@ -1,5 +1,3 @@
-{/* SEO TODO: Add OG meta tags in index.html — og:title, og:description, og:image, og:url, twitter:card */}
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -377,7 +375,7 @@ export default function Landing() {
             { emoji: "😂", label: "Reactions & Feed" },
             { emoji: "📊", label: "Weekly Throne Report" },
             { emoji: "🔒", label: "Privacy First" },
-            { emoji: "🩺", label: "Bristol Stool Scale" },
+            { emoji: "📈", label: "Personal Stats" },
             { emoji: "👑", label: "Porcelain Premium" },
             { emoji: "🌙", label: "Dark Mode" },
             { emoji: "🔗", label: "Invite & Referrals" },
