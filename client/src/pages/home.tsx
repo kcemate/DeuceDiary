@@ -297,6 +297,36 @@ export default function Home() {
         <div className="space-y-2 mb-4">
           <RankStrip deuceCount={user?.deuceCount ?? 0} />
           <NextBadgeTeaser deuceCount={user?.deuceCount ?? 0} />
+          {/* Bingo teaser for free users */}
+          <Link href="/premium">
+            <div className="rounded-2xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99] bg-card">
+              <div className="flex items-center gap-3">
+                <div className="shrink-0 grid grid-cols-5 gap-[2px] w-8 h-8 opacity-40">
+                  {Array.from({ length: 25 }, (_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-[1px]"
+                      style={{
+                        backgroundColor: [0, 6, 12, 18, 24].includes(i) ? "var(--primary)" : "var(--muted)",
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">🎯</span>
+                    <span className="text-xs font-bold text-foreground">Deuce Bingo</span>
+                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full ml-auto">
+                      Premium
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    25 monthly challenges — complete lines for BINGO!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Log Deuce */}
