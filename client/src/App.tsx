@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BottomNavigation } from "@/components/bottom-navigation";
 import { NotificationBanner } from "@/components/notification-banner";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,31 @@ import Legacy from "@/pages/legacy";
 import Referral from "@/pages/referral";
 import Bingo from "@/pages/bingo";
 import Passport from "@/pages/passport";
+
+function PageTransition({ locationKey, children }: { locationKey: string; children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = useState(true);
+  const prevKey = useRef(locationKey);
+
+  useEffect(() => {
+    if (prevKey.current !== locationKey) {
+      prevKey.current = locationKey;
+      setIsVisible(false);
+      // Trigger re-render with fade-in
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    }
+  }, [locationKey]);
+
+  return (
+    <div
+      className={isVisible ? "animate-page-in" : "opacity-0"}
+      style={{ minHeight: "50vh" }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function AppRoutes({
   isLoading,
@@ -201,16 +226,18 @@ function Router() {
           </div>
         )}
 
-        {/* Content */}
-        <div className="px-4">
-          <ErrorBoundary>
-            <AppRoutes
-              isLoading={isLoading}
-              isAuthenticated={isAuthenticated}
-              error={error}
-            />
-          </ErrorBoundary>
-        </div>
+        {/* Content with page transition */}
+        <PageTransition locationKey={location}>
+          <div className="px-4">
+            <ErrorBoundary>
+              <AppRoutes
+                isLoading={isLoading}
+                isAuthenticated={isAuthenticated}
+                error={error}
+              />
+            </ErrorBoundary>
+          </div>
+        </PageTransition>
 
         {/* Bottom Navigation */}
         {isAuthenticated && <BottomNavigation />}
