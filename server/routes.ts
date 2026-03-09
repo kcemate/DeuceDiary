@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   app.get('/api/admin/stats', async (req, res) => {
     const key = req.headers['x-admin-key'];
-    if (key !== ADMIN_KEY) {
+    if (!ADMIN_KEY || key !== ADMIN_KEY) {
       return Errors.unauthorized(res);
     }
     try {
