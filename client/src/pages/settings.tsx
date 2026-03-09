@@ -41,12 +41,13 @@ const THEMES: {
   id: ThemeName;
   name: string;
   color: string;
+  accent: string;
   premium: boolean;
 }[] = [
-  { id: "default", name: "Default", color: "#141414", premium: false },
-  { id: "cream", name: "Cream", color: "#F5F0E8", premium: true },
-  { id: "dark", name: "Dark", color: "#141C29", premium: false },
-  { id: "midnight", name: "Midnight", color: "#170E1A", premium: true },
+  { id: "default", name: "Clean Sweep", color: "#121212", accent: "#34D399", premium: false },
+  { id: "cream", name: "Porcelain", color: "#F5F0E8", accent: "#22C55E", premium: true },
+  { id: "dark", name: "Sewer Pipe", color: "#1A1410", accent: "#E68A2E", premium: false },
+  { id: "midnight", name: "Royal Flush", color: "#150B22", accent: "#A855F7", premium: true },
 ];
 
 function SettingsSection({
@@ -239,13 +240,18 @@ export default function Settings() {
                 className="flex flex-col items-center gap-1.5 group"
               >
                 <div
-                  className={`w-11 h-11 rounded-full border-2 transition-all ${
+                  className={`relative w-11 h-11 rounded-full border-2 transition-all ${
                     theme === t.id
                       ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
                       : "border-border hover:border-muted-foreground"
                   }`}
                   style={{ backgroundColor: t.color }}
-                />
+                >
+                  <div
+                    className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-background"
+                    style={{ backgroundColor: t.accent }}
+                  />
+                </div>
                 <span className="text-[11px] font-medium text-foreground">
                   {t.name}
                 </span>
