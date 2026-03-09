@@ -190,24 +190,17 @@ export default function Home() {
     );
   }
 
-  // ── Pull-to-refresh indicator ────────────────────────────────────────────
-  const PTRIndicator = () => (
-    <div
-      className="flex items-center justify-center overflow-hidden transition-all duration-200"
-      style={{ height: isPulling || isRefreshing ? `${Math.max(pullDistance, isRefreshing ? 48 : 0)}px` : 0 }}
-    >
-      <div
-        className={`w-8 h-8 rounded-full border-2 border-primary flex items-center justify-center transition-transform ${
-          isRefreshing ? "animate-spin border-b-transparent" : ""
-        }`}
-        style={{ transform: `rotate(${Math.min(pullDistance / THRESHOLD_DEG, 1) * 360}deg)` }}
-      >
-        {!isRefreshing && <span className="text-sm">↓</span>}
-      </div>
-    </div>
-  );
-
   const THRESHOLD_DEG = 80;
+
+  // Time-of-day greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 6) return "Up late";
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    if (hour < 21) return "Good evening";
+    return "Late night";
+  };
 
   // ── Free tier ───────────────────────────────────────────────────────────
   if (isFree) {
@@ -298,8 +291,20 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Personalized greeting */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold text-foreground">
+          {getGreeting()}, {user?.username || "friend"} 👋
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {user?.deuceCount === 0
+            ? "Your throne room awaits its first royal visit."
+            : `${user?.deuceCount ?? 0} lifetime deuces and counting.`}
+        </p>
+      </div>
+
       {/* Log Deuce Button */}
-      <div className="mb-8">
+      <div className="mb-6">
         <Button
           onClick={() => setShowLogModal(true)}
           className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
@@ -309,64 +314,23 @@ export default function Home() {
         </Button>
       </div>
 
-      {/* Total Deuces */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-2xl mb-8 border border-border">
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">
-              Total Deuces
-            </p>
-            <p className="stat-number text-5xl text-foreground">
-              {user?.deuceCount ?? 0}
-            </p>
-          </div>
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-            <span className="text-3xl">💩</span>
-          </div>
+      {/* Compact stats strip */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-card border border-border rounded-xl p-3 text-center">
+          <p className="stat-number text-2xl text-foreground">{user?.deuceCount ?? 0}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Total</p>
         </div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="bg-card border border-border rounded-xl p-3 text-center">
+          <p className="stat-number text-2xl text-primary">
+            {analytics && analytics.count > 0 ? analytics.count : "—"}
+          </p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Best Day</p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-3 text-center">
+          <p className="stat-number text-2xl text-foreground">{groups.length}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Squads</p>
+        </div>
       </div>
-
-      {/* Peak Throne Days */}
-      <Card className="mb-8 border border-border rounded-2xl overflow-hidden">
-        <CardContent className="p-6">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">
-            Peak Throne Days
-          </h3>
-          {analytics && analytics.count > 0 ? (
-            <div className="bg-muted p-4 rounded-xl border border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Top Day
-                  </p>
-                  <p className="text-lg font-extrabold text-foreground">
-                    {formatDate(analytics.date)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                    Count
-                  </p>
-                  <p className="stat-number text-3xl text-primary">
-                    {analytics.count}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-muted rounded-xl p-8 text-center border border-border">
-              <p className="text-5xl mb-3">🚽</p>
-              <p className="font-extrabold text-foreground text-lg">
-                The throne is quiet.
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Log your first deuce to get the party started
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Premium Perks Hub */}
       <Card className="mb-8 border border-border rounded-2xl overflow-hidden">
