@@ -235,15 +235,6 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
       return;
     }
 
-    if (!thoughts.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your thoughts",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const finalLocation = showCustomLocation ? customLocation.trim() : location;
     const loggedAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
 
@@ -356,10 +347,10 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
           </div>
 
           <div>
-            <Label htmlFor="thoughts">What's on your mind?</Label>
+            <Label htmlFor="thoughts">What's on your mind? <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Textarea
               id="thoughts"
-              placeholder="Share your throne thoughts..."
+              placeholder="Share your throne thoughts... or skip and go fast 💨"
               value={thoughts}
               onChange={(e) => setThoughts(e.target.value)}
               maxLength={500}
@@ -470,7 +461,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
           <Button
             type="submit"
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            disabled={logDeuceMutation.isPending || thoughts.length > 500}
+            disabled={logDeuceMutation.isPending}
           >
             {logDeuceMutation.isPending ? "Logging..." : isOnline ? "Log Deuce" : "Queue Deuce"}
           </Button>
