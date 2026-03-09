@@ -1495,7 +1495,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         if (validGroups.length !== entry.groupIds.length) continue;
 
-        const loggedAt = new Date(entry.loggedAt || new Date());
+        // Validate loggedAt if provided; skip entry with invalid date
+        let loggedAt: Date;
+        if (entry.loggedAt) {
+          const parsedDate = new Date(entry.loggedAt);
+          if (isNaN(parsedDate.getTime())) {
+            results.push({ id: entry.id, status: 'error', reason: 'Invalid loggedAt date' });
+            continue;
+          }
+          loggedAt = parsedDate;
+        } else {
+          loggedAt = new Date();
+        }
         for (const groupId of validGroups) {
           await storage.createDeuceEntry({
             location: entry.location,
