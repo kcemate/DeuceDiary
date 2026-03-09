@@ -26,7 +26,7 @@ export function createPublicRouter(): Router {
       const { userId } = req.params;
       const data = await storage.getShareCardData(userId);
 
-      const displayName = data.username || 'Anonymous';
+      const displayName = escapeHtml(data.username || 'Anonymous');
       const memberSince = data.memberSince
         ? new Date(data.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : '';
