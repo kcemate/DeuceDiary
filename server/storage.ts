@@ -929,16 +929,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGroupPushTokens(groupId: string): Promise<PushToken[]> {
-    const members = await db
-      .select({ userId: groupMembers.userId })
-      .from(groupMembers)
-      .where(eq(groupMembers.groupId, groupId));
-    if (members.length === 0) return [];
-    const memberIds = members.map(m => m.userId);
-    return await db
-      .select()
+    // Single JOIN query instead of two round-trips
+    const rows = await db
+      .select({ token: pushTokens })
       .from(pushTokens)
-      .where(inArray(pushTokens.userId, memberIds));
+      .innerJoin(groupMembers, eq(pushTokens.userId, groupMembers.userId))
+      .where(eq(groupMembers.groupId, groupId));
+    return rows.map(r => r.token);
   }
 
   // Broadcast operations
