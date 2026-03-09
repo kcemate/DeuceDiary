@@ -259,31 +259,43 @@ export default function GroupDetail() {
   return (
     <div className="pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="mb-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/groups")}
+              aria-label="Back to squads"
+              className="shrink-0"
+            >
+              <svg className="w-4 h-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </Button>
+            <h2 className="text-xl font-bold text-foreground truncate">{groupDetail.group.name}</h2>
+          </div>
           <Button
-            variant="ghost"
+            variant="destructive"
             size="sm"
-            onClick={() => setLocation("/groups")}
-            aria-label="Back to squads"
-            className="shrink-0"
+            onClick={() => leaveGroupMutation.mutate()}
+            disabled={leaveGroupMutation.isPending}
+            aria-label={`Leave ${groupDetail?.group.name ?? "this squad"}`}
           >
-            <svg className="w-4 h-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
+            Dip Out
           </Button>
-          <h2 className="text-xl font-bold text-foreground truncate">{groupDetail.group.name}</h2>
         </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => leaveGroupMutation.mutate()}
-          disabled={leaveGroupMutation.isPending}
-          aria-label={`Leave ${groupDetail?.group.name ?? "this squad"}`}
-        >
-          Dip Out
-        </Button>
+        {groupDetail.group.description && (
+          <p className="text-sm text-muted-foreground mt-1 ml-[52px]">{groupDetail.group.description}</p>
+        )}
+        <div className="flex items-center gap-4 mt-2 ml-[52px]">
+          <span className="text-xs text-muted-foreground">{groupDetail.members.length} member{groupDetail.members.length !== 1 ? "s" : ""}</span>
+          <span className="text-xs text-muted-foreground">{groupDetail.entries.length} deuce{groupDetail.entries.length !== 1 ? "s" : ""}</span>
+          {streakData && streakData.currentStreak > 0 && (
+            <span className="text-xs font-bold text-orange-600">🔥 {streakData.currentStreak}d streak</span>
+          )}
+        </div>
       </div>
 
       {/* New member onboarding — shown if current user has never logged in this group */}
