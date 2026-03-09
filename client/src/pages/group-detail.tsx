@@ -439,40 +439,53 @@ export default function GroupDetail() {
             </p>
           )}
           <div className="space-y-3">
-            {groupDetail.members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3 min-w-0">
-                  <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="shrink-0">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={member.user.profileImageUrl || undefined} />
-                      <AvatarFallback>
-                        {getInitials(member.user)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </StreakFrame>
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate flex items-center gap-1">
-                      {getUserDisplayName(member.user)}
-                      <GoldCrownBadge
-                        subscription={member.user.subscription}
-                        subscriptionExpiresAt={member.user.subscriptionExpiresAt}
-                      />
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {getUserSecondaryInfo(member.user)}
-                    </p>
-                    {member.user.personalRecord && (
-                      <p className="text-xs text-muted-foreground">
-                        PR: {formatDate(member.user.personalRecord.date)} — {member.user.personalRecord.count} deuce{member.user.personalRecord.count !== 1 ? 's' : ''}
-                      </p>
-                    )}
+            {(() => {
+              const maxDeuces = Math.max(...groupDetail.members.map(m => m.user.deuceCount || 0), 1);
+              const sortedMembers = [...groupDetail.members].sort((a, b) => (b.user.deuceCount || 0) - (a.user.deuceCount || 0));
+              return sortedMembers.map((member) => {
+                const count = member.user.deuceCount || 0;
+                const pct = Math.round((count / maxDeuces) * 100);
+                return (
+                  <div key={member.id} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="shrink-0">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={member.user.profileImageUrl || undefined} />
+                            <AvatarFallback>
+                              {getInitials(member.user)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </StreakFrame>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate flex items-center gap-1">
+                            {getUserDisplayName(member.user)}
+                            <GoldCrownBadge
+                              subscription={member.user.subscription}
+                              subscriptionExpiresAt={member.user.subscriptionExpiresAt}
+                            />
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {count} deuce{count !== 1 ? "s" : ""} total
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={isAdmin(member) ? "default" : "secondary"} className="shrink-0">
+                        {isAdmin(member) ? "Admin" : "Member"}
+                      </Badge>
+                    </div>
+                    <div className="ml-[52px]">
+                      <div className="w-full bg-muted rounded-full h-1.5">
+                        <div
+                          className="bg-primary/60 h-1.5 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <Badge variant={isAdmin(member) ? "default" : "secondary"} className="shrink-0">
-                  {isAdmin(member) ? "Admin" : "Member"}
-                </Badge>
-              </div>
-            ))}
+                );
+              });
+            })()}
           </div>
         </CardContent>
       </Card>
