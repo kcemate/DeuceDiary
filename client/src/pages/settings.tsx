@@ -31,6 +31,8 @@ import {
   AlertTriangle,
   Download,
   Globe,
+  Eye,
+  Lock,
 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -300,6 +302,37 @@ export default function Settings() {
 
       {/* ── Your Data ────────────────────────────────────────────── */}
       <SettingsSection title="Your Data">
+        <div className="px-5 py-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Eye className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">
+              What we store
+            </span>
+          </div>
+          <div className="space-y-2">
+            {[
+              { icon: "👤", label: "Profile info", detail: "Name, username, email" },
+              { icon: "📊", label: "Deuce logs", detail: "Time, location name, thoughts" },
+              { icon: "🏆", label: "Progress", detail: "Streaks, badges, squad stats" },
+              { icon: "⚙️", label: "Preferences", detail: "Theme, timezone, notifications" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center gap-2.5 text-[12px]"
+              >
+                <span>{item.icon}</span>
+                <span className="font-medium text-foreground">{item.label}</span>
+                <span className="text-muted-foreground">— {item.detail}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border/50">
+            <Lock className="w-3 h-3 text-primary" />
+            <span className="text-[11px] text-muted-foreground">
+              Your data is encrypted and never sold to third parties.
+            </span>
+          </div>
+        </div>
         <button
           onClick={handleExportData}
           disabled={isExporting}
