@@ -1577,75 +1577,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/deuces/sync', isAuthenticated, async (req: any, res) => {
-    const parsed = syncDeuceSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return Errors.badRequest(res, 'Invalid sync payload');
-    }
+    try {
+      const parsed = syncDeuceSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return Errors.badRequest(res, 'Invalid sync payload');
+      }
 
-    const userId = req.user.id;
-    const today = getTodayUTC();
-    const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
+      const userId = req.user.id;
+      const today = getTodayUTC();
+      const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
 
-    for (const entry of parsed.data.entries) {
-      try {
-        const currentCount = await storage.getUserDailyLogCount(userId, today);
-        if (currentCount >= MAX_LOGS_PER_DAY) {
-          results.push({ id: entry.id, status: 'error', reason: 'Daily limit reached' });
-          continue;
-        }
-
-        const validGroups: string[] = [];
-        for (const gid of entry.groupIds) {
-          const isInGroup = await storage.isUserInGroup(userId, gid);
-          if (!isInGroup) {
-            results.push({ id: entry.id, status: 'error', reason: `Not a member of group ${gid}` });
-            break;
-          }
-          validGroups.push(gid);
-        }
-        if (validGroups.length !== entry.groupIds.length) continue;
-
-        // Validate loggedAt if provided; skip entry with invalid date
-        let loggedAt: Date;
-        if (entry.loggedAt) {
-          const parsedDate = new Date(entry.loggedAt);
-          if (isNaN(parsedDate.getTime())) {
-            results.push({ id: entry.id, status: 'error', reason: 'Invalid loggedAt date' });
+      for (const entry of parsed.data.entries) {
+        try {
+          const currentCount = await storage.getUserDailyLogCount(userId, today);
+          if (currentCount >= MAX_LOGS_PER_DAY) {
+            results.push({ id: entry.id, status: 'error', reason: 'Daily limit reached' });
             continue;
           }
-          loggedAt = parsedDate;
-        } else {
-          loggedAt = new Date();
-        }
-        for (const groupId of validGroups) {
-          await storage.createDeuceEntry({
-            location: entry.location,
-            thoughts: entry.thoughts ?? '',
-            ghost: false,
-            bristolScore: null,
-            photoUrl: null,
-            groupId,
-            userId,
-            loggedAt,
-            id: uuidv4(),
-          });
-        }
 
-        await storage.updateUserDeuceCount(userId, 1);
-        track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
+          const validGroups: string[] = [];
+          for (const gid of entry.groupIds) {
+            const isInGroup = await storage.isUserInGroup(userId, gid);
+            if (!isInGroup) {
+              results.push({ id: entry.id, status: 'error', reason: `Not a member of group ${gid}` });
+              break;
+            }
+            validGroups.push(gid);
+          }
+          if (validGroups.length !== entry.groupIds.length) continue;
 
-        for (const groupId of validGroups) {
-          try { await recalculateStreak(groupId); } catch (_) {}
+          // Validate loggedAt if provided; skip entry with invalid date
+          let loggedAt: Date;
+          if (entry.loggedAt) {
+            const parsedDate = new Date(entry.loggedAt);
+            if (isNaN(parsedDate.getTime())) {
+              results.push({ id: entry.id, status: 'error', reason: 'Invalid loggedAt date' });
+              continue;
+            }
+            loggedAt = parsedDate;
+          } else {
+            loggedAt = new Date();
+          }
+          for (const groupId of validGroups) {
+            await storage.createDeuceEntry({
+              location: entry.location,
+              thoughts: entry.thoughts ?? '',
+              ghost: false,
+              bristolScore: null,
+              photoUrl: null,
+              groupId,
+              userId,
+              loggedAt,
+              id: uuidv4(),
+            });
+          }
+
+          await storage.updateUserDeuceCount(userId, 1);
+          track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
+
+          for (const groupId of validGroups) {
+            try { await recalculateStreak(groupId); } catch (_) {}
+          }
+
+          results.push({ id: entry.id, status: 'ok' });
+        } catch (err) {
+          console.error('Error syncing offline entry', entry.id, err);
+          results.push({ id: entry.id, status: 'error', reason: 'Internal error' });
         }
-
-        results.push({ id: entry.id, status: 'ok' });
-      } catch (err) {
-        console.error('Error syncing offline entry', entry.id, err);
-        results.push({ id: entry.id, status: 'error', reason: 'Internal error' });
       }
-    }
 
-    res.json({ results, synced: results.filter(r => r.status === 'ok').length });
+      res.json({ results, synced: results.filter(r => r.status === 'ok').length });
+    } catch (error) {
+      console.error('Error in deuce sync endpoint:', error);
+      Errors.internal(res, 'Failed to sync offline entries');
+    }
   });
 
   // --- Referral routes ---
