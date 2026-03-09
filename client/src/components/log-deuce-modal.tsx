@@ -69,6 +69,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [selectedTime, setSelectedTime] = useState(format(new Date(), "HH:mm"));
   const [showCustomLocation, setShowCustomLocation] = useState(false);
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [shareLocation, setShareLocation] = useState(false);
   const [geoCoords, setGeoCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -205,6 +206,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     setSelectedDate(format(new Date(), "yyyy-MM-dd"));
     setSelectedTime(format(new Date(), "HH:mm"));
     setShowCustomLocation(false);
+    setShowDateTimePicker(false);
     setShareLocation(false);
     setGeoCoords(null);
   };
@@ -343,27 +345,37 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                max={format(new Date(), "yyyy-MM-dd")}
-              />
+          {!showDateTimePicker ? (
+            <button
+              type="button"
+              onClick={() => setShowDateTimePicker(true)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Logging now &middot; <span className="underline">change time</span>
+            </button>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  max={format(new Date(), "yyyy-MM-dd")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="time">Time</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                type="time"
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
           
           <div>
             <Label htmlFor="location">Location</Label>
@@ -431,7 +443,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
               value={thoughts}
               onChange={(e) => setThoughts(e.target.value)}
               maxLength={500}
-              className="h-32 resize-none"
+              className="h-20 resize-none"
             />
             <div className={`text-right text-xs mt-1 ${
               thoughts.length > 500 ? "text-destructive" :
