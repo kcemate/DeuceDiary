@@ -205,7 +205,11 @@ export default function Passport() {
 
         {/* Stamp Grid */}
         <div>
-          <h3 className="text-lg font-bold text-foreground mb-3">Stamps Collected</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Stamps Collected</h3>
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-primary font-medium">{stamps.length}</span>
+          </div>
           {stamps.length === 0 ? (
             <div className="bg-card rounded-xl border border-border p-8 text-center">
               <span className="text-4xl mb-3 block">📍</span>

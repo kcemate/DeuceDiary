@@ -389,7 +389,10 @@ export default function Bingo() {
           {/* Leaderboard */}
           {showLeaderboard && leaderboardData && (
             <div className="rounded-2xl border border-border bg-card p-4 mb-4">
-              <h3 className="font-bold text-sm mb-3 text-foreground">Squad Bingo Rankings</h3>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Squad Bingo Rankings</h3>
+                <div className="flex-1 h-px bg-border" />
+              </div>
               {leaderboardData.leaderboard.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No squad members have started yet
@@ -432,7 +435,7 @@ export default function Bingo() {
 
           {/* Legend */}
           <div className="rounded-2xl border border-border bg-card p-3">
-            <p className="text-xs font-bold text-muted-foreground mb-2">How to play</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">How to play</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Complete challenges by logging deuces throughout the month. Hit{" "}
               <span className="font-bold text-foreground">Check Progress</span> to update your card.

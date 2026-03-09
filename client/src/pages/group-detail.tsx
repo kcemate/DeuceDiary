@@ -463,13 +463,17 @@ export default function GroupDetail() {
       {/* Members */}
       <Card className="shadow-sm mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h3 className="font-semibold text-foreground">Members ({groupDetail.members.length})</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Members</h3>
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-primary font-medium">{groupDetail.members.length}</span>
+          </div>
+          <div className="mb-3">
             <Button
               onClick={() => inviteCrewMutation.mutate()}
               disabled={inviteCrewMutation.isPending}
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 text-xs"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 text-xs w-full rounded-xl"
             >
               {inviteCrewMutation.isPending ? "Generating..." : "Invite Crew"}
             </Button>
@@ -534,7 +538,11 @@ export default function GroupDetail() {
       {/* Recent Entries */}
       <Card className="shadow-sm">
         <CardContent className="p-4">
-          <h3 className="font-semibold text-foreground mb-4">Recent Drops</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recent Drops</h3>
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-primary font-medium">{groupDetail.entries.length}</span>
+          </div>
           {groupDetail.entries.length > 0 ? (
             <div className="space-y-1">
               {Object.entries(groupedEntries).map(([dateLabel, entries]) => (
