@@ -336,6 +336,15 @@ const memStore = vi.hoisted(() => {
           : (a.name ?? "").localeCompare(b.name ?? ""),
       );
     },
+    async getLocationsForUser(userId: string) {
+      return [..._locations]
+        .filter((l) => l.isDefault || l.createdBy === userId)
+        .sort((a, b) =>
+          a.isDefault !== b.isDefault
+            ? (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)
+            : (a.name ?? "").localeCompare(b.name ?? ""),
+        );
+    },
     async createLocation(loc: any) {
       const l = {
         id: _locationId++,
@@ -1125,16 +1134,15 @@ describe("GET /api/entries/:entryId/reactions", () => {
 });
 
 /* ================================================================
- *  9. GET /api/locations  (no auth)
+ *  9. GET /api/locations  (auth required)
  * ================================================================ */
 describe("GET /api/locations", () => {
-  it("returns locations list without requiring auth", async () => {
+  it("returns 401 without auth", async () => {
     const res = await supertest(app).get("/api/locations");
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.status).toBe(401);
   });
 
-  it("returns seeded locations sorted by isDefault then name", async () => {
+  it("returns user-visible locations sorted by isDefault then name", async () => {
     await memStore.createLocation({
       name: "Bathroom",
       isDefault: true,
@@ -1144,9 +1152,16 @@ describe("GET /api/locations", () => {
       isDefault: false,
       createdBy: "dev-alice",
     });
+    await memStore.createLocation({
+      name: "Secret Spot",
+      isDefault: false,
+      createdBy: "dev-other",
+    });
 
-    const res = await supertest(app).get("/api/locations");
+    const agent = await loginAs("alice");
+    const res = await agent.get("/api/locations");
     expect(res.status).toBe(200);
+    // Alice sees defaults + her own, not dev-other's
     expect(res.body.length).toBe(2);
     // Default locations sort first
     expect(res.body[0].name).toBe("Bathroom");
