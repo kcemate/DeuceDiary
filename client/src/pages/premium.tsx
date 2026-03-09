@@ -168,13 +168,7 @@ export default function Premium() {
                 {feature.description}
               </p>
             </div>
-            <span
-              className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-              style={{
-                color: "hsl(45, 88%, 48%)",
-                backgroundColor: "hsl(45, 88%, 48%, 0.12)",
-              }}
-            >
+            <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-accent bg-accent/10">
               Premium
             </span>
           </div>
@@ -227,7 +221,7 @@ export default function Premium() {
       </div>
 
       {plan === "annual" && (
-        <p className="text-center text-xs font-bold mb-6" style={{ color: "hsl(142, 71%, 45%)" }}>
+        <p className="text-center text-xs font-bold mb-6 text-green-500">
           Save 37% with annual billing
         </p>
       )}
@@ -236,7 +230,7 @@ export default function Premium() {
       <Button
         onClick={() => upgradeMutation.mutate()}
         disabled={upgradeMutation.isPending}
-        className="w-full rounded-2xl font-bold py-6 text-lg btn-shimmer"
+        className="w-full rounded-2xl font-bold py-6 text-lg btn-shimmer shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
       >
         {upgradeMutation.isPending ? "Upgrading..." : "Upgrade to Premium"}
       </Button>
