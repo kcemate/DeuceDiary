@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getUserDisplayName, getInitials, getUserSecondaryInfo } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
+import { GoldCrownBadge } from "@/components/gold-crown-badge";
 
 interface StreakData {
   currentStreak: number;
@@ -40,8 +41,11 @@ interface GroupDetail {
       firstName?: string;
       lastName?: string;
       username?: string;
+      email?: string;
       profileImageUrl?: string;
       deuceCount: number;
+      subscription?: string;
+      subscriptionExpiresAt?: string | null;
       personalRecord?: {
         date: string;
         count: number;
@@ -59,7 +63,10 @@ interface GroupDetail {
       firstName?: string;
       lastName?: string;
       username?: string;
+      email?: string;
       profileImageUrl?: string;
+      subscription?: string;
+      subscriptionExpiresAt?: string | null;
     };
   }>;
 }
@@ -230,20 +237,21 @@ export default function GroupDetail() {
   return (
     <div className="pt-6 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between mb-6 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setLocation("/groups")}
             aria-label="Back to squads"
+            className="shrink-0"
           >
-            <svg className="w-4 h-4 mr-2" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back
           </Button>
-          <h2 className="text-xl font-bold text-foreground">{groupDetail.group.name}</h2>
+          <h2 className="text-xl font-bold text-foreground truncate">{groupDetail.group.name}</h2>
         </div>
         <Button
           variant="destructive"
@@ -386,15 +394,15 @@ export default function GroupDetail() {
       {/* Members */}
       <Card className="shadow-sm mb-6">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <h3 className="font-semibold text-foreground">Members ({groupDetail.members.length})</h3>
             <Button
               onClick={() => inviteCrewMutation.mutate()}
               disabled={inviteCrewMutation.isPending}
               size="sm"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 text-xs"
             >
-              {inviteCrewMutation.isPending ? "Generating..." : "Invite Your Crew"}
+              {inviteCrewMutation.isPending ? "Generating..." : "Invite Crew"}
             </Button>
           </div>
           {inviteCode && (
@@ -404,9 +412,9 @@ export default function GroupDetail() {
           )}
           <div className="space-y-3">
             {groupDetail.members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <StreakFrame currentStreak={streakData?.currentStreak ?? 0}>
+              <div key={member.id} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <StreakFrame currentStreak={streakData?.currentStreak ?? 0} className="shrink-0">
                     <Avatar className="w-10 h-10">
                       <AvatarImage src={member.user.profileImageUrl || undefined} />
                       <AvatarFallback>
@@ -414,21 +422,25 @@ export default function GroupDetail() {
                       </AvatarFallback>
                     </Avatar>
                   </StreakFrame>
-                  <div>
-                    <p className="font-medium text-foreground">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground truncate flex items-center gap-1">
                       {getUserDisplayName(member.user)}
+                      <GoldCrownBadge
+                        subscription={member.user.subscription}
+                        subscriptionExpiresAt={member.user.subscriptionExpiresAt}
+                      />
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground truncate">
                       {getUserSecondaryInfo(member.user)}
                     </p>
                     {member.user.personalRecord && (
                       <p className="text-xs text-muted-foreground">
-                        PR: {formatDate(member.user.personalRecord.date)} - {member.user.personalRecord.count} deuce{member.user.personalRecord.count !== 1 ? 's' : ''}
+                        PR: {formatDate(member.user.personalRecord.date)} — {member.user.personalRecord.count} deuce{member.user.personalRecord.count !== 1 ? 's' : ''}
                       </p>
                     )}
                   </div>
                 </div>
-                <Badge variant={isAdmin(member) ? "default" : "secondary"}>
+                <Badge variant={isAdmin(member) ? "default" : "secondary"} className="shrink-0">
                   {isAdmin(member) ? "Admin" : "Member"}
                 </Badge>
               </div>
@@ -454,8 +466,12 @@ export default function GroupDetail() {
                         </AvatarFallback>
                       </Avatar>
                     </StreakFrame>
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="text-sm font-medium text-foreground flex items-center gap-1">
                       {getUserDisplayName(entry.user)}
+                      <GoldCrownBadge
+                        subscription={entry.user.subscription}
+                        subscriptionExpiresAt={entry.user.subscriptionExpiresAt}
+                      />
                     </span>
                     <div className="text-xs text-muted-foreground ml-auto text-right">
                       <div>{formatDate(entry.loggedAt)}</div>

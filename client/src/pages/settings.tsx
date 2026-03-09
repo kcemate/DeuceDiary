@@ -46,7 +46,7 @@ export default function Settings() {
 
       <h2 className="text-2xl font-extrabold text-foreground mb-6">Theme</h2>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-3 sm:gap-4">
         {THEMES.map((t) => (
           <button
             key={t.id}
@@ -54,7 +54,7 @@ export default function Settings() {
             className="flex flex-col items-center gap-2 group"
           >
             <div
-              className={`w-14 h-14 rounded-full border-2 transition-all ${
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 transition-all ${
                 theme === t.id
                   ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
                   : "border-border hover:border-muted-foreground"

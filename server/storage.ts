@@ -259,6 +259,8 @@ export interface IStorage {
     currentStreak: number;
     bestDay: { day: string; count: number };
     groupRankings: { groupId: string; groupName: string; rank: number; total: number }[];
+    avgBristolScore: number | null;
+    mostUsedLocation: string | null;
   }>;
 
   // Weekly report
@@ -1138,7 +1140,24 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return { totalDeuces, avgPerWeek, longestStreak, currentStreak, bestDay, groupRankings };
+    // Avg Bristol score (all time, exclude nulls)
+    const [bristolResult] = await db
+      .select({ avg: sql<number>`ROUND(AVG(${deuceEntries.bristolScore})::numeric, 1)::float` })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.userId, userId), sql`${deuceEntries.bristolScore} IS NOT NULL`));
+    const avgBristolScore = bristolResult?.avg ?? null;
+
+    // Most used location
+    const locationRows = await db
+      .select({ location: deuceEntries.location, cnt: sql<number>`COUNT(*)::int` })
+      .from(deuceEntries)
+      .where(eq(deuceEntries.userId, userId))
+      .groupBy(deuceEntries.location)
+      .orderBy(desc(sql<number>`COUNT(*)::int`))
+      .limit(1);
+    const mostUsedLocation = locationRows.length > 0 ? locationRows[0].location : null;
+
+    return { totalDeuces, avgPerWeek, longestStreak, currentStreak, bestDay, groupRankings, avgBristolScore, mostUsedLocation };
   }
 
   // Weekly report

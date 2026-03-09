@@ -142,6 +142,48 @@
   }
 }
 
+/* ── 375px (iPhone SE) fixes ──────────────────────────────────────── */
+@media (max-width: 390px) {
+  /* Prevent any element from overflowing the viewport */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Tighten horizontal padding on the app shell */
+  .px-4 {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  /* Scale down oversized stat numbers on very narrow screens */
+  .stat-number.text-5xl {
+    font-size: 2.5rem;
+  }
+
+  /* Badge grid: 2-col on tiny screens */
+  .grid.grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Settings theme grid: 2-col */
+  .grid.grid-cols-4.gap-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Ensure long group names / text truncates properly */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* Bottom nav: tighten spacing */
+  .bottom-nav-item span {
+    font-size: 0.6rem;
+  }
+}
+
 /* Smooth transitions and animations */
 .nav-item {
   transition: color 0.2s ease-in-out;
@@ -158,6 +200,22 @@
 
 .entry-card {
   animation: fadeIn 0.5s ease-out;
+}
+
+/* Feed entry slide-in animation */
+.feed-entry {
+  animation: slideInEntry 0.35s ease-out both;
+}
+
+@keyframes slideInEntry {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {

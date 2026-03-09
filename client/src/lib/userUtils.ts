@@ -4,6 +4,7 @@ export const getUserDisplayName = (user: {
   firstName?: string | null;
   lastName?: string | null;
   username?: string | null;
+  email?: string | null;
 }): string => {
   // Prefer username if available
   if (user.username) {
@@ -14,15 +15,21 @@ export const getUserDisplayName = (user: {
   if (user.firstName) {
     return `${user.firstName} ${user.lastName || ""}`.trim();
   }
+
+  // Fall back to email (strip domain for display)
+  if (user.email) {
+    return user.email.split("@")[0];
+  }
   
   // Final fallback
-  return "Unknown User";
+  return "Anonymous";
 };
 
 export const getInitials = (user: {
   firstName?: string | null;
   lastName?: string | null;
   username?: string | null;
+  email?: string | null;
 }): string => {
   // If we have a username, use first 2 characters
   if (user.username) {
@@ -33,8 +40,13 @@ export const getInitials = (user: {
   if (user.firstName) {
     return `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase();
   }
+
+  // Fall back to first char of email local part
+  if (user.email) {
+    return user.email[0].toUpperCase();
+  }
   
-  return "U";
+  return "?";
 };
 
 export const getUserSecondaryInfo = (user: {

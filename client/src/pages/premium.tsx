@@ -5,6 +5,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { StreakInsuranceButton } from "@/components/streak-insurance-button";
+import { ThroneAnalytics } from "@/components/throne-analytics";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const features = [
   {
@@ -65,28 +68,76 @@ export default function Premium() {
     },
   });
 
-  // Already premium — show success
+  // Already premium — show premium features dashboard
   if (upgraded || user?.subscription === "premium") {
     return (
-      <div className="pt-6 pb-24">
-        <div className="text-center py-16">
-          <p className="text-7xl mb-6">👑🎉</p>
+      <div className="pt-6 pb-24 space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <p className="text-7xl mb-4">👑</p>
           <h1
-            className="text-3xl font-extrabold text-foreground mb-3"
+            className="text-3xl font-extrabold text-foreground mb-1"
             style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
           >
-            Welcome to the Throne Room
+            Throne Room
           </h1>
-          <p className="text-muted-foreground text-lg mb-8">
-            You're Porcelain Premium now. Long live the king.
+          <p className="text-muted-foreground">
+            Your premium perks, all in one place.
           </p>
+        </div>
+
+        {/* Streak Insurance */}
+        <ErrorBoundary>
+          <StreakInsuranceButton />
+        </ErrorBoundary>
+
+        {/* Throne Analytics */}
+        <ErrorBoundary>
+          <ThroneAnalytics />
+        </ErrorBoundary>
+
+        {/* Gold Badge info */}
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">👑</span>
+            <div>
+              <h3 className="font-bold text-foreground">Gold Badge</h3>
+              <p className="text-xs text-muted-foreground">
+                Your gold crown shows next to your name in group feeds and leaderboards.
+              </p>
+            </div>
+          </div>
+          <div className="bg-muted rounded-xl px-4 py-3 flex items-center gap-2">
+            <span className="font-bold text-foreground">{user?.username ?? user?.firstName ?? "You"}</span>
+            <span className="text-base leading-none" title="Porcelain Premium">👑</span>
+            <span className="text-xs text-muted-foreground ml-1">← that's you</span>
+          </div>
+        </div>
+
+        {/* Custom Themes link */}
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-2xl">🎨</span>
+            <div>
+              <h3 className="font-bold text-foreground">Custom Themes</h3>
+              <p className="text-xs text-muted-foreground">Personalize your throne aesthetic.</p>
+            </div>
+          </div>
           <Button
-            onClick={() => setLocation("/profile")}
-            className="rounded-2xl font-bold px-8 py-3"
+            variant="outline"
+            className="w-full rounded-xl font-bold"
+            onClick={() => setLocation("/settings")}
           >
-            Back to Profile
+            Open Theme Settings →
           </Button>
         </div>
+
+        <Button
+          onClick={() => setLocation("/profile")}
+          className="w-full rounded-2xl font-bold py-4"
+        >
+          Back to Profile
+        </Button>
       </div>
     );
   }
