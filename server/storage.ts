@@ -221,7 +221,7 @@ export interface IStorage {
   getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
   getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>>;
   updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void>;
-  getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
+  getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; email: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
 
   // Streak alert operations
   getAllGroupsWithActiveStreaks(minStreak: number): Promise<Group[]>;
