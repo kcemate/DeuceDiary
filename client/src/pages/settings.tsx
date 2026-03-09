@@ -40,16 +40,17 @@ import { apiRequest } from "@/lib/queryClient";
 const THEMES: {
   id: ThemeName;
   name: string;
-  color: string;
+  bg: string;
+  fg: string;
   accent: string;
   premium: boolean;
 }[] = [
-  { id: "default", name: "Clean Sweep", color: "#121212", accent: "#34D399", premium: false },
-  { id: "cream", name: "Porcelain", color: "#F5F0E8", accent: "#22C55E", premium: true },
-  { id: "dark", name: "Sewer Pipe", color: "#1A1410", accent: "#E68A2E", premium: false },
-  { id: "midnight", name: "Royal Flush", color: "#150B22", accent: "#A855F7", premium: true },
-  { id: "ocean", name: "Splash Zone", color: "#0D1A1F", accent: "#2DD4BF", premium: true },
-  { id: "retro", name: "Log Cabin", color: "#1A1410", accent: "#F59E0B", premium: true },
+  { id: "default", name: "Clean Sweep", bg: "#121212", fg: "#F2F2F2", accent: "#34D399", premium: false },
+  { id: "cream", name: "Porcelain", bg: "#F5F0E8", fg: "#1F1408", accent: "#22C55E", premium: true },
+  { id: "dark", name: "Sewer Pipe", bg: "#1A1410", fg: "#E0D5C4", accent: "#E68A2E", premium: false },
+  { id: "midnight", name: "Royal Flush", bg: "#150B22", fg: "#DDD0EB", accent: "#A855F7", premium: true },
+  { id: "ocean", name: "Splash Zone", bg: "#0D1A1F", fg: "#D0E8E6", accent: "#2DD4BF", premium: true },
+  { id: "retro", name: "Log Cabin", bg: "#1A1410", fg: "#E0D4B8", accent: "#F59E0B", premium: true },
 ];
 
 function SettingsSection({
@@ -239,26 +240,47 @@ export default function Settings() {
               <button
                 key={t.id}
                 onClick={() => handleThemeSelect(t)}
-                className="flex flex-col items-center gap-1.5 group"
+                className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                  theme === t.id
+                    ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
+                    : "border-border hover:border-muted-foreground"
+                }`}
               >
+                {/* Mini preview card */}
                 <div
-                  className={`relative w-11 h-11 rounded-full border-2 transition-all ${
-                    theme === t.id
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
-                      : "border-border hover:border-muted-foreground"
-                  }`}
-                  style={{ backgroundColor: t.color }}
+                  className="px-2.5 pt-2.5 pb-2"
+                  style={{ backgroundColor: t.bg }}
                 >
+                  {/* Fake text lines */}
                   <div
-                    className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-background"
+                    className="h-1.5 rounded-full w-3/4 mb-1.5"
+                    style={{ backgroundColor: t.fg, opacity: 0.7 }}
+                  />
+                  <div
+                    className="h-1 rounded-full w-1/2 mb-2"
+                    style={{ backgroundColor: t.fg, opacity: 0.3 }}
+                  />
+                  {/* Fake CTA button */}
+                  <div
+                    className="h-4 rounded-md w-full"
                     style={{ backgroundColor: t.accent }}
                   />
                 </div>
-                <span className="text-[11px] font-medium text-foreground">
-                  {t.name}
-                </span>
+                {/* Theme name */}
+                <div
+                  className="px-2.5 py-1.5 text-center"
+                  style={{ backgroundColor: t.bg }}
+                >
+                  <span
+                    className="text-[10px] font-bold"
+                    style={{ color: t.fg }}
+                  >
+                    {t.name}
+                  </span>
+                </div>
+                {/* Premium badge */}
                 {t.premium && !isPremium && (
-                  <span className="text-[10px] leading-none">👑</span>
+                  <span className="absolute top-1 right-1 text-[10px] leading-none">👑</span>
                 )}
               </button>
             ))}
