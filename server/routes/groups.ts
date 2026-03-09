@@ -297,19 +297,6 @@ export function createGroupsRouter(): Router {
     }
   });
 
-  // Weekly Throne Report — group-level (premium)
-  router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
-      const report = await storage.getGroupWeeklyReport(groupId);
-      res.json(report);
-    } catch (error: any) {
-      console.error("Error fetching group weekly report:", error);
-      if (error.message === 'Group not found') return res.status(404).json({ message: 'Group not found' });
-      res.status(500).json({ message: "Failed to fetch weekly report" });
-    }
-  });
-
   // Export Weekly Throne Report as PDF (premium)
   router.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), async (req: any, res) => {
     try {
