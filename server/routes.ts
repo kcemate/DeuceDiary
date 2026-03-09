@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   app.post('/api/internal/streak-check', async (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return Errors.unauthorized(res);
     }
     try {
@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Error log endpoint (internal) ---
   app.get('/api/internal/errors', (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return Errors.unauthorized(res);
     }
     const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Detailed health endpoint (internal) ---
   app.get('/api/internal/health/detailed', async (req, res) => {
     const key = req.headers['x-internal-key'];
-    if (key !== INTERNAL_KEY) {
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return Errors.unauthorized(res);
     }
     try {
