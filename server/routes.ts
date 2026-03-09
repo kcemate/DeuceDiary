@@ -1258,7 +1258,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const entries = [];
-      const loggedAt = new Date(entryData.loggedAt || new Date());
+      // Validate loggedAt if provided; reject clearly invalid date strings
+      let loggedAt: Date;
+      if (entryData.loggedAt) {
+        const parsedDate = new Date(entryData.loggedAt);
+        if (isNaN(parsedDate.getTime())) {
+          return Errors.badRequest(res, "Invalid loggedAt date");
+        }
+        loggedAt = parsedDate;
+      } else {
+        loggedAt = new Date();
+      }
       const isGhost = !!entryData.ghost;
 
       // Create entry for each selected group
