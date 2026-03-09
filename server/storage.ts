@@ -502,14 +502,14 @@ export class DatabaseStorage implements IStorage {
         group: groups,
         memberCount: sql<number>`COUNT(DISTINCT ${groupMembers.id})`,
         entryCount: sql<number>`COUNT(DISTINCT ${deuceEntries.id})`,
-        lastActivity: sql<Date>`MAX(${deuceEntries.createdAt})`,
+        lastActivity: sql<Date>`MAX(${deuceEntries.loggedAt})`,
       })
       .from(groups)
       .leftJoin(groupMembers, eq(groups.id, groupMembers.groupId))
       .leftJoin(deuceEntries, eq(groups.id, deuceEntries.groupId))
       .where(inArray(groups.id, groupIds))
       .groupBy(groups.id)
-      .orderBy(desc(sql`MAX(${deuceEntries.createdAt})`));
+      .orderBy(desc(sql`MAX(${deuceEntries.loggedAt})`));
 
     return userGroups.map(row => ({
       ...row.group,
