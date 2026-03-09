@@ -87,10 +87,21 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     enabled: open,
   });
 
-  // Auto-select when user has exactly one group
+  // Auto-select groups: single group auto-selects, multi-group remembers last selection
   useEffect(() => {
-    if (open && groups.length === 1 && selectedGroupIds.length === 0) {
-      setSelectedGroupIds([groups[0].id]);
+    if (open && groups.length > 0 && selectedGroupIds.length === 0) {
+      if (groups.length === 1) {
+        setSelectedGroupIds([groups[0].id]);
+      } else {
+        const saved = localStorage.getItem("deuce_last_group_ids");
+        if (saved) {
+          try {
+            const ids = JSON.parse(saved) as string[];
+            const valid = ids.filter((id) => groups.some((g) => g.id === id));
+            if (valid.length > 0) setSelectedGroupIds(valid);
+          } catch {}
+        }
+      }
     }
   }, [open, groups]);
 
@@ -271,8 +282,9 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     const finalLocation = showCustomLocation ? customLocation.trim() : location;
     const loggedAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
 
-    // Remember location for next time
+    // Remember location and groups for next time
     localStorage.setItem("deuce_last_location", finalLocation);
+    localStorage.setItem("deuce_last_group_ids", JSON.stringify(selectedGroupIds));
 
     logDeuceMutation.mutate({
       location: finalLocation,
