@@ -93,6 +93,38 @@ function MilestoneBadge({
   );
 }
 
+// ── Throne rank / level system ───────────────────────────────────────────────
+const THRONE_RANKS = [
+  { min: 0, title: "Throne Rookie", icon: "🪑" },
+  { min: 5, title: "Seat Warmer", icon: "🔰" },
+  { min: 15, title: "Regular", icon: "📋" },
+  { min: 30, title: "Throne Thinker", icon: "🤔" },
+  { min: 50, title: "Brown Belt", icon: "🥋" },
+  { min: 75, title: "Throne Philosopher", icon: "📜" },
+  { min: 100, title: "Centurion", icon: "⚔️" },
+  { min: 150, title: "Porcelain Pro", icon: "🏅" },
+  { min: 250, title: "Throne Legend", icon: "🏆" },
+  { min: 500, title: "Throne Master", icon: "👑" },
+  { min: 1000, title: "Deuce Deity", icon: "⚡" },
+] as const;
+
+function getThroneRank(deuceCount: number) {
+  let rank = THRONE_RANKS[0];
+  let nextRank: (typeof THRONE_RANKS)[number] | null = THRONE_RANKS[1];
+  for (let i = THRONE_RANKS.length - 1; i >= 0; i--) {
+    if (deuceCount >= THRONE_RANKS[i].min) {
+      rank = THRONE_RANKS[i];
+      nextRank = i < THRONE_RANKS.length - 1 ? THRONE_RANKS[i + 1] : null;
+      break;
+    }
+  }
+  const level = THRONE_RANKS.indexOf(rank) + 1;
+  const progressToNext = nextRank
+    ? ((deuceCount - rank.min) / (nextRank.min - rank.min)) * 100
+    : 100;
+  return { rank, nextRank, level, progressToNext: Math.min(progressToNext, 100) };
+}
+
 // ── Member since formatter ──────────────────────────────────────────────────
 function formatMemberSince(dateStr?: string | null): string {
   if (!dateStr) return "OG Member";
@@ -166,9 +198,32 @@ export default function Profile() {
           Member since {formatMemberSince(user?.createdAt as unknown as string)}
         </p>
 
-        <span className="inline-block mt-2 bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-          Throne Philosopher
-        </span>
+        {(() => {
+          const { rank, nextRank, level, progressToNext } = getThroneRank(deuceCount);
+          return (
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="text-sm">{rank.icon}</span>
+                <span className="bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  Lvl {level} — {rank.title}
+                </span>
+              </div>
+              {nextRank && (
+                <div className="max-w-[200px] mx-auto">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+                      style={{ width: `${progressToNext}%` }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    {nextRank.min - deuceCount} more to {nextRank.title}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Streak Card ──────────────────────────────────────────────── */}
