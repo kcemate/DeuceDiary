@@ -338,32 +338,38 @@ export default function Referral() {
         </h3>
         {leaderboard.length > 0 ? (
           <div className="space-y-3">
-            {leaderboard.map((entry, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className={`text-sm font-extrabold w-6 text-center ${i < 3 ? "text-accent" : "text-muted-foreground"}`}>
-                  {i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : `${i + 1}`}
-                </span>
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                  {entry.profileImageUrl ? (
-                    <img src={entry.profileImageUrl} alt={`${entry.username || "User"}'s avatar`} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs font-bold text-muted-foreground">
-                      {(entry.username ?? "?")[0]?.toUpperCase()}
-                    </span>
-                  )}
+            {leaderboard.map((entry, i) => {
+              const isCurrentUser = entry.username === user?.username;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 ${isCurrentUser ? "bg-primary/5 -mx-2 px-2 py-1 rounded-xl ring-1 ring-primary/20" : ""}`}
+                >
+                  <span className={`text-sm font-extrabold w-6 text-center ${i < 3 ? "text-accent" : "text-muted-foreground"}`}>
+                    {i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : `${i + 1}`}
+                  </span>
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                    {entry.profileImageUrl ? (
+                      <img src={entry.profileImageUrl} alt={`${entry.username || "User"}'s avatar`} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-muted-foreground">
+                        {(entry.username ?? "?")[0]?.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-foreground flex-1 truncate">
+                    {isCurrentUser ? "You" : (entry.username ?? "Anonymous")}
+                  </span>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-primary">{entry.referralCount}</span>
+                    <span className="text-xs text-muted-foreground ml-1">refs</span>
+                    {entry.premiumConversionCount > 0 && (
+                      <span className="text-xs text-accent ml-2">{entry.premiumConversionCount} conv</span>
+                    )}
+                  </div>
                 </div>
-                <span className="text-sm font-medium text-foreground flex-1 truncate">
-                  {entry.username ?? "Anonymous"}
-                </span>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-primary">{entry.referralCount}</span>
-                  <span className="text-xs text-muted-foreground ml-1">refs</span>
-                  {entry.premiumConversionCount > 0 && (
-                    <span className="text-xs text-accent ml-2">{entry.premiumConversionCount} conv</span>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-muted/50 rounded-xl p-8 text-center">
