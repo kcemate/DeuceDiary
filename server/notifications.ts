@@ -44,9 +44,9 @@ export async function sendPushNotification(
     });
   }
 
-  // Clean up tokens that aren't valid Expo format
-  for (const token of invalidTokenValues) {
-    await storage.deletePushToken(userId, token);
+  // Clean up tokens that aren't valid Expo format (in parallel)
+  if (invalidTokenValues.length > 0) {
+    await Promise.all(invalidTokenValues.map(token => storage.deletePushToken(userId, token)));
   }
 
   if (messages.length === 0) {
