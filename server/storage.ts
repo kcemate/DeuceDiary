@@ -1908,33 +1908,54 @@ export class DatabaseStorage implements IStorage {
       ))
       .groupBy(deuceEntries.userId);
 
-    // Current streak per member: count consecutive days (most recent streak)
+    // Current streak per member — batched single query instead of N+1 loop.
+    // Uses a gap-and-islands approach: assign each day a row_number and subtract
+    // from the date to detect consecutive runs. Counts the run containing today
+    // or yesterday (grace period).
     const today = new Date().toISOString().slice(0, 10);
     const streakMap = new Map<string, number>();
-    for (const userId of userIds) {
-      // Get distinct logged dates for this user in this group, sorted desc
-      const dateLogs = await db
-        .select({
-          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        })
-        .from(deuceEntries)
-        .where(and(eq(deuceEntries.groupId, groupId), eq(deuceEntries.userId, userId)))
-        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-        .orderBy(desc(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`));
-
-      let streak = 0;
-      let expected = today;
-      for (const row of dateLogs) {
-        if (row.date === expected) {
-          streak++;
-          const d = new Date(expected + 'T00:00:00Z');
-          d.setUTCDate(d.getUTCDate() - 1);
-          expected = d.toISOString().slice(0, 10);
-        } else {
-          break;
-        }
+    if (userIds.length > 0) {
+      const streakRows = await db.execute(sql`
+        WITH distinct_days AS (
+          SELECT
+            user_id,
+            DATE(logged_at AT TIME ZONE 'UTC') AS log_date
+          FROM deuce_entries
+          WHERE group_id = ${groupId}
+            AND user_id = ANY(${userIds})
+          GROUP BY user_id, DATE(logged_at AT TIME ZONE 'UTC')
+        ),
+        numbered AS (
+          SELECT
+            user_id,
+            log_date,
+            ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY log_date DESC) AS rn
+          FROM distinct_days
+        ),
+        groups_cte AS (
+          SELECT
+            user_id,
+            log_date,
+            (log_date + (rn - 1) * INTERVAL '1 day')::date AS grp
+          FROM numbered
+        ),
+        runs AS (
+          SELECT user_id, grp, COUNT(*)::int AS run_len, MAX(log_date) AS run_end
+          FROM groups_cte
+          GROUP BY user_id, grp
+        )
+        SELECT r.user_id, r.run_len AS streak
+        FROM runs r
+        WHERE r.run_end >= (CURRENT_DATE AT TIME ZONE 'UTC' - INTERVAL '1 day')::date
+          AND r.grp = (
+            SELECT grp FROM groups_cte
+            WHERE user_id = r.user_id
+              AND log_date = r.run_end
+          )
+      `);
+      for (const row of streakRows.rows as { user_id: string; streak: number }[]) {
+        streakMap.set(row.user_id, row.streak);
       }
-      streakMap.set(userId, streak);
     }
 
     // Build lookup maps
