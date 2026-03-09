@@ -548,12 +548,12 @@ export class DatabaseStorage implements IStorage {
     const records = await db
       .select({
         userId: deuceEntries.userId,
-        date: sql<string>`DATE(${deuceEntries.createdAt})`,
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
         count: sql<number>`COUNT(*)::int`,
       })
       .from(deuceEntries)
       .where(inArray(deuceEntries.userId, userIds))
-      .groupBy(deuceEntries.userId, sql`DATE(${deuceEntries.createdAt})`)
+      .groupBy(deuceEntries.userId, sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
       .orderBy(deuceEntries.userId, desc(sql<number>`COUNT(*)::int`));
 
     // Keep only the top record per user (first occurrence due to ORDER BY)
