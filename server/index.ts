@@ -180,6 +180,12 @@ app.use((req, res, next) => {
     }
   });
 
+  // --- API 404 catch-all (must be after all API routes, before SPA fallback) ---
+  app.all('/api/*', (req: Request, res: Response) => {
+    const requestId = req.headers['x-request-id'] as string | undefined;
+    res.status(404).json({ message: "Not found", ...(requestId && { requestId }) });
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes

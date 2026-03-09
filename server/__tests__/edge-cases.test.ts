@@ -975,6 +975,21 @@ describe("Long string inputs (>10000 characters)", () => {
     expect(res.body.message).toMatch(/500 characters/i);
   });
 
+  it("POST /api/deuces with future loggedAt is rejected with 400", async () => {
+    const name = uniqueName("futureDate");
+    const agent = await loginAs(name);
+    const groupId = await getSoloGroupId(name);
+    const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // tomorrow
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "Home",
+      thoughts: "",
+      loggedAt: futureDate,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/future/i);
+  });
+
   it("POST /api/groups with 10001-char name handles gracefully (premium)", async () => {
     const name = uniqueName("longGroup");
     const agent = await loginAsPremium(name);
@@ -1327,6 +1342,58 @@ describe("Additional edge cases", () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/at least one group/i);
+  });
+
+  it("POST /api/deuces with empty thoughts string succeeds", async () => {
+    const name = uniqueName("emptyThoughts");
+    const agent = await loginAs(name);
+    const groupId = await getSoloGroupId(name);
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "Home",
+      thoughts: "",
+      loggedAt: new Date().toISOString(),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("POST /api/deuces with special chars in location succeeds", async () => {
+    const name = uniqueName("specialLoc");
+    const agent = await loginAs(name);
+    const groupId = await getSoloGroupId(name);
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "O'Brien's / Bar & Grill",
+      thoughts: "",
+      loggedAt: new Date().toISOString(),
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.entries[0].location).toBe("O'Brien's / Bar & Grill");
+  });
+
+  it("POST /api/deuces with >100 char location is rejected", async () => {
+    const name = uniqueName("longLoc");
+    const agent = await loginAs(name);
+    const groupId = await getSoloGroupId(name);
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      location: "X".repeat(101),
+      thoughts: "",
+      loggedAt: new Date().toISOString(),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("POST /api/deuces without location field is rejected", async () => {
+    const name = uniqueName("noLoc");
+    const agent = await loginAs(name);
+    const groupId = await getSoloGroupId(name);
+    const res = await agent.post("/api/deuces").send({
+      groupIds: [groupId],
+      thoughts: "No location",
+      loggedAt: new Date().toISOString(),
+    });
+    expect(res.status).toBe(400);
   });
 
   it("server stays alive after all edge case attacks", async () => {

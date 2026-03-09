@@ -52,6 +52,7 @@ export function useOfflineSync() {
 
       if (synced > 0) {
         queryClient.invalidateQueries({ queryKey: ['/api/groups'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/deuces'] });
         queryClient.invalidateQueries({ queryKey: ['/api/analytics/most-deuces'] });
         queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       }

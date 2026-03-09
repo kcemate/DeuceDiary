@@ -213,6 +213,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         const { title, description } = getSuccessMessage(response.streak || 0, count, userData?.deuceCount);
         toast({ title, description });
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/analytics/most-deuces"] });
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         queryClient.invalidateQueries({ queryKey: ["/api/passport"] });
@@ -232,9 +233,19 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         }, 500);
         return;
       }
+      // Extract server error message (format: "STATUS: {"message":"..."}")
+      let description = "Failed to log deuce. Please try again.";
+      const errMsg = (error as Error)?.message || "";
+      try {
+        const jsonPart = errMsg.substring(errMsg.indexOf("{"));
+        const parsed = JSON.parse(jsonPart);
+        if (parsed.message) description = parsed.message;
+      } catch {
+        // Fallback to generic message
+      }
       toast({
         title: "Error",
-        description: "Failed to log deuce",
+        description,
         variant: "destructive",
       });
     },

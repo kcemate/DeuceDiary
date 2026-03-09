@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const group = await storage.getGroupById(groupId);
       if (!group) {
-        return Errors.notFound(res, "Group not found");
+        return Errors.notFound(res, "Group");
       }
       
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
@@ -887,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if entry exists and user can access it
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
-        return Errors.notFound(res, "Entry not found");
+        return Errors.notFound(res, "Entry");
       }
       
       const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
@@ -924,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify entry exists and user is in the group
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
-        return Errors.notFound(res, "Entry not found");
+        return Errors.notFound(res, "Entry");
       }
       const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
       if (!isInGroup) {
@@ -945,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { entryId } = req.params;
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
-        return Errors.notFound(res, "Entry not found");
+        return Errors.notFound(res, "Entry");
       }
       const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
       if (!isInGroup) {
@@ -1320,6 +1320,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (isNaN(parsedDate.getTime())) {
           return Errors.badRequest(res, "Invalid loggedAt date");
         }
+        // Reject future dates (allow up to 1 minute of clock skew)
+        if (parsedDate.getTime() > Date.now() + 60_000) {
+          return Errors.badRequest(res, "Cannot log a deuce in the future");
+        }
         loggedAt = parsedDate;
       } else {
         loggedAt = new Date();
@@ -1455,6 +1459,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const parsedDate = new Date(entryData.loggedAt);
         if (isNaN(parsedDate.getTime())) {
           return Errors.badRequest(res, "Invalid loggedAt date");
+        }
+        // Reject future dates (allow up to 1 minute of clock skew)
+        if (parsedDate.getTime() > Date.now() + 60_000) {
+          return Errors.badRequest(res, "Cannot log a deuce in the future");
         }
         loggedAt = parsedDate;
       } else {
@@ -1979,7 +1987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(data);
     } catch (error) {
       if (error instanceof Error && error.message === "User not found") {
-        return Errors.notFound(res, "User not found");
+        return Errors.notFound(res, "User");
       }
       console.error('Error fetching share card data:', error);
       Errors.internal(res, 'Failed to fetch share card data');
@@ -2123,7 +2131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(html);
     } catch (error) {
       if (error instanceof Error && error.message === "User not found") {
-        return Errors.notFound(res, "User not found");
+        return Errors.notFound(res, "User");
       }
       console.error('Error rendering OG share card:', error);
       Errors.internal(res, 'Failed to render share card');

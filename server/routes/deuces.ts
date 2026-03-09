@@ -240,6 +240,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         if (isNaN(parsed.getTime())) {
           return res.status(400).json({ message: "Invalid loggedAt date" });
         }
+        // Reject future dates (allow up to 1 minute of clock skew)
+        if (parsed.getTime() > Date.now() + 60_000) {
+          return res.status(400).json({ message: "Cannot log a deuce in the future" });
+        }
         loggedAt = parsed;
       } else {
         loggedAt = new Date();

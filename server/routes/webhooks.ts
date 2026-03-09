@@ -16,7 +16,7 @@ export function registerClerkWebhook(app: Express): void {
       const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
       if (!WEBHOOK_SECRET) {
         console.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
-        return res.status(500).json({ message: "Webhook secret not configured" });
+        return res.status(503).json({ message: "Service unavailable" });
       }
 
       const svixId = req.headers["svix-id"] as string;
