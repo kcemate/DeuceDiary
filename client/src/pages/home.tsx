@@ -438,16 +438,20 @@ export default function Home() {
       <div className="mb-6 -mx-4 px-4">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {[
-            { href: "/bingo", emoji: "🎯", label: "Bingo" },
+            { href: "/bingo", emoji: "🎯", label: "Bingo", highlight: true },
             { href: "/profile", emoji: "🛡️", label: user?.streakInsuranceUsed ? "Insurance (Used)" : "Insurance" },
             { href: "/profile", emoji: "📊", label: "Analytics" },
             { href: "/passport", emoji: "🗺️", label: "Passport" },
             { href: "/settings", emoji: "⚙️", label: "Settings" },
-          ].map(({ href, emoji, label }) => (
+          ].map(({ href, emoji, label, highlight }) => (
             <Link key={label} href={href}>
-              <div className="flex items-center gap-1.5 bg-card border border-border rounded-full px-3 py-1.5 whitespace-nowrap cursor-pointer hover:border-primary/30 active:scale-[0.97] transition-all">
+              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap cursor-pointer active:scale-[0.97] transition-all ${
+                highlight
+                  ? "bg-primary/10 border border-primary/30 hover:border-primary/50"
+                  : "bg-card border border-border hover:border-primary/30"
+              }`}>
                 <span className="text-sm">{emoji}</span>
-                <span className="text-xs font-semibold text-foreground">{label}</span>
+                <span className={`text-xs font-semibold ${highlight ? "text-primary" : "text-foreground"}`}>{label}</span>
               </div>
             </Link>
           ))}
