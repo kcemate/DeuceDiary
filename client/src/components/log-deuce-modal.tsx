@@ -260,6 +260,26 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
     });
   };
 
+  // Quick Log: determine if we can one-tap submit
+  const lastLocation = localStorage.getItem("deuce_last_location");
+  const quickLogLocation = lastLocation && locations.some((l) => l.name === lastLocation)
+    ? lastLocation
+    : locations.length === 1 ? locations[0].name : null;
+  const quickLogGroupIds = groups.length > 0 ? groups.map((g) => g.id) : [];
+  const canQuickLog = !!quickLogLocation && quickLogGroupIds.length > 0;
+
+  const handleQuickLog = () => {
+    if (!canQuickLog) return;
+    const loggedAt = new Date().toISOString();
+    localStorage.setItem("deuce_last_location", quickLogLocation!);
+    logDeuceMutation.mutate({
+      location: quickLogLocation!,
+      thoughts: "",
+      groupIds: quickLogGroupIds,
+      loggedAt,
+    });
+  };
+
   const handleAddCustomLocation = () => {
     if (!customLocation.trim()) return;
     createLocationMutation.mutate(customLocation.trim());
@@ -278,6 +298,29 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         <DialogHeader>
           <DialogTitle>Log a Deuce</DialogTitle>
         </DialogHeader>
+
+        {canQuickLog && (
+          <Button
+            type="button"
+            onClick={handleQuickLog}
+            disabled={logDeuceMutation.isPending}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-base font-semibold"
+          >
+            {logDeuceMutation.isPending ? "Logging..." : `Quick Log @ ${quickLogLocation}`}
+          </Button>
+        )}
+
+        {canQuickLog && (
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or customize</span>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
