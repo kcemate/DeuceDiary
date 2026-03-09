@@ -879,7 +879,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return Errors.badRequest(res, "Emoji is required");
       }
       const { emoji } = parsed.data;
-      
+
+      // Verify entry exists and user is in the group
+      const entry = await storage.getEntryById(entryId);
+      if (!entry) {
+        return Errors.notFound(res, "Entry not found");
+      }
+      const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
+      if (!isInGroup) {
+        return Errors.forbidden(res, "Not authorized to remove reactions from this entry");
+      }
+
       await storage.removeReaction(userId, entryId, emoji);
       res.json({ message: "Reaction removed" });
     } catch (error) {
