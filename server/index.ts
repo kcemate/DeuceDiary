@@ -139,6 +139,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- Inject requestId into all 4xx/5xx JSON error responses automatically ---
+// Individual route handlers don't need to thread req through every catch block.
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body: any) => {
+    if (res.statusCode >= 400 && body && typeof body === 'object' && !body.requestId) {
+      const rid = req.headers['x-request-id'] as string | undefined;
+      if (rid) (body as Record<string, unknown>).requestId = rid;
+    }
+    return originalJson(body);
+  };
+  next();
+});
+
 // --- Body parsers ---
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
