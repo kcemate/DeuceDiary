@@ -25,7 +25,7 @@ const BINGO_CHALLENGES: Omit<BingoSquare, 'id' | 'completed'>[] = [
   { title: 'Midnight Flush',    description: 'Log after 11pm',                         condition_type: 'time_after',        condition_value: 23 },
   { title: 'Social Throne',     description: 'Receive 5 reactions on your entries',    condition_type: 'reactions_received',condition_value: 5  },
   { title: 'Triple Crown',      description: '3-day squad streak',                     condition_type: 'streak_days',       condition_value: 3  },
-  { title: 'Photogenic',        description: 'Add photos to 3 logs',                   condition_type: 'photo_count',       condition_value: 3  },
+  { title: 'Throne Thoughts',    description: 'Write 5 logs with notes',                 condition_type: 'thoughts_count',    condition_value: 5  },
   { title: 'Wordsmith',         description: 'Write 3 thoughtful logs (100+ chars)',   condition_type: 'long_thoughts',     condition_value: 3  },
   { title: 'Full Week',         description: 'Log all 7 days of a single week',        condition_type: 'full_week',         condition_value: 1  },
   { title: 'Tuesday Throne',    description: 'Log on 3 different Tuesdays',            condition_type: 'weekday_logs',      condition_value: 3  },
@@ -66,6 +66,23 @@ export function createBingoRouter(): Router {
       const month = getCurrentMonth();
 
       let card = await storage.getBingoCard(userId, month);
+
+      // Regenerate cards that contain deprecated Bristol/photo squares
+      if (card) {
+        const squares = card.squares as any[];
+        const hasDeprecated = squares.some((sq: any) =>
+          sq.condition_type === 'photo_count' ||
+          sq.condition_type === 'bristol_score' ||
+          /bristol/i.test(sq.title || '') ||
+          /bristol/i.test(sq.description || '') ||
+          /photo/i.test(sq.title || '') ||
+          /photo.*log/i.test(sq.description || '')
+        );
+        if (hasDeprecated) {
+          await storage.deleteBingoCard(card.id);
+          card = undefined;
+        }
+      }
 
       if (!card) {
         // Create a new card for this month

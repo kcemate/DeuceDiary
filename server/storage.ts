@@ -119,8 +119,9 @@ function evaluateBingoCondition(
       const total = Array.from(reactionCounts.values()).reduce((a, b) => a + b, 0);
       return total >= conditionValue;
     }
-    case 'photo_count': {
-      const c = entries.filter(e => e.photoUrl !== null).length;
+    case 'photo_count':
+    case 'thoughts_count': {
+      const c = entries.filter(e => e.thoughts && e.thoughts.trim().length > 0).length;
       return c >= conditionValue;
     }
     case 'long_thoughts': {
@@ -394,6 +395,7 @@ export interface IStorage {
 
   // Bingo operations
   getBingoCard(userId: string, month: string): Promise<BingoCard | undefined>;
+  deleteBingoCard(cardId: string): Promise<void>;
   createBingoCard(data: InsertBingoCard): Promise<BingoCard>;
   updateBingoProgress(cardId: string, completedSquares: number[]): Promise<BingoCard>;
   checkAndUpdateBingoProgress(userId: string, month: string): Promise<{ completedSquares: number[]; hasBlackout: boolean }>;
@@ -2015,6 +2017,10 @@ export class DatabaseStorage implements IStorage {
       .from(bingoCards)
       .where(and(eq(bingoCards.userId, userId), eq(bingoCards.month, month)));
     return card;
+  }
+
+  async deleteBingoCard(cardId: string): Promise<void> {
+    await db.delete(bingoCards).where(eq(bingoCards.id, cardId));
   }
 
   async createBingoCard(data: InsertBingoCard): Promise<BingoCard> {
