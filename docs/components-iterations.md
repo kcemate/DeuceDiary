@@ -53,3 +53,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** Each reaction burst drifts slightly left or right — feels alive and playful.
 
 ---
+
+## Iteration 6 — CreateGroupModal: Expanded squad icon palette (12 → 24)
+
+**Problem:** Only 12 icon options — felt limited, no bathroom/throne variety.
+
+**Change:** Expanded `SQUAD_ICONS` to 24 emojis organized in 4 thematic rows (Throne essentials, Power & glory, Nature & beasts, Vibes). Added `max-h-48 overflow-y-auto` to the picker dropdown for graceful scrolling.
+
+**Result:** 2× more icon choices covering toilet essentials (🧻, 🪠, 🚿) alongside the existing power and vibe options.
+
+---

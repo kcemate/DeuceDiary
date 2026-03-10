@@ -20,8 +20,17 @@ interface CreateGroupModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Fun squad icon options — toilet-themed
-const SQUAD_ICONS = ['🚽', '💩', '🔥', '👑', '⚡', '🏆', '💎', '🎯', '🌊', '🦁', '🐉', '🤝'];
+// Fun squad icon options — toilet-themed (24 options, 4 rows of 6)
+const SQUAD_ICONS = [
+  // Throne room essentials
+  '🚽', '💩', '🧻', '🪠', '🚿', '🛁',
+  // Power & glory
+  '🔥', '👑', '⚡', '🏆', '💎', '🎯',
+  // Nature & beasts
+  '🌊', '🦁', '🐉', '🦅', '🐺', '🌋',
+  // Vibes
+  '🤝', '💪', '🧠', '👊', '🎉', '🥇',
+];
 
 // Witty placeholder names — pick one randomly each time the modal opens
 const SQUAD_NAME_PLACEHOLDERS = [
@@ -196,7 +205,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 )}
 
                 {showIconPicker && (
-                  <div className="absolute top-12 left-0 z-50 bg-popover border rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 w-[196px]">
+                  <div className="absolute top-12 left-0 z-50 bg-popover border rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 w-[196px] max-h-48 overflow-y-auto">
                     {SQUAD_ICONS.map(e => (
                       <button
                         key={e}
