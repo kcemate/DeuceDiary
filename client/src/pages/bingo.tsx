@@ -358,27 +358,52 @@ export default function Bingo() {
         <>
           {/* Header */}
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-2">
               <div>
                 <h2 className="text-xl font-bold text-foreground">Deuce Bingo</h2>
                 <p className="text-sm text-muted-foreground">{formatMonth(data.month)}</p>
               </div>
-              <div className="text-right">
+              <div className="flex flex-col items-end gap-1">
                 <p className="stat-number text-2xl text-foreground">{data.completedCount}/25</p>
-                {data.hasBingo && (
-                  <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">
-                    BINGO!
-                  </span>
-                )}
-                {data.hasBlackout && (
-                  <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full ml-1">
-                    BLACKOUT!
-                  </span>
-                )}
+                <div className="flex gap-1">
+                  {data.hasBingo && (
+                    <span className="text-[10px] font-black text-yellow-700 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded-full tracking-wide">
+                      BINGO!
+                    </span>
+                  )}
+                  {data.hasBlackout && (
+                    <span className="text-[10px] font-black text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full tracking-wide">
+                      BLACKOUT!
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            <Progress value={data.percentComplete} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1 text-right">{data.percentComplete}% complete</p>
+            {/* Progress bar with milestone ticks */}
+            <div className="relative">
+              <Progress value={data.percentComplete} className="h-3 rounded-full" />
+              {/* Milestone ticks at 5, 10, 15, 20 squares (20%, 40%, 60%, 80%) */}
+              {[20, 40, 60, 80].map((pct) => (
+                <div
+                  key={pct}
+                  className="absolute top-0 h-3 w-px bg-background/60"
+                  style={{ left: `${pct}%` }}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] text-muted-foreground">0</span>
+              {[5, 10, 15, 20].map((n) => (
+                <span key={n} className={cn(
+                  "text-[10px]",
+                  data.completedCount >= n ? "text-primary font-bold" : "text-muted-foreground",
+                )}>{n}</span>
+              ))}
+              <span className={cn(
+                "text-[10px]",
+                data.completedCount === 25 ? "text-amber-600 font-bold" : "text-muted-foreground",
+              )}>25</span>
+            </div>
           </div>
 
           {/* 5x5 Grid */}
