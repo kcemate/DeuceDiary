@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Smile } from "lucide-react";
 
 interface Reaction {
@@ -26,12 +27,14 @@ interface ReactionsProps {
   entryId: string;
 }
 
-const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '🔥', '👏'];
+// Poop-themed emoji set for Deuce Diary
+const commonEmojis = ['💩', '🚽', '🔥', '❤️', '😂', '👍', '🤢', '💀', '👏', '🤣'];
 
 export function Reactions({ entryId }: ReactionsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [animatingEmoji, setAnimatingEmoji] = useState<string | null>(null);
 
   const { data: reactions = [] } = useQuery<Reaction[]>({
     queryKey: ['/api/entries', entryId, 'reactions'],
@@ -45,12 +48,11 @@ export function Reactions({ entryId }: ReactionsProps) {
         body: JSON.stringify({ emoji }),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, emoji) => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
       setShowEmojiPicker(false);
-    },
-    onError: (error) => {
-      console.error('Error adding reaction:', error);
+      setAnimatingEmoji(emoji);
+      setTimeout(() => setAnimatingEmoji(null), 400);
     },
   });
 
@@ -64,26 +66,14 @@ export function Reactions({ entryId }: ReactionsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
     },
-    onError: (error) => {
-      console.error('Error removing reaction:', error);
-    },
   });
 
   const handleEmojiClick = (emoji: string) => {
-    if (!user) {
-      console.log('No user found, cannot react');
-      return;
-    }
-    
-    console.log('Handling emoji click:', emoji, 'User:', user.id);
-    
+    if (!user) return;
     const existingReaction = reactions.find(r => r.emoji === emoji && r.userId === user.id);
-    
     if (existingReaction) {
-      console.log('Removing existing reaction');
       removeReactionMutation.mutate(emoji);
     } else {
-      console.log('Adding new reaction');
       addReactionMutation.mutate(emoji);
     }
   };
@@ -97,50 +87,76 @@ export function Reactions({ entryId }: ReactionsProps) {
     return acc;
   }, {} as Record<string, Reaction[]>);
 
-  const userHasReacted = (emoji: string) => {
-    return reactions.some(r => r.emoji === emoji && r.userId === user?.id);
-  };
+  const userHasReacted = (emoji: string) =>
+    reactions.some(r => r.emoji === emoji && r.userId === user?.id);
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Existing reactions */}
-      {Object.entries(groupedReactions).map(([emoji, reactionList]) => (
-        <Button
-          key={emoji}
-          variant={userHasReacted(emoji) ? "default" : "outline"}
-          size="sm"
-          onClick={() => handleEmojiClick(emoji)}
-          className="h-8 px-2 text-sm"
-          title={`${reactionList.length} reaction${reactionList.length > 1 ? 's' : ''}: ${reactionList.map(r => getUserDisplayName(r.user)).join(', ')}`}
-        >
-          <span className="mr-1">{emoji}</span>
-          <span>{reactionList.length}</span>
-        </Button>
-      ))}
+    <TooltipProvider delayDuration={300}>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Existing reactions */}
+        {Object.entries(groupedReactions).map(([emoji, reactionList]) => {
+          const mine = userHasReacted(emoji);
+          const names = reactionList.map(r => getUserDisplayName(r.user)).join(', ');
+          const isAnimating = animatingEmoji === emoji;
 
-      {/* Add reaction button */}
-      <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 px-2">
-            <Smile className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-2">
-          <div className="grid grid-cols-4 gap-1">
-            {commonEmojis.map(emoji => (
-              <Button
-                key={emoji}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEmojiClick(emoji)}
-                className="h-8 w-8 p-0 text-base hover:bg-muted"
-              >
-                {emoji}
-              </Button>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+          return (
+            <Tooltip key={emoji}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleEmojiClick(emoji)}
+                  className={[
+                    "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-medium",
+                    "min-h-[36px] min-w-[44px] transition-all duration-150 active:scale-90",
+                    mine
+                      ? "bg-[hsl(45,88%,48%)] text-white ring-2 ring-[hsl(45,88%,38%)] shadow-sm"
+                      : "bg-muted hover:bg-muted/80 text-foreground",
+                    isAnimating ? "scale-125" : "scale-100",
+                  ].join(' ')}
+                  aria-label={`${emoji} — ${names}`}
+                >
+                  <span className="text-base leading-none">{emoji}</span>
+                  <span className="text-xs tabular-nums">{reactionList.length}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[200px] text-center">
+                {names}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+
+        {/* Add reaction button */}
+        <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0 rounded-full hover:bg-muted"
+              aria-label="Add reaction"
+            >
+              <Smile className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2" align="start">
+            <div className="grid grid-cols-5 gap-1">
+              {commonEmojis.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => handleEmojiClick(emoji)}
+                  className={[
+                    "h-10 w-10 flex items-center justify-center rounded-lg text-xl",
+                    "transition-all duration-100 hover:bg-muted active:scale-90",
+                    userHasReacted(emoji) ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]" : "",
+                  ].join(' ')}
+                  aria-label={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </TooltipProvider>
   );
 }
