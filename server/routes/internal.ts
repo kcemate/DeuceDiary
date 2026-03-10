@@ -8,22 +8,32 @@ import { buildDetailedHealth } from "../lib/perfBaseline";
 export function createInternalRouter(): Router {
   const router = Router();
 
-  // Health check (no auth required) — checks DB connectivity + returns uptime
+  // Health check (no auth required) — checks DB connectivity, latency, and memory
   router.get('/api/health', async (_req, res) => {
+    const t0 = Date.now();
     try {
       await pool.query('SELECT 1');
+      const dbLatencyMs = Date.now() - t0;
+      const mem = process.memoryUsage();
       res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
+        uptime: Math.floor(process.uptime()),
         db: 'connected',
+        dbLatencyMs,
+        memory: {
+          heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+          heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+          rssMb: Math.round(mem.rss / 1024 / 1024),
+        },
       });
     } catch (err) {
       res.status(503).json({
         status: 'degraded',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
+        uptime: Math.floor(process.uptime()),
         db: 'disconnected',
+        dbLatencyMs: Date.now() - t0,
       });
     }
   });
