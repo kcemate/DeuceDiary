@@ -70,8 +70,8 @@ export function ShareCardModal({
     }
     try {
       await navigator.share({
-        title: `${data?.username || "I"}'m on a ${data?.currentStreak}-day streak!`,
-        text: `Join my streak on Deuce Diary`,
+        title: `${data?.username || "I"}'m on a ${data?.currentStreak}-day streak! 🔥`,
+        text: `${tagline} — Join me on Deuce Diary`,
         url: shareUrl,
       });
     } catch {
@@ -82,9 +82,11 @@ export function ShareCardModal({
   const rank = getThroneRank(data?.totalLogs ?? 0);
   const streakTier = getStreakTier(data?.currentStreak ?? 0);
 
+  const tagline = getStreakTagline(data?.currentStreak ?? 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm mx-auto">
+      <DialogContent className="w-full max-w-sm mx-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-center">Share Your Streak</DialogTitle>
         </DialogHeader>

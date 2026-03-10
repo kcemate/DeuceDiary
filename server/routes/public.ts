@@ -2,6 +2,42 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { getTitle, escapeHtml } from "./helpers";
 
+function getStreakTagline(streak: number): string {
+  if (streak === 0) return "Ready to start the streak";
+  if (streak === 1) return "Day one. The throne awaits.";
+  if (streak < 3) return "Just getting warmed up";
+  if (streak < 7) return "The habit is forming";
+  if (streak < 14) return "Week one locked in";
+  if (streak < 30) return "Officially unstoppable";
+  if (streak < 60) return "Iron constitution. Steel resolve.";
+  if (streak < 90) return "A force of bathroom nature";
+  if (streak < 180) return "Three months of total dominance";
+  if (streak < 365) return "Half a year on the throne";
+  return "Absolute throne legend";
+}
+
+function getThroneRankTitle(deuceCount: number): string {
+  if (deuceCount >= 1000) return "\u26A1 Deuce Deity";
+  if (deuceCount >= 500) return "\uD83D\uDC51 Throne Master";
+  if (deuceCount >= 250) return "\uD83C\uDFC6 Throne Legend";
+  if (deuceCount >= 150) return "\uD83C\uDFC5 Porcelain Pro";
+  if (deuceCount >= 100) return "\u2694\uFE0F Centurion";
+  if (deuceCount >= 75) return "\uD83D\uDCDC Throne Philosopher";
+  if (deuceCount >= 50) return "\uD83E\uDD4B Brown Belt";
+  if (deuceCount >= 30) return "\uD83E\uDD14 Throne Thinker";
+  if (deuceCount >= 15) return "\uD83D\uDCCB Regular";
+  if (deuceCount >= 5) return "\uD83D\uDD30 Seat Warmer";
+  return "\uD83E\uDE91 Throne Rookie";
+}
+
+function getStreakTierLabel(streak: number): string {
+  if (streak >= 365) return "\uD83D\uDC8E Diamond Streak";
+  if (streak >= 90) return "\uD83E\uDD47 Gold Streak";
+  if (streak >= 30) return "\uD83E\uDD48 Silver Streak";
+  if (streak >= 7) return "\uD83E\uDD49 Bronze Streak";
+  return "\uD83D\uDD25 Starter Streak";
+}
+
 export function createPublicRouter(): Router {
   const router = Router();
 
@@ -30,6 +66,9 @@ export function createPublicRouter(): Router {
       const memberSince = data.memberSince
         ? new Date(data.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : '';
+      const tagline = getStreakTagline(data.currentStreak);
+      const rankTitle = getThroneRankTitle(data.totalLogs);
+      const tierLabel = getStreakTierLabel(data.currentStreak);
 
       const html = `<!DOCTYPE html>
 <html lang="en">
@@ -38,11 +77,11 @@ export function createPublicRouter(): Router {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${displayName} on Deuce Diary</title>
   <meta property="og:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta property="og:description" content="${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''} \u00B7 Longest streak: ${data.longestStreak} days" />
+  <meta property="og:description" content="${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta name="twitter:description" content="${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''} on Deuce Diary" />
+  <meta name="twitter:description" content="${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs on Deuce Diary" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -55,17 +94,37 @@ export function createPublicRouter(): Router {
       min-height: 100vh;
     }
     .card {
-      background: hsl(38, 30%, 94%);
-      border: 1px solid hsl(38, 18%, 83%);
+      background: linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%);
+      border: 1.5px solid hsl(45, 55%, 72%);
       border-radius: 24px;
-      padding: 48px 40px;
+      overflow: hidden;
       max-width: 400px;
       width: 100%;
       text-align: center;
+      box-shadow: 0 2px 16px hsl(45 60% 60% / 0.12);
+    }
+    .accent-bar {
+      height: 6px;
+      background: linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%);
+    }
+    .card-inner { padding: 40px 36px; }
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: hsl(45, 88%, 48%);
+      color: hsl(25, 30%, 8%);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
     }
     .flame { font-size: 48px; line-height: 1; }
     .streak {
-      font-size: 72px;
+      font-size: 80px;
       font-weight: 900;
       color: hsl(45, 88%, 48%);
       line-height: 1;
@@ -73,70 +132,103 @@ export function createPublicRouter(): Router {
       font-variant-numeric: tabular-nums;
     }
     .streak-label {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       color: hsl(25, 12%, 42%);
-      margin-bottom: 24px;
+      margin-bottom: 8px;
+    }
+    .tagline {
+      font-size: 13px;
+      font-style: italic;
+      color: hsl(25, 30%, 38%);
+      margin-bottom: 18px;
     }
     .username {
       font-size: 22px;
       font-weight: 800;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
-    .subtitle {
-      font-size: 14px;
+    .rank-title {
+      font-size: 13px;
+      font-weight: 600;
       color: hsl(25, 12%, 42%);
-      margin-bottom: 24px;
+      margin-bottom: 18px;
     }
     .stats {
       display: flex;
       justify-content: center;
-      gap: 32px;
+      gap: 0;
+      background: hsl(38, 25%, 88%);
+      border-radius: 16px;
+      overflow: hidden;
       margin-bottom: 20px;
     }
+    .stat {
+      flex: 1;
+      padding: 10px 8px;
+      text-align: center;
+      position: relative;
+    }
+    .stat + .stat::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: hsl(38, 18%, 80%);
+    }
+    .stat-emoji { font-size: 14px; line-height: 1; margin-bottom: 2px; }
     .stat-value {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 900;
       font-variant-numeric: tabular-nums;
     }
     .stat-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: hsl(25, 12%, 42%);
+      margin-top: 1px;
     }
-    .brand {
-      font-size: 12px;
-      color: hsl(25, 12%, 42%);
-      margin-top: 16px;
-    }
+    .divider { border: none; border-top: 1px solid hsl(38, 18%, 84%); margin: 0 0 12px; }
+    .brand-name { font-size: 13px; font-weight: 700; color: hsl(25, 30%, 28%); }
+    .brand-tagline { font-size: 10px; color: hsl(25, 12%, 52%); margin-top: 2px; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="flame">\uD83D\uDD25</div>
-    <div class="streak">${data.currentStreak}</div>
-    <div class="streak-label">Day Streak</div>
-    <div class="username">${displayName}</div>
-    <div class="subtitle">on Deuce Diary</div>
-    <div class="stats">
-      <div>
-        <div class="stat-value">${data.totalLogs}</div>
-        <div class="stat-label">Logs</div>
+    <div class="accent-bar"></div>
+    <div class="card-inner">
+      <div><span class="tier-badge">${tierLabel}</span></div>
+      <div class="flame">\uD83D\uDD25</div>
+      <div class="streak">${data.currentStreak}</div>
+      <div class="streak-label">Day Streak</div>
+      <div class="tagline">${escapeHtml(tagline)}</div>
+      <div class="username">${displayName}</div>
+      <div class="rank-title">${escapeHtml(rankTitle)}</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-emoji">\uD83D\uDCA9</div>
+          <div class="stat-value">${data.totalLogs}</div>
+          <div class="stat-label">Logs</div>
+        </div>
+        <div class="stat">
+          <div class="stat-emoji">\uD83C\uDFC6</div>
+          <div class="stat-value">${data.longestStreak}</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+        <div class="stat">
+          <div class="stat-emoji">\uD83D\uDC65</div>
+          <div class="stat-value">${data.squadCount}</div>
+          <div class="stat-label">Squads</div>
+        </div>
       </div>
-      <div>
-        <div class="stat-value">${data.longestStreak}</div>
-        <div class="stat-label">Best Streak</div>
-      </div>
-      <div>
-        <div class="stat-value">${data.squadCount}</div>
-        <div class="stat-label">Squads</div>
-      </div>
+      <hr class="divider" />
+      <div class="brand-name">\uD83D\uDEBD Deuce Diary</div>
+      <div class="brand-tagline">Drop a log. Leave a mark.${memberSince ? ` \u00B7 Member since ${memberSince}` : ''}</div>
     </div>
-    ${memberSince ? `<div class="brand">Member since ${memberSince}</div>` : ''}
   </div>
 </body>
 </html>`;
