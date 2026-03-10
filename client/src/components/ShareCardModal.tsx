@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share2, Download } from "lucide-react";
 import { getThroneRank, getStreakTier } from "@/lib/gamification";
 
 function getStreakTagline(streak: number): string {
@@ -208,23 +208,40 @@ export function ShareCardModal({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3 mt-2">
+        <div className="flex gap-2 mt-2">
           <Button
             variant="outline"
-            className="flex-1 rounded-xl font-bold"
+            className="rounded-xl font-bold px-3"
             onClick={handleCopy}
+            title="Copy link"
           >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy Link
+            <Copy className="w-4 h-4" />
           </Button>
           <Button
             className="flex-1 rounded-xl font-bold"
             onClick={handleNativeShare}
           >
             <Share2 className="w-4 h-4 mr-2" />
-            Share
+            Share Card
           </Button>
+          {shareUrl && (
+            <a
+              href={shareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Preview card"
+            >
+              <Button variant="outline" className="rounded-xl font-bold px-3" asChild>
+                <span>
+                  <Download className="w-4 h-4" />
+                </span>
+              </Button>
+            </a>
+          )}
         </div>
+        <p className="text-center text-[11px] mt-1" style={{ color: "hsl(25, 12%, 52%)" }}>
+          Share your streak · embarrass your friends
+        </p>
       </DialogContent>
     </Dialog>
   );
