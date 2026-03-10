@@ -192,7 +192,7 @@ export function createGroupsRouter(): Router {
   });
 
   // Legacy /join/:inviteId redirect -> new client-side /invite/:code page
-  router.get('/join/:inviteId', async (req: any, res) => {
+  router.get('/join/:inviteId', (req: any, res) => {
     res.redirect(`/invite/${req.params.inviteId}`);
   });
 

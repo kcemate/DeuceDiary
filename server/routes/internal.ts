@@ -78,9 +78,15 @@ export function createInternalRouter(): Router {
     if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
-    const errors = getRecentErrors(limit);
-    res.json({ errors, count: errors.length });
+    try {
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50;
+      const errors = getRecentErrors(limit);
+      res.json({ errors, count: errors.length });
+    } catch (err) {
+      console.error('[INTERNAL ERRORS]', err);
+      res.status(500).json({ message: 'Failed to fetch error log' });
+    }
   });
 
   // --- Detailed health endpoint (internal) ---
