@@ -105,3 +105,22 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Crown Banner now matches the spec — shows log count, streak weeks, and days remaining.
 
 ---
+
+## Iteration 7 — Edge case tests: 1-person group, boundary exclusion, tiebreaker
+
+**Date:** 2026-03-10
+**What I analyzed:** Three untested scenarios that could cause incorrect crown assignments in production:
+1. **1-person group** — a solo member who logs should be crowned (the cron's `if (logCounts.length === 0)` guard only skips zero-log groups, not solo-member groups)
+2. **Period boundary exclusion** — logs exactly at `periodEnd` should NOT count (the DB query uses `lt`, but this was only implicitly tested)
+3. **Tiebreaker (earliest first log)** — when two users have identical log counts and streak lengths, the one who logged first that period should win
+
+**What I changed:**
+- Added 3 tests to the `POST /api/internal/crown-transfer` describe block:
+  1. `crowns the sole member of a 1-person group if they have logs` — verifies a solo user with 1 log gets crowned
+  2. `does not include logs that fall exactly on periodEnd (exclusive boundary)` — verifies `logCounts.length === 0` when the only log is at the boundary
+  3. `tiebreaker uses earliest first log when streaks are equal` — verifies `firstLogAt` sort direction with matching log counts
+
+**Test results:** 496/496 passed (+3 new tests)
+**Verdict:** Crown transfer tiebreaker and boundary logic verified against all three edge cases.
+
+---

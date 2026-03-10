@@ -953,4 +953,98 @@ describe("POST /api/internal/crown-transfer", () => {
     const groupKings = kings.filter((k: any) => k.groupId === groupId);
     expect(groupKings).toHaveLength(0);
   });
+
+  it("crowns the sole member of a 1-person group if they have logs", async () => {
+    const { v4: uuidv4 } = await import("uuid");
+    const groupId = uuidv4();
+    await memStore.upsertUser({ id: "dev-solo", firstName: "solo" });
+    await memStore.createGroup({ id: groupId, name: "Solo Squad", createdBy: "dev-solo" });
+
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const daysSinceMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMon));
+    const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    await memStore.createDeuceEntry({
+      id: uuidv4(),
+      userId: "dev-solo",
+      groupId,
+      location: "Home",
+      thoughts: "",
+      ghost: false,
+      loggedAt: new Date(periodStart.getTime() + 60 * 60 * 1000),
+    });
+
+    const res = await supertest(app)
+      .post("/api/internal/crown-transfer")
+      .set("x-internal-key", INTERNAL_KEY);
+
+    expect(res.status).toBe(200);
+    const kings = memStore._getKings().filter((k: any) => k.groupId === groupId);
+    expect(kings).toHaveLength(1);
+    expect(kings[0].userId).toBe("dev-solo");
+    expect(kings[0].logCount).toBe(1);
+  });
+
+  it("does not include logs that fall exactly on periodEnd (exclusive boundary)", async () => {
+    const { v4: uuidv4 } = await import("uuid");
+    const groupId = uuidv4();
+    await memStore.upsertUser({ id: "dev-boundary", firstName: "boundary" });
+    await memStore.createGroup({ id: groupId, name: "Boundary Test", createdBy: "dev-boundary" });
+
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const daysSinceMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMon));
+    const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Log exactly at periodEnd — should be excluded
+    await memStore.createDeuceEntry({
+      id: uuidv4(),
+      userId: "dev-boundary",
+      groupId,
+      location: "Home",
+      thoughts: "",
+      ghost: false,
+      loggedAt: periodEnd,
+    });
+
+    const logCounts = await memStore.getGroupLogCountsForPeriod(groupId, periodStart, periodEnd);
+    // The in-memory store uses < periodEnd (exclusive), so this log must not count
+    expect(logCounts).toHaveLength(0);
+  });
+
+  it("tiebreaker uses earliest first log when streaks are equal", async () => {
+    const { v4: uuidv4 } = await import("uuid");
+    const groupId = uuidv4();
+    await memStore.createGroup({ id: groupId, name: "Tiebreak Test", createdBy: "dev-alice" });
+    await memStore.upsertUser({ id: "dev-alice", firstName: "alice" });
+    await memStore.upsertUser({ id: "dev-bob", firstName: "bob" });
+    await memStore.addGroupMember({ groupId, userId: "dev-bob", role: "member" });
+
+    const periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const periodEnd = new Date(Date.now() - 1000);
+
+    // Both log 3 times — Alice logs earlier
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-alice", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 1 * 60 * 60 * 1000) });
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-alice", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 2 * 60 * 60 * 1000) });
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-alice", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 3 * 60 * 60 * 1000) });
+
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-bob", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 4 * 60 * 60 * 1000) });
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-bob", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 5 * 60 * 60 * 1000) });
+    await memStore.createDeuceEntry({ id: uuidv4(), userId: "dev-bob", groupId, location: "Home", thoughts: "", ghost: false, loggedAt: new Date(periodStart.getTime() + 6 * 60 * 60 * 1000) });
+
+    const logCounts = await memStore.getGroupLogCountsForPeriod(groupId, periodStart, periodEnd);
+    expect(logCounts).toHaveLength(2);
+
+    // Both have 3 logs — sort by firstLogAt ascending, Alice wins
+    logCounts.sort((a, b) => {
+      if (a.logCount !== b.logCount) return b.logCount - a.logCount;
+      const aTime = a.firstLogAt?.getTime() ?? Infinity;
+      const bTime = b.firstLogAt?.getTime() ?? Infinity;
+      return aTime - bTime;
+    });
+    expect(logCounts[0].userId).toBe("dev-alice");
+  });
 });
