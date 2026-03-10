@@ -23,3 +23,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** Picker now surfaces the crowd's favorites first — feels more social and contextual.
 
 ---
+
+## Iteration 3 — CreateGroupModal: Random witty placeholder names
+
+**Problem:** The squad name input always showed "e.g. Morning Crew" — same every time, boring.
+
+**Change:** Added `SQUAD_NAME_PLACEHOLDERS` array with 10 toilet-themed squad name ideas. A random one is selected via `useState(randomPlaceholder)` on mount so each modal open shows a fresh suggestion.
+
+**Result:** More delightful and inspiring — users see "e.g. Flush Force" or "e.g. Toilet Titans" instead of the same generic placeholder.
+
+---

@@ -23,12 +23,31 @@ interface CreateGroupModalProps {
 // Fun squad icon options — toilet-themed
 const SQUAD_ICONS = ['🚽', '💩', '🔥', '👑', '⚡', '🏆', '💎', '🎯', '🌊', '🦁', '🐉', '🤝'];
 
+// Witty placeholder names — pick one randomly each time the modal opens
+const SQUAD_NAME_PLACEHOLDERS = [
+  "Morning Crew",
+  "The Regulars",
+  "Porcelain Squad",
+  "Throne Seekers",
+  "Brown Belt Club",
+  "The Daily Deuces",
+  "Drop & Roll",
+  "Flush Force",
+  "Toilet Titans",
+  "Deuce Division",
+];
+
+function randomPlaceholder() {
+  return SQUAD_NAME_PLACEHOLDERS[Math.floor(Math.random() * SQUAD_NAME_PLACEHOLDERS.length)];
+}
+
 const NAME_MAX = 90;
 const DESC_MAX = 500;
 
 export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) {
   const [icon, setIcon] = useState('🚽');
   const [name, setName] = useState("");
+  const [namePlaceholder] = useState(randomPlaceholder);
   const [description, setDescription] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [nameError, setNameError] = useState("");
@@ -199,7 +218,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
               {/* Name input */}
               <div className="flex-1 relative">
                 <Input
-                  placeholder="e.g. Morning Crew"
+                  placeholder={`e.g. ${namePlaceholder}`}
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   className={["pr-10", nameError ? "border-destructive" : ""].join(' ')}
