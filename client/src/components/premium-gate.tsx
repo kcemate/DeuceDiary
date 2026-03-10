@@ -46,6 +46,8 @@ export function PremiumGate({ featureName, children }: PremiumGateProps) {
 
   if (!isFree) return <>{children}</>;
 
+  const bullets = FEATURE_BULLETS[featureName] ?? PREMIUM_FEATURES;
+
   return (
     <div className="relative">
       {/* Blurred content underneath */}
@@ -57,15 +59,15 @@ export function PremiumGate({ featureName, children }: PremiumGateProps) {
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/70 backdrop-blur-sm rounded-2xl p-6">
         <span className="text-4xl mb-2">👑</span>
         <p className="text-base font-extrabold text-foreground text-center mb-1 leading-tight">
-          {featureName} is a Premium feature
+          Unlock {featureName}
         </p>
-        <p className="text-xs text-muted-foreground text-center mb-4">
-          Join thousands of Deuce Diary regulars living their best throne life.
+        <p className="text-xs text-muted-foreground text-center mb-3">
+          Join thousands living their best throne life.
         </p>
 
-        {/* Feature bullets */}
+        {/* Feature-specific bullets */}
         <ul className="w-full max-w-xs mb-4 space-y-1.5">
-          {PREMIUM_FEATURES.map((f) => (
+          {bullets.map((f) => (
             <li key={f.text} className="flex items-start gap-2 text-xs text-foreground">
               <span className="text-sm leading-none mt-0.5">{f.emoji}</span>
               <span className="leading-snug">{f.text}</span>
@@ -78,7 +80,9 @@ export function PremiumGate({ featureName, children }: PremiumGateProps) {
             Upgrade to Premium
           </Button>
         </Link>
-        <p className="text-[10px] text-muted-foreground mt-2">Cancel anytime · No throne left behind</p>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          From $2.99/mo &middot; Cancel anytime
+        </p>
       </div>
     </div>
   );
