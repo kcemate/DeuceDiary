@@ -32,6 +32,15 @@ interface ReactionsProps {
 // Poop-themed emoji set for Deuce Diary
 const commonEmojis = ['💩', '🚽', '🔥', '❤️', '😂', '👍', '🤢', '💀', '👏', '🤣'];
 
+/** Sort picker emojis: already-used on this entry first (by count desc), then the rest */
+function getSortedPickerEmojis(grouped: Record<string, { length: number }[]>): string[] {
+  const usedCounts: Record<string, number> = {};
+  for (const emoji of commonEmojis) {
+    if (grouped[emoji]) usedCounts[emoji] = grouped[emoji].length;
+  }
+  return [...commonEmojis].sort((a, b) => (usedCounts[b] ?? 0) - (usedCounts[a] ?? 0));
+}
+
 interface Floater {
   id: number;
   emoji: string;
@@ -240,7 +249,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
               React
             </p>
             <div className="grid grid-cols-5 gap-1">
-              {commonEmojis.map(emoji => (
+              {getSortedPickerEmojis(groupedReactions).map(emoji => (
                 <button
                   key={emoji}
                   onClick={() => handleEmojiClick(emoji)}
