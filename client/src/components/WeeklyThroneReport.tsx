@@ -8,6 +8,7 @@ interface WeeklyReport {
   funniestEntry: { thought: string; reactions: number } | null;
   totalReactionsReceived: number;
   weekOf: string;
+  dailyCounts: { date: string; count: number }[];
 }
 
 function formatWeekRange(weekOf: string): string {
@@ -28,6 +29,56 @@ function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "..." : str;
 }
 
+function DailyBarChart({
+  dailyCounts,
+  peakDate,
+}: {
+  dailyCounts: { date: string; count: number }[];
+  peakDate: string;
+}) {
+  const max = Math.max(...dailyCounts.map((d) => d.count), 1);
+
+  return (
+    <div className="px-4 pb-2">
+      <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+        Daily Activity
+      </p>
+      <div className="flex items-end gap-1 h-12">
+        {dailyCounts.map((day) => {
+          const isPeak = day.date === peakDate && day.count > 0;
+          const heightPct = (day.count / max) * 100;
+          const barH = Math.max(heightPct, day.count > 0 ? 12 : 4);
+
+          return (
+            <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
+              <div className="w-full flex items-end" style={{ height: "36px" }}>
+                <div
+                  className="w-full rounded-t-sm transition-all duration-500"
+                  style={{
+                    height: `${barH}%`,
+                    background: isPeak
+                      ? "hsl(45, 88%, 48%)"
+                      : day.count > 0
+                      ? "hsl(142, 60%, 45%)"
+                      : "hsl(25, 12%, 82%)",
+                    minHeight: "3px",
+                  }}
+                />
+              </div>
+              <span
+                className="text-[7px] font-bold leading-none"
+                style={{ color: isPeak ? "hsl(45, 65%, 38%)" : "hsl(25, 12%, 52%)" }}
+              >
+                {formatDayName(day.date).slice(0, 1)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function WeeklyThroneReport() {
   const { data: report, isLoading } = useQuery<WeeklyReport>({
     queryKey: ["/api/users/me/weekly-report"],
@@ -44,27 +95,27 @@ export function WeeklyThroneReport() {
   if (!report) return null;
 
   const stats = [
-    { emoji: "\uD83D\uDCA9", value: report.totalDeuces, label: "Deuces This Week" },
-    { emoji: "\uD83D\uDD25", value: `${report.longestStreak}-Day`, label: "Best Streak" },
-    { emoji: "\uD83C\uDFC6", value: report.mostActiveSquad.name, label: "Top Squad" },
+    { emoji: "💩", value: report.totalDeuces, label: "Deuces This Week" },
+    { emoji: "🔥", value: `${report.longestStreak}-Day`, label: "Best Streak" },
+    { emoji: "🏆", value: report.mostActiveSquad.name, label: "Top Squad" },
     {
-      emoji: "\u23F0",
+      emoji: "⏰",
       value: report.peakDay.count > 0 ? formatDayName(report.peakDay.date) : "—",
       label: report.peakDay.count > 0 ? `${report.peakDay.count} deuces` : "Peak Day",
     },
-    { emoji: "\u2764\uFE0F", value: report.totalReactionsReceived, label: "Reactions Received" },
+    { emoji: "❤️", value: report.totalReactionsReceived, label: "Reactions Received" },
     {
-      emoji: "\u270D\uFE0F",
+      emoji: "✍️",
       value: report.funniestEntry ? `'${truncate(report.funniestEntry.thought, 28)}'` : "—",
       label: report.funniestEntry ? `${report.funniestEntry.reactions} reactions` : "Best Thought",
     },
   ];
 
   return (
-    <div className="w-[320px] h-[480px] mx-auto rounded-2xl border-2 border-accent bg-background flex flex-col overflow-hidden">
+    <div className="w-[320px] mx-auto rounded-2xl border-2 border-accent bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="text-center pt-5 pb-3 px-4">
-        <p className="text-3xl mb-1">{"\uD83D\uDEBD"}</p>
+      <div className="text-center pt-5 pb-2 px-4">
+        <p className="text-3xl mb-1">🚽</p>
         <h3 className="text-lg font-extrabold text-foreground tracking-tight">
           Weekly Throne Report
         </h3>
@@ -73,8 +124,13 @@ export function WeeklyThroneReport() {
         </p>
       </div>
 
+      {/* Daily bar chart */}
+      {report.dailyCounts && report.dailyCounts.length > 0 && (
+        <DailyBarChart dailyCounts={report.dailyCounts} peakDate={report.peakDay.date} />
+      )}
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-2 px-4 flex-1">
+      <div className="grid grid-cols-2 gap-2 px-4 pb-2 flex-1">
         {stats.map((stat, i) => (
           <div
             key={i}

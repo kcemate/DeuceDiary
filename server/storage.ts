@@ -288,6 +288,7 @@ export interface IStorage {
     funniestEntry: { thought: string; reactions: number } | null;
     totalReactionsReceived: number;
     weekOf: string;
+    dailyCounts: { date: string; count: number }[];
   }>;
 
   // Weekly Throne Report — group-level weekly summary
@@ -1262,6 +1263,26 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
     const totalReactionsReceived = reactionsResult?.total ?? 0;
 
+    // 7. Daily counts for the past 7 days (for bar chart)
+    const dailyRows = await db
+      .select({
+        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+      .orderBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`);
+
+    // Build a full 7-day array (fill zeros for missing days)
+    const dailyMap = new Map(dailyRows.map(r => [r.date, r.count]));
+    const dailyCounts = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(sevenDaysAgo);
+      d.setUTCDate(d.getUTCDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      return { date: dateStr, count: dailyMap.get(dateStr) ?? 0 };
+    });
+
     return {
       totalDeuces,
       peakDay,
@@ -1270,6 +1291,7 @@ export class DatabaseStorage implements IStorage {
       funniestEntry,
       totalReactionsReceived,
       weekOf,
+      dailyCounts,
     };
   }
 
