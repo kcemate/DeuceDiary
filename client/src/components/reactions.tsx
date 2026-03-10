@@ -6,7 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Smile } from "lucide-react";
+import { Smile, ChevronDown } from "lucide-react";
 
 interface Reaction {
   id: number;
@@ -25,15 +25,18 @@ interface Reaction {
 
 interface ReactionsProps {
   entryId: string;
+  /** Max reaction pills to show before collapsing (default 4) */
+  maxVisible?: number;
 }
 
 // Poop-themed emoji set for Deuce Diary
 const commonEmojis = ['💩', '🚽', '🔥', '❤️', '😂', '👍', '🤢', '💀', '👏', '🤣'];
 
-export function Reactions({ entryId }: ReactionsProps) {
+export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAllReactions, setShowAllReactions] = useState(false);
   const [animatingEmoji, setAnimatingEmoji] = useState<string | null>(null);
 
   const { data: reactions = [] } = useQuery<Reaction[]>({
@@ -52,7 +55,7 @@ export function Reactions({ entryId }: ReactionsProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
       setShowEmojiPicker(false);
       setAnimatingEmoji(emoji);
-      setTimeout(() => setAnimatingEmoji(null), 400);
+      setTimeout(() => setAnimatingEmoji(null), 350);
     },
   });
 
@@ -78,23 +81,28 @@ export function Reactions({ entryId }: ReactionsProps) {
     }
   };
 
-  // Group reactions by emoji
+  // Group reactions by emoji, sorted by count desc then alphabetical
   const groupedReactions = reactions.reduce((acc, reaction) => {
-    if (!acc[reaction.emoji]) {
-      acc[reaction.emoji] = [];
-    }
+    if (!acc[reaction.emoji]) acc[reaction.emoji] = [];
     acc[reaction.emoji].push(reaction);
     return acc;
   }, {} as Record<string, Reaction[]>);
 
+  const sortedEntries = Object.entries(groupedReactions).sort(
+    ([, a], [, b]) => b.length - a.length
+  );
+
   const userHasReacted = (emoji: string) =>
     reactions.some(r => r.emoji === emoji && r.userId === user?.id);
+
+  const visibleEntries = showAllReactions ? sortedEntries : sortedEntries.slice(0, maxVisible);
+  const hiddenCount = sortedEntries.length - maxVisible;
 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center gap-1.5 flex-wrap">
         {/* Existing reactions */}
-        {Object.entries(groupedReactions).map(([emoji, reactionList]) => {
+        {visibleEntries.map(([emoji, reactionList]) => {
           const mine = userHasReacted(emoji);
           const names = reactionList.map(r => getUserDisplayName(r.user)).join(', ');
           const isAnimating = animatingEmoji === emoji;
@@ -104,13 +112,16 @@ export function Reactions({ entryId }: ReactionsProps) {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => handleEmojiClick(emoji)}
+                  style={{
+                    transform: isAnimating ? 'scale(1.3)' : 'scale(1)',
+                    transition: 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                  }}
                   className={[
                     "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-medium",
-                    "min-h-[36px] min-w-[44px] transition-all duration-150 active:scale-90",
+                    "min-h-[36px] min-w-[44px] active:scale-90",
                     mine
                       ? "bg-[hsl(45,88%,48%)] text-white ring-2 ring-[hsl(45,88%,38%)] shadow-sm"
                       : "bg-muted hover:bg-muted/80 text-foreground",
-                    isAnimating ? "scale-125" : "scale-100",
                   ].join(' ')}
                   aria-label={`${emoji} — ${names}`}
                 >
@@ -125,6 +136,17 @@ export function Reactions({ entryId }: ReactionsProps) {
           );
         })}
 
+        {/* "+N more" overflow toggle */}
+        {!showAllReactions && hiddenCount > 0 && (
+          <button
+            onClick={() => setShowAllReactions(true)}
+            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px]"
+          >
+            +{hiddenCount}
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        )}
+
         {/* Add reaction button */}
         <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
           <PopoverTrigger asChild>
@@ -138,6 +160,9 @@ export function Reactions({ entryId }: ReactionsProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-2" align="start">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
+              React
+            </p>
             <div className="grid grid-cols-5 gap-1">
               {commonEmojis.map(emoji => (
                 <button
@@ -146,7 +171,9 @@ export function Reactions({ entryId }: ReactionsProps) {
                   className={[
                     "h-10 w-10 flex items-center justify-center rounded-lg text-xl",
                     "transition-all duration-100 hover:bg-muted active:scale-90",
-                    userHasReacted(emoji) ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]" : "",
+                    userHasReacted(emoji)
+                      ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
+                      : "",
                   ].join(' ')}
                   aria-label={emoji}
                 >
