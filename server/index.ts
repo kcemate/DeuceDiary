@@ -101,6 +101,36 @@ const pushLimiter = rateLimit({
 app.use("/api/notifications/register", pushLimiter);
 app.use("/api/push/unregister", pushLimiter);
 
+// Group creation — prevent spam squad creation
+const groupCreateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many group creation requests, please try again later." },
+});
+app.use("/api/groups", groupCreateLimiter);
+
+// Reactions — prevent emoji spam
+const reactionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many reaction requests, please try again later." },
+});
+app.use("/api/entries", reactionLimiter);
+
+// Referral apply — prevent brute-force code guessing
+const referralLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,  // 1 hour window
+  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many referral attempts, please try again later." },
+});
+app.use("/api/referral/apply", referralLimiter);
+
 // --- Request ID (trace each request through logs & error responses) ---
 app.use((req, res, next) => {
   const id = (req.headers['x-request-id'] as string) || crypto.randomUUID();
