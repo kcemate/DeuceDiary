@@ -4,3 +4,8 @@
 **Change**: Added AnimatePresence + motion.div for slide-in/fade between steps (spring physics, direction-aware). Replaced plain progress dots with labeled step pills showing step name ("Your Name", "Your Base", "First Log") with checkmark on completed steps.
 **Result**: Tests passing (466/466)
 **Notes**: Used custom variants with directional x offset so forward navigation slides right-to-left and backward navigation reverses. Step pills animate via CSS transitions, motion wraps each card.
+
+## Iteration 2 — Animated emoji mascot with bounce entrance
+**Change**: Each step's emoji now has a distinct entrance animation: Step 1 (🚽) bounces in from above with spring physics, Step 2 (🏠) slides up from below, Step 3 (💩) spins in with rotation. Added a continuous rotation animation on 🚽 during the username submit loading state.
+**Result**: Tests passing (466/466)
+**Notes**: Used framer-motion's spread props pattern with typed `as const` animation configs per step. The loading spinner is a nested motion.span with `repeat: Infinity` rotate animation.

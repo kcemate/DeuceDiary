@@ -29,6 +29,25 @@ const stepVariants = {
   }),
 };
 
+// Emoji mascot animation configs per step
+const emojiAnimations = {
+  1: {
+    initial: { y: -80, opacity: 0, scale: 0.5 },
+    animate: { y: 0, opacity: 1, scale: 1 },
+    transition: { type: "spring", stiffness: 400, damping: 15, delay: 0.1 },
+  },
+  2: {
+    initial: { y: 60, opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    transition: { type: "spring", stiffness: 350, damping: 20, delay: 0.1 },
+  },
+  3: {
+    initial: { rotate: -180, scale: 0, opacity: 0 },
+    animate: { rotate: 0, scale: 1, opacity: 1 },
+    transition: { type: "spring", stiffness: 300, damping: 18, delay: 0.1 },
+  },
+} as const;
+
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
@@ -137,7 +156,20 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <Card className="w-full border border-border rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
-                    <span className="text-6xl block mb-4">🚽</span>
+                    <motion.span
+                      className="text-6xl block mb-4"
+                      {...emojiAnimations[1]}
+                    >
+                      {usernameMutation.isPending ? (
+                        <motion.span
+                          className="inline-block"
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                        >
+                          🚽
+                        </motion.span>
+                      ) : "🚽"}
+                    </motion.span>
                     <h2 className="text-2xl font-extrabold text-foreground mb-2">
                       Welcome to Deuce Diary!
                     </h2>
@@ -193,7 +225,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <Card className="w-full border border-border rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
-                    <span className="text-6xl block mb-4">🏠</span>
+                    <motion.span
+                      className="text-6xl block mb-4"
+                      {...emojiAnimations[2]}
+                    >
+                      🏠
+                    </motion.span>
                     <h2 className="text-2xl font-extrabold text-foreground mb-2">
                       Your Solo Deuces group is ready
                     </h2>
@@ -250,7 +287,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <Card className="w-full border border-border rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
-                    <span className="text-6xl block mb-4">💩</span>
+                    <motion.span
+                      className="text-6xl block mb-4"
+                      {...emojiAnimations[3]}
+                    >
+                      💩
+                    </motion.span>
                     <h2 className="text-2xl font-extrabold text-foreground mb-2">
                       Log your first deuce!
                     </h2>
