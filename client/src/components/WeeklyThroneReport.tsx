@@ -57,30 +57,38 @@ function DailyBarChart({
       <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
         Daily Activity
       </p>
-      <div className="flex items-end gap-1 h-12">
+      <div className="flex items-end gap-1" style={{ height: "52px" }}>
         {dailyCounts.map((day) => {
           const isPeak = day.date === peakDate && day.count > 0;
           const heightPct = (day.count / max) * 100;
-          const barH = Math.max(heightPct, day.count > 0 ? 12 : 4);
+          const barH = Math.max(heightPct, day.count > 0 ? 15 : 5);
 
           return (
-            <div key={day.date} className="flex-1 flex flex-col items-center gap-0.5">
-              <div className="w-full flex items-end" style={{ height: "36px" }}>
+            <div key={day.date} className="flex-1 flex flex-col items-center">
+              {/* Count label above bar */}
+              <span
+                className="text-[7px] font-black leading-none mb-0.5"
+                style={{ color: isPeak ? "hsl(45, 65%, 38%)" : "transparent" }}
+              >
+                {day.count > 0 ? day.count : " "}
+              </span>
+              <div className="w-full flex items-end" style={{ height: "34px" }}>
                 <div
-                  className="w-full rounded-t-sm transition-all duration-500"
+                  className="w-full rounded-t-sm"
                   style={{
                     height: `${barH}%`,
                     background: isPeak
-                      ? "hsl(45, 88%, 48%)"
+                      ? "linear-gradient(180deg, hsl(45,88%,55%) 0%, hsl(45,88%,40%) 100%)"
                       : day.count > 0
                       ? "hsl(142, 60%, 45%)"
                       : "hsl(25, 12%, 82%)",
                     minHeight: "3px",
+                    boxShadow: isPeak ? "0 0 6px hsl(45 88% 48% / 0.5)" : undefined,
                   }}
                 />
               </div>
               <span
-                className="text-[7px] font-bold leading-none"
+                className="text-[7px] font-bold leading-none mt-0.5"
                 style={{ color: isPeak ? "hsl(45, 65%, 38%)" : "hsl(25, 12%, 52%)" }}
               >
                 {formatDayName(day.date).slice(0, 1)}
@@ -177,9 +185,33 @@ export function WeeklyThroneReport() {
         <DailyBarChart dailyCounts={report.dailyCounts} peakDate={report.peakDay.date} />
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-2 px-4 pb-2 flex-1">
-        {stats.map((stat, i) => (
+      {/* Hero stat — total deuces */}
+      <div className="px-4 pb-1">
+        <div
+          className="rounded-xl px-4 py-2.5 flex items-center justify-between"
+          style={{
+            background: "linear-gradient(135deg, hsl(45,88%,95%) 0%, hsl(38,70%,90%) 100%)",
+            border: "1.5px solid hsl(45, 60%, 72%)",
+          }}
+        >
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(45,65%,38%)" }}>
+              Deuces This Week
+            </p>
+            <p
+              className="text-3xl font-black leading-none"
+              style={{ color: "hsl(45, 88%, 38%)", fontVariantNumeric: "tabular-nums" }}
+            >
+              {report.totalDeuces}
+            </p>
+          </div>
+          <span className="text-4xl">💩</span>
+        </div>
+      </div>
+
+      {/* Stats Grid — remaining 5 stats */}
+      <div className="grid grid-cols-2 gap-2 px-4 pb-2">
+        {stats.slice(1).map((stat, i) => (
           <div
             key={i}
             className="bg-card border border-border rounded-xl p-2.5 flex flex-col items-center justify-center text-center"
