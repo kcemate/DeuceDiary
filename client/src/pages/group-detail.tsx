@@ -987,33 +987,32 @@ export default function GroupDetail() {
 
       {/* ── CHALLENGE SETTER MODAL ── */}
       <Dialog open={showChallengeModal} onOpenChange={setShowChallengeModal}>
-        <DialogContent className="max-w-sm mx-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-sm mx-auto max-h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-4 pt-4 pb-2 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <span>👑</span> Set Your Challenge
             </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              You're Deuce King — pick a challenge for your squad this week!
+              Pick a challenge for your squad this week!
             </p>
-
-            {/* Template grid */}
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-4 pb-2 space-y-3">
+            {/* Template grid — compact 2-col on mobile */}
             <div>
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Pick a template</p>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 {(kingData?.templates ?? []).map((t) => (
                   <button
                     key={t.key}
                     onClick={() => setChallengeInput({ templateKey: t.key, customTitle: "" })}
-                    className={`text-left p-2.5 rounded-xl border text-sm transition-colors ${
+                    className={`text-left p-2 rounded-lg border text-xs transition-colors ${
                       challengeInput.templateKey === t.key
                         ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 font-bold"
                         : "border-border hover:border-yellow-300"
                     }`}
                   >
-                    <span className="font-semibold">{t.title}</span>
-                    <span className="text-xs text-muted-foreground block">{t.description}</span>
+                    <span className="font-semibold text-sm leading-tight block">{t.title}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">{t.description}</span>
                   </button>
                 ))}
               </div>
@@ -1025,7 +1024,7 @@ export default function GroupDetail() {
                 Or write your own <span className="text-yellow-600">✦ Premium</span>
               </p>
               <textarea
-                className="w-full border rounded-xl p-2 text-sm resize-none bg-background"
+                className="w-full border rounded-lg p-2 text-sm resize-none bg-background"
                 rows={2}
                 maxLength={140}
                 placeholder="Custom challenge (max 140 chars)…"
@@ -1034,7 +1033,10 @@ export default function GroupDetail() {
               />
               <p className="text-xs text-muted-foreground text-right">{challengeInput.customTitle.length}/140</p>
             </div>
+          </div>
 
+          {/* Sticky button at bottom */}
+          <div className="px-4 pb-4 pt-2 shrink-0 border-t">
             <Button
               className="w-full font-bold"
               disabled={!challengeInput.templateKey && !challengeInput.customTitle.trim() || setChallengesMutation.isPending}
