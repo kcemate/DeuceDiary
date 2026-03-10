@@ -157,28 +157,36 @@ export function ShareCardModal({
             {rank.rank.icon} {rank.rank.title}
           </div>
 
-          <div className="flex justify-center gap-8">
-            <div>
-              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+          <div
+            className="flex justify-center gap-6 rounded-2xl py-3 px-2"
+            style={{ background: "hsl(38, 25%, 88%)" }}
+          >
+            <div className="text-center">
+              <div className="text-base leading-none mb-0.5">💩</div>
+              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
                 {data?.totalLogs ?? 0}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
                 Logs
               </div>
             </div>
-            <div>
-              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+            <div className="w-px self-stretch" style={{ background: "hsl(38, 18%, 80%)" }} />
+            <div className="text-center">
+              <div className="text-base leading-none mb-0.5">🏆</div>
+              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
                 {data?.longestStreak ?? 0}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
                 Best Streak
               </div>
             </div>
-            <div>
-              <div className="text-lg font-black" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+            <div className="w-px self-stretch" style={{ background: "hsl(38, 18%, 80%)" }} />
+            <div className="text-center">
+              <div className="text-base leading-none mb-0.5">👥</div>
+              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
                 {data?.squadCount ?? 0}
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
                 Squads
               </div>
             </div>
