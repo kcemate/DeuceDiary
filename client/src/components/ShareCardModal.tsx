@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Copy, Share2 } from "lucide-react";
 import { getThroneRank, getStreakTier } from "@/lib/gamification";
 
+function getStreakTagline(streak: number): string {
+  if (streak === 0) return "Ready to start the streak";
+  if (streak === 1) return "Day one. The throne awaits.";
+  if (streak < 3) return "Just getting warmed up";
+  if (streak < 7) return "The habit is forming";
+  if (streak < 14) return "Week one locked in 💪";
+  if (streak < 30) return "Officially unstoppable";
+  if (streak < 60) return "Iron constitution. Steel resolve.";
+  if (streak < 90) return "A force of bathroom nature";
+  if (streak < 180) return "Three months of total dominance";
+  if (streak < 365) return "Half a year on the throne";
+  return "Absolute throne legend 👑";
+}
+
 interface ShareCardData {
   username: string | null;
   currentStreak: number;
@@ -91,7 +105,7 @@ export function ShareCardModal({
           />
 
           <div className="p-8">
-          {/* Streak tier badge */}
+            {/* Streak tier badge */}
           <div className="flex justify-center mb-3">
             <span
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
@@ -117,10 +131,18 @@ export function ShareCardModal({
             {data?.currentStreak ?? 0}
           </div>
           <div
-            className="text-xs font-bold uppercase tracking-widest mb-5"
+            className="text-xs font-bold uppercase tracking-widest mb-2"
             style={{ color: "hsl(25, 12%, 42%)" }}
           >
             Day Streak
+          </div>
+
+          {/* Fun tagline */}
+          <div
+            className="text-[13px] italic mb-4"
+            style={{ color: "hsl(25, 30%, 38%)" }}
+          >
+            {getStreakTagline(data?.currentStreak ?? 0)}
           </div>
 
           <div className="text-xl font-extrabold" style={{ color: "hsl(25, 30%, 8%)" }}>
