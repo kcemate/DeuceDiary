@@ -44,6 +44,7 @@ function getSortedPickerEmojis(grouped: Record<string, { length: number }[]>): s
 interface Floater {
   id: number;
   emoji: string;
+  dx: number; // horizontal drift in px
 }
 
 export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
@@ -62,7 +63,8 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
 
   const spawnFloater = (emoji: string) => {
     const id = ++floaterCounter.current;
-    setFloaters(prev => [...prev, { id, emoji }]);
+    const dx = Math.round((Math.random() - 0.5) * 36); // -18..+18 px
+    setFloaters(prev => [...prev, { id, emoji, dx }]);
     setTimeout(() => setFloaters(prev => prev.filter(f => f.id !== id)), 800);
   };
 
@@ -126,9 +128,9 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
       {/* Keyframes for floating emoji burst */}
       <style>{`
         @keyframes floatUp {
-          0%   { opacity: 1; transform: translateY(0) scale(1); }
-          60%  { opacity: 0.9; transform: translateY(-28px) scale(1.4); }
-          100% { opacity: 0; transform: translateY(-52px) scale(0.8); }
+          0%   { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+          60%  { opacity: 0.9; transform: translateX(calc(var(--dx, 0) * 0.6px)) translateY(-28px) scale(1.4); }
+          100% { opacity: 0; transform: translateX(calc(var(--dx, 0) * 1px)) translateY(-52px) scale(0.8); }
         }
         .emoji-floater {
           position: absolute;
@@ -152,7 +154,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
       <div className="relative flex items-center gap-1.5 flex-wrap">
         {/* Floating emoji burst portal */}
         {floaters.map(f => (
-          <span key={f.id} className="emoji-floater">{f.emoji}</span>
+          <span key={f.id} className="emoji-floater" style={{ ['--dx' as string]: f.dx }}>{f.emoji}</span>
         ))}
 
         {/* Existing reactions */}
