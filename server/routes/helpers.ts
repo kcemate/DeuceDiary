@@ -102,6 +102,22 @@ export const unregisterPushSchema = z.object({
   token: z.string().min(1).max(500),
 });
 
+// --- Path param schemas ---
+// UUID v4 (used for groupId, entryId, etc.)
+export const uuidParamSchema = z.object({
+  id: z.string().uuid(),
+});
+// Flexible userId: Clerk IDs (user_xxx) or internal UUIDs — allow alphanumeric + _ - .
+export const userIdParamSchema = z.object({
+  userId: z.string().min(1).max(128).regex(/^[\w.\-]+$/, 'Invalid user ID'),
+});
+export const groupIdParamSchema = z.object({
+  groupId: z.string().uuid('Invalid group ID'),
+});
+export const usernameParamSchema = z.object({
+  username: z.string().min(1).max(50).regex(/^[\w\-]+$/, 'Invalid username'),
+});
+
 // --- Constants ---
 export const MAX_LOGS_PER_DAY = 10;
 export const VALID_THEMES = ['default', 'dark', 'cream', 'midnight', 'ocean', 'retro'] as const;

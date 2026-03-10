@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { storage } from "../storage";
-import { getTitle, escapeHtml } from "./helpers";
+import { getTitle, escapeHtml, userIdParamSchema, groupIdParamSchema, usernameParamSchema } from "./helpers";
 
 function getStreakTagline(streak: number): string {
   if (streak === 0) return "Ready to start the streak";
@@ -43,8 +43,10 @@ export function createPublicRouter(): Router {
 
   // --- Share Card Data (public) ---
   router.get('/api/share/streak/:userId', async (req, res) => {
+    const params = userIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ message: 'Invalid user ID' });
     try {
-      const { userId } = req.params;
+      const { userId } = params.data;
       const data = await storage.getShareCardData(userId);
       res.json(data);
     } catch (error) {
@@ -58,8 +60,10 @@ export function createPublicRouter(): Router {
 
   // --- OG Image / Share Card Preview (public) ---
   router.get('/api/og/streak/:userId', async (req, res) => {
+    const params = userIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ message: 'Invalid user ID' });
     try {
-      const { userId } = req.params;
+      const { userId } = params.data;
       const data = await storage.getShareCardData(userId);
 
       const displayName = escapeHtml(data.username || 'Anonymous');
@@ -246,8 +250,10 @@ export function createPublicRouter(): Router {
 
   // --- Group Weekly Throne Report Data (public, shareable) ---
   router.get('/api/share/group-report/:groupId', async (req, res) => {
+    const params = groupIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ message: 'Invalid group ID' });
     try {
-      const { groupId } = req.params;
+      const { groupId } = params.data;
       const report = await storage.getGroupWeeklyReport(groupId);
       res.json(report);
     } catch (error) {
@@ -261,8 +267,10 @@ export function createPublicRouter(): Router {
 
   // --- Group Weekly Throne Report OG Card (public, shareable HTML) ---
   router.get('/api/og/group-report/:groupId', async (req, res) => {
+    const params = groupIdParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ message: 'Invalid group ID' });
     try {
-      const { groupId } = req.params;
+      const { groupId } = params.data;
       const report = await storage.getGroupWeeklyReport(groupId);
 
       const weekRange = formatWeekRange(report.weekOf, report.weekEnding);
@@ -359,8 +367,10 @@ export function createPublicRouter(): Router {
 
   // --- Legacy Wall (public) ---
   router.get('/api/users/:username/legacy', async (req, res) => {
+    const params = usernameParamSchema.safeParse(req.params);
+    if (!params.success) return res.status(400).json({ message: 'Invalid username' });
     try {
-      const { username } = req.params;
+      const { username } = params.data;
       const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
