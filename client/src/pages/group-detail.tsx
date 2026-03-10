@@ -157,6 +157,27 @@ export default function GroupDetail() {
     },
   });
 
+  const completeChallengeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/groups/${groupId}/challenge/complete`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message ?? "Failed to mark complete");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/challenge`] });
+      toast({ title: "Challenge complete! 🏆", description: "You crushed it." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Couldn't mark complete", description: error.message, variant: "destructive" });
+    },
+  });
+
   const leaveGroupMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/groups/${groupId}/leave`, {
@@ -453,9 +474,21 @@ export default function GroupDetail() {
                     {challengeProgress.completionCount}/{challengeProgress.memberCount}
                   </span>
                 </div>
-                {challengeProgress.userCompleted && (
-                  <p className="text-xs font-bold text-green-600 dark:text-green-400 mt-1.5">✅ You completed this!</p>
-                )}
+                <div className="mt-1.5">
+                  {challengeProgress.userCompleted ? (
+                    <p className="text-xs font-bold text-green-600 dark:text-green-400">✅ You completed this!</p>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs rounded-lg border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 font-bold"
+                      disabled={completeChallengeMutation.isPending}
+                      onClick={() => completeChallengeMutation.mutate()}
+                    >
+                      {completeChallengeMutation.isPending ? "Marking…" : "Mark Complete 🏆"}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>

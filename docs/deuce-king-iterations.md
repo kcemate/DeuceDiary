@@ -38,3 +38,21 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Challenge completion loop is now complete end-to-end.
 
 ---
+
+## Iteration 3 — Add "Mark Complete" button to Active Challenge Card
+
+**Date:** 2026-03-10
+**What I analyzed:** The Active Challenge Card showed `userCompleted: true/false` state but had no action. Even after adding the API endpoint in Iteration 2, users in the UI couldn't trigger it. There was no CTA to mark the challenge done — it was a read-only card.
+
+**What I changed:**
+- Added `completeChallengeMutation` in `group-detail.tsx` calling `POST /api/groups/:groupId/challenge/complete`
+- Replaced the static "✅ You completed this!" text with a conditional:
+  - Not yet: green outlined "Mark Complete 🏆" button (disabled while pending)
+  - Completed: "✅ You completed this!" text (same as before)
+- Invalidates the challenge query on success to update the progress bar live
+- Toast feedback on success/error
+
+**Test results:** 493/493 passed
+**Verdict:** Users can now complete challenges from the squad page.
+
+---
