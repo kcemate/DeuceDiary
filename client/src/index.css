@@ -161,6 +161,23 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ── Global focus-visible styles — WCAG 2.4.7 / 2.4.11 ──────────── */
+  /* Uses --ring (theme-aware primary color) for contrast on all 6 themes */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Radix-based components use focus-visible:ring-* — keep them consistent */
+  /* (Button.tsx CVA already handles focus-visible:ring-2 for shadcn buttons) */
+
   /* Bold typography system */
   h1, h2, h3 {
     @apply font-extrabold tracking-tight;
