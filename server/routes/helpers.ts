@@ -4,6 +4,29 @@ import { groups, groupMembers, deuceEntries } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 
+// --- Shared sanitization helpers ---
+
+/**
+ * Strip null bytes and ASCII control characters (except tab/newline) from a string.
+ * This prevents storage of characters that can cause issues in JSON, PDFs, and DB logs.
+ */
+export function stripControlChars(s: string): string {
+  // Remove null bytes and non-printable ASCII control chars (0x00–0x08, 0x0B–0x0C, 0x0E–0x1F, 0x7F)
+  // Preserve: 0x09 (tab), 0x0A (newline), 0x0D (carriage return)
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+}
+
+/** Trim whitespace then strip control chars — for single-line fields */
+function sanitizeLine(s: string): string {
+  return stripControlChars(s.trim());
+}
+
+/** Trim whitespace then strip control chars — for multi-line fields (thoughts) */
+function sanitizeText(s: string): string {
+  return stripControlChars(s.trim());
+}
+
 // --- Zod Validation Schemas ---
 export const loginSchema = z.object({
   username: z.string().min(1).max(50),
@@ -11,19 +34,19 @@ export const loginSchema = z.object({
 });
 
 export const createGroupSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
+  name: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Group name cannot be blank'),
+  description: z.string().max(500).transform(sanitizeText).optional(),
 });
 
 export const createLocationSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Location name cannot be blank'),
 });
 
 export const createDeuceSchema = z.object({
   groupIds: z.array(z.string()).optional(),
   groupId: z.string().optional(),
-  location: z.string().min(1).max(100),
-  thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
+  location: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Location cannot be blank'),
+  thoughts: z.string().max(500, "Thought must be 500 characters or less").transform(sanitizeText).optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
   ghost: z.boolean().optional(),
   bristolScore: z.number().int().min(1).max(7).optional(),
