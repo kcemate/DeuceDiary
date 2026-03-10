@@ -181,14 +181,23 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
           );
         })}
 
-        {/* "+N more" overflow toggle */}
+        {/* "+N more" overflow toggle / "show less" */}
         {!showAllReactions && hiddenCount > 0 && (
           <button
             onClick={() => setShowAllReactions(true)}
-            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px]"
+            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px] transition-colors"
           >
             +{hiddenCount}
             <ChevronDown className="h-3 w-3" />
+          </button>
+        )}
+        {showAllReactions && sortedEntries.length > maxVisible && (
+          <button
+            onClick={() => setShowAllReactions(false)}
+            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px] transition-colors"
+            aria-label="Show fewer reactions"
+          >
+            <ChevronDown className="h-3 w-3 rotate-180 transition-transform" />
           </button>
         )}
 
