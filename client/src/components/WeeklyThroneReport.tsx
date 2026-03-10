@@ -128,11 +128,6 @@ export function WeeklyThroneReport() {
       label: report.peakDay.count > 0 ? `${report.peakDay.count} deuces` : "Peak Day",
     },
     { emoji: "❤️", value: report.totalReactionsReceived, label: "Reactions Received" },
-    {
-      emoji: "✍️",
-      value: report.funniestEntry ? `'${truncate(report.funniestEntry.thought, 28)}'` : "—",
-      label: report.funniestEntry ? `${report.funniestEntry.reactions} reactions` : "Best Thought",
-    },
   ];
 
   const handleShare = async () => {
@@ -228,7 +223,7 @@ export function WeeklyThroneReport() {
         </div>
       </div>
 
-      {/* Stats Grid — remaining 5 stats */}
+      {/* Stats Grid — 4 stats in 2×2 grid */}
       <div className="grid grid-cols-2 gap-2 px-4 pb-2">
         {stats.slice(1).map((stat, i) => (
           <div
@@ -245,6 +240,32 @@ export function WeeklyThroneReport() {
           </div>
         ))}
       </div>
+
+      {/* Funniest entry — full-width quote card */}
+      {report.funniestEntry && (
+        <div className="px-4 pb-2">
+          <div
+            className="rounded-xl px-3 py-2.5"
+            style={{
+              background: "hsl(38, 22%, 94%)",
+              border: "1px solid hsl(38, 18%, 84%)",
+            }}
+          >
+            <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground mb-1">
+              ✍️ Best Throne Thought
+            </p>
+            <p
+              className="text-[12px] italic text-foreground leading-snug"
+              style={{ color: "hsl(25, 25%, 28%)" }}
+            >
+              &ldquo;{truncate(report.funniestEntry.thought, 72)}&rdquo;
+            </p>
+            <p className="text-[9px] text-muted-foreground mt-1 font-medium">
+              {report.funniestEntry.reactions} reaction{report.funniestEntry.reactions !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Share button + footer */}
       <div className="px-4 pb-3 pt-1 flex flex-col items-center gap-2">
