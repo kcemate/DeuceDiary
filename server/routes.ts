@@ -10,7 +10,6 @@ import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./r
 import { requiresPremiumFor } from "./premiumAuth";
 import { requireGroupMember } from "./groupAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
-import { registerRevenueCatWebhook } from "./routes/webhooks/revenuecat";
 import { createBingoRouter } from "./routes/bingo";
 import { createPassportRouter } from "./routes/passport";
 import { createPremiumRouter } from "./routes/premium";
@@ -377,12 +376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // --- Clerk webhook (must be before session middleware) ---
-  if (clerkEnabled) {
-    registerClerkWebhook(app);
-  }
-
-  // --- RevenueCat webhook (no session auth, server-to-server) ---
-  registerRevenueCatWebhook(app);
+  // Always register — the handler validates CLERK_WEBHOOK_SECRET itself
+  registerClerkWebhook(app);
 
   // --- Public endpoints (no auth required) ---
 

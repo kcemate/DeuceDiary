@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuth as useClerkAuth } from "@clerk/clerk-react";
 import type { ReactNode } from "react";
 
 // Generic fallback bullets for unknown feature names
@@ -42,7 +43,9 @@ interface PremiumGateProps {
 
 export function PremiumGate({ featureName, children }: PremiumGateProps) {
   const { user } = useAuth();
-  const isFree = user?.subscription !== "premium";
+  const { has } = useClerkAuth();
+  // Check Clerk billing plan first, fall back to DB subscription field
+  const isFree = !(has?.({ plan: "premium" }) || user?.subscription === "premium");
 
   if (!isFree) return <>{children}</>;
 

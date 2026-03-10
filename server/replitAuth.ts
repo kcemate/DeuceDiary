@@ -218,6 +218,8 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         }
       }
       req.user = user;
+      // Store decoded JWT claims so premium middleware can check Clerk Billing plan
+      req.clerkAuth = payload;
       return next();
     } catch (err) {
       console.error(`[AUTH] 500 db-error: ${req.method} ${req.path} user=${payload.sub}`, err);

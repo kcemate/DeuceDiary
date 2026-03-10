@@ -455,6 +455,18 @@ vi.mock("../db", () => ({ db: {}, pool: {} }));
 vi.mock("../storage", () => ({ storage: memStore }));
 vi.mock("@clerk/clerk-sdk-node", () => ({ createClerkClient: () => null }));
 
+// Mock Svix so the Clerk webhook handler skips real signature verification in tests
+vi.mock("svix", () => ({
+  Webhook: class {
+    verify(body: any) {
+      // Body may arrive as Buffer, string, or already-parsed object
+      if (Buffer.isBuffer(body)) return JSON.parse(body.toString());
+      if (typeof body === "string") return JSON.parse(body);
+      return body; // already an object (when express.json() ran first)
+    }
+  },
+}));
+
 vi.mock("../replitAuth", async () => {
   const sessionMod = await import("express-session");
   const session = sessionMod.default;
@@ -541,6 +553,8 @@ let app: Express;
 let server: Server;
 
 beforeAll(async () => {
+  // Set CLERK_WEBHOOK_SECRET so the webhook handler doesn't reject with 503
+  process.env.CLERK_WEBHOOK_SECRET = "test-webhook-secret";
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
@@ -617,10 +631,27 @@ describe("Premium subscription E2E flow", () => {
 });
 
 /* ================================================================
- *  REVENUECAT WEBHOOK FLOW  (external purchase → status change)
+ *  CLERK SUBSCRIPTION WEBHOOK FLOW  (external purchase → status change)
  * ================================================================ */
-describe("RevenueCat webhook → subscription state transitions", () => {
-  it("INITIAL_PURCHASE sets user to premium", async () => {
+
+// Helper: post a Clerk webhook event bypassing Svix signature verification
+// (Svix is mocked to return the parsed body directly)
+function clerkWebhook(type: string, data: Record<string, unknown>) {
+  const body = JSON.stringify({ type, data });
+  return supertest(app)
+    .post("/api/webhooks/clerk")
+    .set("content-type", "application/json")
+    .set("svix-id", "test-id")
+    .set("svix-timestamp", String(Date.now()))
+    .set("svix-signature", "v1,test-sig")
+    .send(body);
+}
+
+describe("Clerk subscription webhook → subscription state transitions", () => {
+  const periodEnd = Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000);
+  const laterPeriodEnd = Math.floor((Date.now() + 60 * 24 * 60 * 60 * 1000) / 1000);
+
+  it("subscription.created (active) sets user to premium", async () => {
     const agent = await loginAs("buyer");
     const userId = "dev-buyer";
 
@@ -628,18 +659,12 @@ describe("RevenueCat webhook → subscription state transitions", () => {
     const before = await agent.get("/api/subscription");
     expect(before.body.tier).toBe("free");
 
-    // Simulate RevenueCat INITIAL_PURCHASE
-    const expirationMs = Date.now() + 30 * 24 * 60 * 60 * 1000;
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: expirationMs,
-        },
-      })
-      .expect(200);
+    // Simulate Clerk subscription.created
+    await clerkWebhook("subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
     // Verify now premium
     const after = await agent.get("/api/subscription");
@@ -651,36 +676,25 @@ describe("RevenueCat webhook → subscription state transitions", () => {
     expect(analytics.status).toBe(200);
   });
 
-  it("CANCELLATION sets user back to free", async () => {
+  it("subscription.deleted sets user back to free", async () => {
     const agent = await loginAs("canceller");
     const userId = "dev-canceller";
 
     // Purchase first
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        },
-      })
-      .expect(200);
+    await clerkWebhook("subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
     // Confirm premium
     const mid = await agent.get("/api/subscription");
     expect(mid.body.tier).toBe("premium");
 
-    // Cancel
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "CANCELLATION",
-          app_user_id: userId,
-        },
-      })
-      .expect(200);
+    // Delete subscription
+    await clerkWebhook("subscription.deleted", {
+      user_id: userId,
+    }).expect(200);
 
     // Verify reverted to free
     const after = await agent.get("/api/subscription");
@@ -692,80 +706,59 @@ describe("RevenueCat webhook → subscription state transitions", () => {
     expect(analytics.body.upgrade).toBe(true);
   });
 
-  it("RENEWAL extends an existing premium subscription", async () => {
+  it("subscription.updated (active) extends an existing premium subscription", async () => {
     const agent = await loginAs("renewer");
     const userId = "dev-renewer";
 
     // Initial purchase
-    const firstExpiration = Date.now() + 30 * 24 * 60 * 60 * 1000;
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: firstExpiration,
-        },
-      })
-      .expect(200);
+    await clerkWebhook("subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
     // Renewal with later expiration
-    const renewedExpiration = Date.now() + 60 * 24 * 60 * 60 * 1000;
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "RENEWAL",
-          app_user_id: userId,
-          expiration_at_ms: renewedExpiration,
-        },
-      })
-      .expect(200);
+    await clerkWebhook("subscription.updated", {
+      user_id: userId,
+      status: "active",
+      current_period_end: laterPeriodEnd,
+    }).expect(200);
 
     // Still premium with updated expiration
     const sub = await agent.get("/api/subscription");
     expect(sub.body.tier).toBe("premium");
     const expiresAt = new Date(sub.body.expiresAt).getTime();
-    expect(expiresAt).toBeGreaterThan(firstExpiration);
+    expect(expiresAt).toBeGreaterThan(periodEnd * 1000);
   });
 
-  it("EXPIRATION event sets user back to free", async () => {
+  it("subscription.updated (canceled) sets user back to free", async () => {
     const agent = await loginAs("expirer");
     const userId = "dev-expirer";
 
     // Purchase
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        },
-      })
-      .expect(200);
+    await clerkWebhook("subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
-    // Expire
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "EXPIRATION",
-          app_user_id: userId,
-        },
-      })
-      .expect(200);
+    // Expire via updated→canceled
+    await clerkWebhook("subscription.updated", {
+      user_id: userId,
+      status: "canceled",
+    }).expect(200);
 
     const after = await agent.get("/api/subscription");
     expect(after.body.tier).toBe("free");
   });
 
-  it("rejects webhook with invalid payload", async () => {
+  it("rejects webhook with missing svix headers", async () => {
     const res = await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({ garbage: true });
+      .post("/api/webhooks/clerk")
+      .set("content-type", "application/json")
+      .send(JSON.stringify({ type: "subscription.created", data: {} }));
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/invalid payload/i);
+    expect(res.body.message).toMatch(/missing svix headers/i);
   });
 });
 

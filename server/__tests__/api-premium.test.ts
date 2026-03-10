@@ -439,6 +439,17 @@ vi.mock("../db", () => ({ db: {}, pool: {} }));
 vi.mock("../storage", () => ({ storage: memStore }));
 vi.mock("@clerk/clerk-sdk-node", () => ({ createClerkClient: () => null }));
 
+// Mock Svix so the Clerk webhook handler skips real signature verification in tests
+vi.mock("svix", () => ({
+  Webhook: class {
+    verify(body: any) {
+      if (Buffer.isBuffer(body)) return JSON.parse(body.toString());
+      if (typeof body === "string") return JSON.parse(body);
+      return body;
+    }
+  },
+}));
+
 vi.mock("../replitAuth", async () => {
   const sessionMod = await import("express-session");
   const session = sessionMod.default;
@@ -525,6 +536,7 @@ let app: Express;
 let server: Server;
 
 beforeAll(async () => {
+  process.env.CLERK_WEBHOOK_SECRET = "test-webhook-secret";
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
@@ -663,71 +675,61 @@ describe("POST /api/subscription/streak-insurance", () => {
 });
 
 /* ================================================================
- *  POST /api/webhooks/revenuecat
+ *  POST /api/webhooks/clerk — subscription events
  * ================================================================ */
-describe("POST /api/webhooks/revenuecat", () => {
-  it("INITIAL_PURCHASE event sets user premium", async () => {
-    // Create user first via login
+function clerkSubWebhook(app: any, type: string, data: Record<string, unknown>) {
+  return supertest(app)
+    .post("/api/webhooks/clerk")
+    .set("content-type", "application/json")
+    .set("svix-id", "test-id")
+    .set("svix-timestamp", String(Date.now()))
+    .set("svix-signature", "v1,test-sig")
+    .send(JSON.stringify({ type, data }));
+}
+
+describe("POST /api/webhooks/clerk — subscription events", () => {
+  const periodEnd = Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000);
+
+  it("subscription.created (active) sets user to premium", async () => {
     const agent = await loginAs("alice");
     const userId = "dev-alice";
 
-    // Simulate RevenueCat INITIAL_PURCHASE webhook
-    const expirationMs = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: expirationMs,
-        },
-      })
-      .expect(200);
+    await clerkSubWebhook(app, "subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
-    // Verify user is now premium
     const res = await agent.get("/api/subscription");
     expect(res.status).toBe(200);
     expect(res.body.tier).toBe("premium");
   });
 
-  it("CANCELLATION event sets user back to free", async () => {
+  it("subscription.deleted sets user back to free", async () => {
     const agent = await loginAs("alice");
     const userId = "dev-alice";
 
-    // First upgrade
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "INITIAL_PURCHASE",
-          app_user_id: userId,
-          expiration_at_ms: Date.now() + 30 * 24 * 60 * 60 * 1000,
-        },
-      })
-      .expect(200);
+    await clerkSubWebhook(app, "subscription.created", {
+      user_id: userId,
+      status: "active",
+      current_period_end: periodEnd,
+    }).expect(200);
 
-    // Then cancel
-    await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({
-        event: {
-          type: "CANCELLATION",
-          app_user_id: userId,
-        },
-      })
-      .expect(200);
+    await clerkSubWebhook(app, "subscription.deleted", {
+      user_id: userId,
+    }).expect(200);
 
-    // Verify user is free again
     const res = await agent.get("/api/subscription");
     expect(res.status).toBe(200);
     expect(res.body.tier).toBe("free");
   });
 
-  it("rejects invalid payload", async () => {
+  it("rejects webhook with missing svix headers", async () => {
     const res = await supertest(app)
-      .post("/api/webhooks/revenuecat")
-      .send({ garbage: true });
+      .post("/api/webhooks/clerk")
+      .set("content-type", "application/json")
+      .send(JSON.stringify({ type: "subscription.created", data: {} }));
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/invalid payload/i);
+    expect(res.body.message).toMatch(/missing svix headers/i);
   });
 });

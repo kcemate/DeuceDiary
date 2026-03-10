@@ -95,6 +95,41 @@ export function registerClerkWebhook(app: Express): void {
             break;
           }
 
+          // --- Clerk Billing subscription events ---
+          case "subscription.created":
+          case "subscription.updated": {
+            const sub = event.data;
+            const userId = sub?.user_id ?? sub?.subscriber_id;
+            if (!userId) break;
+            const status = sub?.status; // "active" | "canceled" | "past_due" etc.
+            if (status === "active") {
+              // Use period end as expiry; default to 1 year if missing
+              const periodEnd = sub?.current_period_end
+                ? new Date(sub.current_period_end * 1000)
+                : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+              await storage.updateUserSubscription(userId, "premium", periodEnd);
+              await storage.resetStreakInsurance(userId);
+              console.log(`Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`);
+              track("subscription_change", userId, { type: event.type, status });
+            } else {
+              // Canceled / past_due / unpaid → downgrade
+              await storage.updateUserSubscription(userId, "free", new Date());
+              console.log(`Clerk webhook: ${event.type} — user ${userId} → free (status: ${status})`);
+              track("subscription_change", userId, { type: event.type, status });
+            }
+            break;
+          }
+
+          case "subscription.deleted": {
+            const sub = event.data;
+            const userId = sub?.user_id ?? sub?.subscriber_id;
+            if (!userId) break;
+            await storage.updateUserSubscription(userId, "free", new Date());
+            console.log(`Clerk webhook: subscription.deleted — user ${userId} → free`);
+            track("subscription_change", userId, { type: event.type });
+            break;
+          }
+
           default:
             console.log(`Clerk webhook: unhandled event type ${event.type}`);
         }

@@ -4,6 +4,16 @@ import { useEffect, useRef, useCallback } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
 import type { User } from "@shared/schema";
 
+/**
+ * Returns whether the current user has an active Porcelain Premium subscription.
+ * Checks Clerk Billing plan first (real-time JWT), falls back to DB subscription field.
+ */
+export function usePremium(): boolean {
+  const { has } = useClerkAuth();
+  // has() may be undefined in dev mode / before Clerk loads
+  return !!(has?.({ plan: "premium" }));
+}
+
 const CLERK_ENABLED = true;
 
 // ---------- dev mode ----------
