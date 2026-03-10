@@ -238,18 +238,24 @@ export default function InviteLanding() {
   if (previewError || (!previewLoading && !preview)) {
     return (
       <div className="min-h-screen bg-[#FBF6EF] flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="text-6xl">🚽</div>
-          <h1 className="text-2xl font-extrabold text-[#2C1A0E]">Invite Not Found</h1>
-          <p className="text-[#8B7355]">
-            This invite link has expired or doesn't exist. Ask your squad for a fresh one.
-          </p>
-          <Button
-            onClick={() => setLocation("/")}
-            className="rounded-full bg-green-600 hover:bg-green-700 text-white"
-          >
-            Go Home
-          </Button>
+        <div className="max-w-sm w-full text-center space-y-5">
+          <div className="text-7xl animate-bounce">🚽</div>
+          <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-6 space-y-3">
+            <h1 className="text-xl font-extrabold text-[#2C1A0E]">Invite Not Found</h1>
+            <p className="text-sm text-[#8B7355]">
+              This invite link has expired or never existed.
+              <br />Ask your squad to send a fresh one.
+            </p>
+            <div className="pt-1 space-y-2">
+              <Button
+                onClick={() => setLocation("/")}
+                className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white font-bold"
+              >
+                Go to Deuce Diary
+              </Button>
+              <p className="text-[10px] text-[#C4B49A]">Invites expire after 7 days</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -259,7 +265,7 @@ export default function InviteLanding() {
 
   return (
     <div className="min-h-screen bg-[#FBF6EF]">
-      <div className="max-w-md mx-auto px-4 py-8 space-y-5">
+      <div className="max-w-md mx-auto px-4 py-8 pb-28 space-y-5">
 
         {/* ── Header ────────────────────────────────────────────────── */}
         <div className="text-center pt-4">
@@ -322,7 +328,7 @@ export default function InviteLanding() {
             <div className="h-4 bg-[#F0E8DC] rounded w-1/3" />
           </div>
         ) : preview ? (
-          <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
             {/* Group name + streak banner */}
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 border-b border-[#F0E8DC]">
               <div className="flex items-start justify-between">
@@ -452,7 +458,7 @@ export default function InviteLanding() {
         )}
 
         {/* ── Action area ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-4">
+        <div id="cta-form" className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-4">
           <p className="text-center text-sm font-semibold text-[#2C1A0E]">
             Ready to take a seat? 👇
           </p>
@@ -496,6 +502,7 @@ export default function InviteLanding() {
               {ctaTab === "new" ? (
                 <form onSubmit={handleJoinWithLogin} className="space-y-3">
                   <Input
+                    id="username-input"
                     type="text"
                     placeholder="Pick a username (no email needed)"
                     value={username}
@@ -544,6 +551,24 @@ export default function InviteLanding() {
           )}
         </div>
       </div>
+
+      {/* ── Sticky Bottom CTA bar (mobile) ────────────────────────── */}
+      {!authLoading && !isAuthenticated && preview && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#E8DFD0] px-4 py-3 safe-area-pb">
+          <div className="max-w-md mx-auto">
+            <Button
+              onClick={() => {
+                document.getElementById("cta-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                const input = document.getElementById("username-input") as HTMLInputElement;
+                input?.focus();
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 text-base rounded-full shadow-lg shadow-green-600/30"
+            >
+              🚽 Join {preview.name} — Free
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
