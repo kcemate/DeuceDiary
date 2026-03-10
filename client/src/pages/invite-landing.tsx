@@ -150,7 +150,7 @@ export default function InviteLanding() {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showDemo, setShowDemo] = useState(false);
+  const [showDemo, setShowDemo] = useState(true);
   const [visibleActivity, setVisibleActivity] = useState(0);
 
   const { data: preview, isLoading: previewLoading, error: previewError } = useQuery<GroupPreview>({
@@ -422,29 +422,32 @@ export default function InviteLanding() {
           </div>
         ) : null}
 
-        {/* ── Demo Mode toggle ───────────────────────────────────────── */}
+        {/* ── App Preview (Demo) ─────────────────────────────────────── */}
+        {/* Show by default; auto-dismiss once real group activity is visible */}
+        {showDemo && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[10px] text-[#A89070] font-bold uppercase tracking-widest">
+                App Preview — what your feed looks like
+              </p>
+              <button
+                onClick={() => setShowDemo(false)}
+                className="text-[10px] text-[#C4B49A] hover:text-[#5C4A35] transition-colors underline"
+              >
+                Hide
+              </button>
+            </div>
+            <DemoFeedCard />
+          </div>
+        )}
+
         {!showDemo && (
           <button
             onClick={() => setShowDemo(true)}
-            className="w-full text-center text-sm text-[#8B7355] underline underline-offset-2 hover:text-[#5C4A35] transition-colors"
+            className="w-full text-center text-xs text-[#C4B49A] hover:text-[#8B7355] transition-colors"
           >
-            👀 Not sure? See a demo first
+            👀 Show app preview
           </button>
-        )}
-
-        {showDemo && (
-          <div className="space-y-2">
-            <p className="text-xs text-center text-[#A89070] font-medium uppercase tracking-widest">
-              This is what your feed looks like →
-            </p>
-            <DemoFeedCard />
-            <button
-              onClick={() => setShowDemo(false)}
-              className="w-full text-center text-xs text-[#A89070] hover:text-[#5C4A35] transition-colors"
-            >
-              Got it — hide demo
-            </button>
-          </div>
         )}
 
         {/* ── Action area ───────────────────────────────────────────── */}
