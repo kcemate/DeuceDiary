@@ -32,6 +32,22 @@ function formatRelativeTime(dateString: string): string {
   return `${Math.floor(diffMin / 1440)}d ago`;
 }
 
+// Avatar color palette seeded by username for consistency
+const AVATAR_COLORS = [
+  { bg: "#D4EDDA", text: "#1A5C2E" }, // green
+  { bg: "#FFF3CD", text: "#7D4E00" }, // gold
+  { bg: "#D1ECF1", text: "#0C5460" }, // teal
+  { bg: "#F8D7DA", text: "#721C24" }, // rose
+  { bg: "#E2D9F3", text: "#4B2EA2" }, // purple
+  { bg: "#FDEBD0", text: "#6E2C00" }, // orange
+  { bg: "#D6EAF8", text: "#154360" }, // blue
+];
+
+function avatarColor(username: string) {
+  const idx = username.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[idx];
+}
+
 function getStreakTier(streak: number): { label: string; emoji: string } | null {
   if (streak >= 30) return { label: "Diamond", emoji: "💎" };
   if (streak >= 14) return { label: "Gold", emoji: "🥇" };
@@ -315,13 +331,41 @@ export default function InviteLanding() {
                 <p className="text-[10px] font-bold text-[#A89070] uppercase tracking-widest mb-2">
                   The Crew
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {preview.members.map((m, i) => (
-                    <div key={i} className="flex items-center gap-1.5 bg-[#F5EDE0] rounded-full px-3 py-1">
-                      <span className="text-xs font-semibold text-[#2C1A0E]">{m.username}</span>
-                      <span className="text-[10px] text-[#A89070]">· {m.deuceCount} 💩</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3">
+                  {/* Overlapping avatar stack */}
+                  <div className="flex -space-x-2">
+                    {preview.members.slice(0, 5).map((m, i) => {
+                      const { bg, text } = avatarColor(m.username);
+                      return (
+                        <div
+                          key={i}
+                          title={`${m.username} · ${m.deuceCount} 💩`}
+                          style={{ backgroundColor: bg, color: text, zIndex: 5 - i }}
+                          className="relative w-9 h-9 rounded-full border-2 border-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm"
+                        >
+                          {m.username[0].toUpperCase()}
+                        </div>
+                      );
+                    })}
+                    {preview.members.length > 5 && (
+                      <div
+                        className="relative w-9 h-9 rounded-full border-2 border-white bg-[#F0E8DC] flex items-center justify-center text-[10px] font-bold text-[#8B7355] flex-shrink-0"
+                        style={{ zIndex: 0 }}
+                      >
+                        +{preview.members.length - 5}
+                      </div>
+                    )}
+                  </div>
+                  {/* Member names list */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#2C1A0E] truncate">
+                      {preview.members.slice(0, 3).map(m => m.username).join(", ")}
+                      {preview.members.length > 3 && ` + ${preview.members.length - 3} more`}
+                    </p>
+                    <p className="text-[10px] text-[#A89070]">
+                      {preview.members.reduce((sum, m) => sum + m.deuceCount, 0)} 💩 total between the crew
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
