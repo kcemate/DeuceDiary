@@ -126,42 +126,61 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div className="pt-8 pb-24 flex flex-col items-center">
-      {/* Labeled step pills */}
-      <div className="flex items-center gap-2 mb-8">
-        {STEP_LABELS.map((label, i) => {
-          const s = i + 1;
-          const isActive = s === step;
-          const isDone = s < step;
-          return (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
-                  isActive
-                    ? "bg-primary text-white shadow-md"
-                    : isDone
-                    ? "bg-primary/20 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                <span
-                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                    isActive ? "bg-white/20" : isDone ? "bg-primary/30" : "bg-border"
+      {/* Top row: step pills + skip */}
+      <div className="w-full flex items-center justify-between mb-8">
+        {/* Labeled step pills */}
+        <div className="flex items-center gap-2">
+          {STEP_LABELS.map((label, i) => {
+            const s = i + 1;
+            const isActive = s === step;
+            const isDone = s < step;
+            return (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
+                    isActive
+                      ? "bg-primary text-white shadow-md"
+                      : isDone
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {isDone ? "✓" : s}
-                </span>
-                {label}
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      isActive ? "bg-white/20" : isDone ? "bg-primary/30" : "bg-border"
+                    }`}
+                  >
+                    {isDone ? "✓" : s}
+                  </span>
+                  {label}
+                </div>
+                {s < 3 && (
+                  <div
+                    className={`h-0.5 w-4 rounded transition-all duration-300 ${
+                      isDone ? "bg-primary/60" : "bg-border"
+                    }`}
+                  />
+                )}
               </div>
-              {s < 3 && (
-                <div
-                  className={`h-0.5 w-4 rounded transition-all duration-300 ${
-                    isDone ? "bg-primary/60" : "bg-border"
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* Skip link (steps 2 and 3 only) */}
+        <AnimatePresence>
+          {step > 1 && (
+            <motion.button
+              key="skip"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              onClick={onComplete}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            >
+              Skip for now →
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Animated steps */}
