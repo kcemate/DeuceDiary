@@ -227,53 +227,64 @@ function BingoSquareCell({
   isOnBingoLine: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
-        "min-h-[64px] cursor-default",
-        isOnBingoLine
-          ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
-          : isCompleted
-          ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
-          : "border-border bg-card hover:bg-muted/30",
-        isNew && "animate-pulse scale-105",
-      )}
-    >
-      {isCompleted ? (
-        <>
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-            {isOnBingoLine ? (
-              <svg className="w-8 h-8 text-green-700 opacity-40" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            ) : (
-              <svg
-                className="w-8 h-8 text-amber-700 opacity-30"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-              </svg>
-            )}
-          </div>
-          <p className={cn(
-            "text-[9px] font-bold leading-tight z-10 line-clamp-2",
-            isOnBingoLine ? "text-green-900" : "text-amber-800",
-          )}>
-            {square.title}
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">
-            {square.title}
-          </p>
-          <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">
-            {square.description}
-          </p>
-        </>
-      )}
-    </div>
+    <>
+      <style>{`
+        @keyframes squarePop {
+          0%   { transform: scale(1); }
+          30%  { transform: scale(1.18); }
+          60%  { transform: scale(0.95); }
+          100% { transform: scale(1); }
+        }
+        .square-pop { animation: squarePop 0.5s ease-out forwards; }
+      `}</style>
+      <div
+        className={cn(
+          "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
+          "min-h-[64px] cursor-default",
+          isOnBingoLine
+            ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
+            : isCompleted
+            ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
+            : "border-border bg-card hover:bg-muted/30",
+          isNew && "square-pop",
+        )}
+      >
+        {isCompleted ? (
+          <>
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl">
+              {isOnBingoLine ? (
+                <svg className="w-10 h-10 text-green-700 opacity-30" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                </svg>
+              ) : (
+                <svg
+                  className="w-10 h-10 text-amber-700 opacity-25"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                </svg>
+              )}
+            </div>
+            <p className={cn(
+              "text-[9px] font-bold leading-tight z-10 line-clamp-2",
+              isOnBingoLine ? "text-green-900" : "text-amber-800",
+            )}>
+              {square.title}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">
+              {square.title}
+            </p>
+            <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">
+              {square.description}
+            </p>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
