@@ -124,6 +124,17 @@ export default function NotFound() {
             </Button>
           )}
         </div>
+
+        {/* Brand footer */}
+        <div
+          className="px-6 py-3 text-center"
+          style={{ borderTop: "1px solid hsl(38, 18%, 86%)" }}
+        >
+          <p className="text-[10px] text-muted-foreground font-medium">
+            🚽 Deuce Diary &middot; Drop a log. Leave a mark.
+          </p>
+        </div>
+        </div>{/* end inner card */}
       </div>
     </div>
   );
