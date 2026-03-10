@@ -36,26 +36,42 @@ export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Spinning toilet emoji */}
-        <div
-          className="text-8xl mb-4 inline-block"
-          style={{ animation: "spin 6s linear infinite" }}
-        >
-          🚽
-        </div>
-
         <style>{`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+          @keyframes float1 {
+            0%, 100% { transform: translateY(0px) rotate(-8deg); }
+            50%       { transform: translateY(-10px) rotate(-8deg); }
+          }
+          @keyframes float2 {
+            0%, 100% { transform: translateY(0px) rotate(4deg); }
+            50%       { transform: translateY(-14px) rotate(4deg); }
+          }
+          @keyframes float3 {
+            0%, 100% { transform: translateY(0px) rotate(12deg); }
+            50%       { transform: translateY(-8px) rotate(12deg); }
           }
         `}</style>
 
-        <h1 className="text-5xl font-extrabold text-foreground mb-2">404</h1>
-        <h2 className="text-xl font-bold text-foreground mb-3">
+        {/* Three floating emojis */}
+        <div className="flex justify-center items-end gap-3 mb-4" style={{ height: "80px" }}>
+          <span style={{ fontSize: "2.5rem", animation: "float1 3.1s ease-in-out infinite", display: "inline-block", opacity: 0.7 }}>💩</span>
+          <span style={{ fontSize: "4rem",   animation: "float2 2.7s ease-in-out infinite 0.3s", display: "inline-block" }}>🚽</span>
+          <span style={{ fontSize: "2rem",   animation: "float3 3.5s ease-in-out infinite 0.6s", display: "inline-block", opacity: 0.65 }}>🧻</span>
+        </div>
+
+        {/* Error code with flavor */}
+        <div className="mb-2">
+          <h1 className="text-6xl font-black text-foreground leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
+            404
+          </h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
+            Page Not Found · Plumbing Error
+          </p>
+        </div>
+
+        <h2 className="text-xl font-extrabold text-foreground mb-2">
           This throne is out of order.
         </h2>
-        <p className="text-muted-foreground mb-8 max-w-xs mx-auto leading-relaxed">
+        <p className="text-muted-foreground mb-5 max-w-xs mx-auto leading-relaxed text-sm">
           {isLoading
             ? "Checking the plumbing..."
             : isAuthenticated
@@ -63,7 +79,7 @@ export default function NotFound() {
               : "You need to log in before you can find a seat."}
         </p>
 
-        {/* Throne fact card */}
+        {/* Throne Fact card */}
         <div
           className="rounded-xl px-4 py-3 mb-6 text-left"
           style={{
