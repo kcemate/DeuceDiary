@@ -50,6 +50,14 @@ export function PremiumGate({ featureName, children }: PremiumGateProps) {
 
   return (
     <div className="relative">
+      <style>{`
+        @keyframes crownPulse {
+          0%, 100% { filter: drop-shadow(0 0 4px hsl(45 88% 55% / 0.5)); transform: scale(1); }
+          50%       { filter: drop-shadow(0 0 10px hsl(45 88% 55% / 0.85)); transform: scale(1.08); }
+        }
+        .crown-pulse { animation: crownPulse 2.4s ease-in-out infinite; display: inline-block; }
+      `}</style>
+
       {/* Blurred content underneath */}
       <div className="pointer-events-none select-none blur-sm opacity-40">
         {children}
@@ -71,7 +79,7 @@ export function PremiumGate({ featureName, children }: PremiumGateProps) {
             style={{ background: "linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%)" }}
           />
 
-          <span className="text-4xl mb-2 mt-1">👑</span>
+          <span className="text-4xl mb-2 mt-1 crown-pulse">👑</span>
           <p className="text-base font-extrabold text-foreground text-center mb-0.5 leading-tight">
             Unlock {featureName}
           </p>
