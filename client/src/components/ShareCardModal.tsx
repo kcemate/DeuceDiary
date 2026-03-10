@@ -185,11 +185,16 @@ export function ShareCardModal({
           </div>
 
           {/* Brand watermark */}
-          <div
-            className="text-[11px] font-semibold mt-5"
-            style={{ color: "hsl(25, 12%, 56%)" }}
-          >
-            🚽 Deuce Diary
+          <div className="mt-5 pt-4" style={{ borderTop: "1px solid hsl(38, 18%, 84%)" }}>
+            <div className="text-[12px] font-bold" style={{ color: "hsl(25, 30%, 28%)" }}>
+              🚽 Deuce Diary
+            </div>
+            <div className="text-[10px] mt-0.5" style={{ color: "hsl(25, 12%, 52%)" }}>
+              Drop a log. Leave a mark.
+              {data?.memberSince && (
+                <> · Member since {new Date(data.memberSince).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</>
+              )}
+            </div>
           </div>
           </div>{/* end p-8 */}
         </div>
