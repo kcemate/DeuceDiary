@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, Users } from "lucide-react";
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -23,7 +23,7 @@ interface CreateGroupModalProps {
 // Fun squad icon options — toilet-themed
 const SQUAD_ICONS = ['🚽', '💩', '🔥', '👑', '⚡', '🏆', '💎', '🎯', '🌊', '🦁', '🐉', '🤝'];
 
-const NAME_MAX = 90; // leave room for "🚽 " prefix
+const NAME_MAX = 90;
 const DESC_MAX = 500;
 
 export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) {
@@ -32,6 +32,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const [description, setDescription] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [createdName, setCreatedName] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,14 +43,9 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
         body: JSON.stringify(data),
       });
     },
-    onSuccess: () => {
-      toast({
-        title: "Squad created! 🎉",
-        description: `${icon} ${name.trim()} is ready to roll.`,
-      });
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
-      resetForm();
-      onOpenChange(false);
+      setCreatedName(vars.name);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -77,6 +73,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
     setDescription("");
     setShowIconPicker(false);
     setNameError("");
+    setCreatedName(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -112,6 +109,38 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const nameRemaining = NAME_MAX - name.length;
   const descRemaining = DESC_MAX - description.length;
 
+  // Success state
+  if (createdName) {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center text-center py-6 gap-4">
+            <div className="relative">
+              <div className="h-20 w-20 rounded-full bg-[hsl(45,88%,48%)]/15 flex items-center justify-center text-4xl">
+                {createdName.split(' ')[0]}
+              </div>
+              <CheckCircle2 className="h-6 w-6 text-green-600 absolute -bottom-1 -right-1 bg-background rounded-full" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold">{createdName}</h2>
+              <p className="text-sm text-muted-foreground mt-1">Your squad is live! 🎉</p>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3 w-full justify-center">
+              <Users className="h-4 w-4 shrink-0" />
+              <span>Invite friends from your squad page</span>
+            </div>
+
+            <Button className="w-full" onClick={() => handleOpenChange(false)}>
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -139,7 +168,6 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                   {icon}
                 </button>
 
-                {/* Invisible overlay to close picker on outside click */}
                 {showIconPicker && (
                   <div
                     className="fixed inset-0 z-40"
@@ -187,7 +215,6 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
               </div>
             </div>
 
-            {/* Inline error */}
             {nameError && (
               <p id="name-error" className="mt-1.5 text-xs text-destructive flex items-center gap-1">
                 <span aria-hidden>⚠️</span> {nameError}

@@ -131,6 +131,13 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
           bottom: 100%;
           transform-origin: center bottom;
         }
+        @keyframes pickerSlideIn {
+          from { opacity: 0; transform: translateY(6px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .picker-slide-in {
+          animation: pickerSlideIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
       `}</style>
 
       <div className="relative flex items-center gap-1.5 flex-wrap">
@@ -197,7 +204,29 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
               <Smile className="h-4 w-4 text-muted-foreground" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-2" align="start">
+          <PopoverContent className="w-auto p-2 picker-slide-in" align="start">
+            {/* Already reacted row */}
+            {user && commonEmojis.some(e => userHasReacted(e)) && (
+              <div className="mb-2 px-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Your reactions
+                </p>
+                <div className="flex gap-1 flex-wrap">
+                  {commonEmojis.filter(e => userHasReacted(e)).map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleEmojiClick(emoji)}
+                      className="h-9 w-9 flex items-center justify-center rounded-lg text-xl bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)] hover:bg-[hsl(45,88%,48%)]/30 active:scale-90 transition-all"
+                      aria-label={`Remove ${emoji}`}
+                      title="Tap to remove"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t my-2" />
+              </div>
+            )}
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5 px-1">
               React
             </p>
@@ -208,10 +237,10 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                   onClick={() => handleEmojiClick(emoji)}
                   className={[
                     "h-10 w-10 flex items-center justify-center rounded-lg text-xl",
-                    "transition-all duration-100 hover:bg-muted active:scale-90",
+                    "transition-all duration-150 hover:scale-110 active:scale-90",
                     userHasReacted(emoji)
                       ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
-                      : "",
+                      : "hover:bg-muted",
                   ].join(' ')}
                   aria-label={emoji}
                 >
