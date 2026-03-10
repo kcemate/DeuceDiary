@@ -24,3 +24,8 @@
 **Change**: Replaced the static info cards in Step 2 with three interactive action cards: "Create a Squad" (expands to show squad name input), "Join a Squad" (expands to show invite code input), and "Stay Solo for now" (default selected). Mini forms expand inline with AnimatePresence height animation. CTA button label updates contextually based on selection.
 **Result**: Tests passing (466/466)
 **Notes**: Added squadMode, squadName, and inviteCode state. Using button elements as toggle cards. The expand/collapse uses height: 0 → "auto" with AnimatePresence. This is UI-only (no API calls for squad creation in onboarding flow — deferred to post-onboarding).
+
+## Iteration 6 — Celebration animation on completion
+**Change**: When "Log a Deuce" is clicked, 8 emoji particles (💩🚽💨🎉✨🎊) burst outward in all directions from the button center before calling onComplete(). 800ms delay between burst and navigation. Button text changes to "Here we go! 🎉" during celebration and is disabled to prevent double-tap.
+**Result**: Tests passing (466/466)
+**Notes**: Used polar coordinate math (angle → x/y) to position particles. Each particle animates from center to its computed (x, y) while scaling to 0 and fading. Staggered with 30ms delay per particle. handleComplete() wraps onComplete() with setTimeout(800ms).

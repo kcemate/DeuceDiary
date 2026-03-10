@@ -59,6 +59,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [squadMode, setSquadMode] = useState<"none" | "create" | "join">("none");
   const [squadName, setSquadName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  const [celebrating, setCelebrating] = useState(false);
   const queryClient = useQueryClient();
 
   const goToStep = (next: number) => {
@@ -116,6 +117,24 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  const CONFETTI_PARTICLES = [
+    { emoji: "💩", angle: 0 },
+    { emoji: "🚽", angle: 45 },
+    { emoji: "💨", angle: 90 },
+    { emoji: "🎉", angle: 135 },
+    { emoji: "✨", angle: 180 },
+    { emoji: "💩", angle: 225 },
+    { emoji: "🎊", angle: 270 },
+    { emoji: "✨", angle: 315 },
+  ];
+
+  const handleComplete = () => {
+    setCelebrating(true);
+    setTimeout(() => {
+      onComplete();
+    }, 800);
+  };
 
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -485,13 +504,40 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                   </div>
 
-                  <Button
-                    onClick={onComplete}
-                    className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
-                  >
-                    <span className="text-2xl mr-3">🚽</span>
-                    Log a Deuce
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      onClick={handleComplete}
+                      disabled={celebrating}
+                      className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
+                    >
+                      <span className="text-2xl mr-3">🚽</span>
+                      {celebrating ? "Here we go! 🎉" : "Log a Deuce"}
+                    </Button>
+                    {/* Confetti burst */}
+                    <AnimatePresence>
+                      {celebrating && CONFETTI_PARTICLES.map((p, i) => {
+                        const rad = (p.angle * Math.PI) / 180;
+                        const dist = 80 + (i % 3) * 30;
+                        return (
+                          <motion.span
+                            key={i}
+                            className="absolute text-2xl pointer-events-none select-none"
+                            style={{ left: "50%", top: "50%", translateX: "-50%", translateY: "-50%" }}
+                            initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                            animate={{
+                              x: Math.cos(rad) * dist,
+                              y: Math.sin(rad) * dist,
+                              scale: 0,
+                              opacity: 0,
+                            }}
+                            transition={{ duration: 0.7, ease: "easeOut", delay: i * 0.03 }}
+                          >
+                            {p.emoji}
+                          </motion.span>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
