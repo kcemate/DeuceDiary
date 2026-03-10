@@ -1,4 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface WeeklyReport {
   totalDeuces: number;
@@ -27,6 +30,17 @@ function formatDayName(dateStr: string): string {
 
 function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "..." : str;
+}
+
+function getWeeklyHeadline(report: WeeklyReport): string {
+  const { totalDeuces, longestStreak, totalReactionsReceived } = report;
+  if (totalDeuces === 0) return "A quiet week on the throne 🤫";
+  if (totalDeuces >= 14) return "Absolutely relentless. Respect. 👑";
+  if (longestStreak >= 7) return "7-day warrior. The throne bows. 🔥";
+  if (totalReactionsReceived >= 10) return "The crowd loves you. 🎉";
+  if (totalDeuces >= 7) return "Solid output. Keep it coming. 💪";
+  if (totalDeuces >= 4) return "Decent week. The streak lives. ✅";
+  return "Every deuce counts. Stay consistent. 🚽";
 }
 
 function DailyBarChart({
@@ -83,6 +97,7 @@ export function WeeklyThroneReport() {
   const { data: report, isLoading } = useQuery<WeeklyReport>({
     queryKey: ["/api/users/me/weekly-report"],
   });
+  const { toast } = useToast();
 
   if (isLoading) {
     return (
@@ -111,16 +126,49 @@ export function WeeklyThroneReport() {
     },
   ];
 
+  const handleShare = async () => {
+    const text = [
+      `📊 Weekly Throne Report — ${formatWeekRange(report.weekOf)}`,
+      `💩 ${report.totalDeuces} deuces logged`,
+      `🔥 ${report.longestStreak}-day best streak`,
+      report.totalReactionsReceived > 0 ? `❤️ ${report.totalReactionsReceived} reactions` : null,
+      `\n🚽 Deuce Diary — Drop a log. Leave a mark.`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Weekly Throne Report", text });
+      } catch {
+        // user cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied to clipboard!" });
+    }
+  };
+
   return (
     <div className="w-[320px] mx-auto rounded-2xl border-2 border-accent bg-background flex flex-col overflow-hidden">
+      {/* Gold accent bar */}
+      <div
+        className="h-1 w-full"
+        style={{ background: "linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%)" }}
+      />
+
       {/* Header */}
-      <div className="text-center pt-5 pb-2 px-4">
+      <div className="text-center pt-4 pb-2 px-4">
         <p className="text-3xl mb-1">🚽</p>
         <h3 className="text-lg font-extrabold text-foreground tracking-tight">
           Weekly Throne Report
         </h3>
         <p className="text-xs text-muted-foreground font-medium mt-0.5">
           {formatWeekRange(report.weekOf)}
+        </p>
+        {/* Personalized headline */}
+        <p className="text-[11px] font-semibold text-foreground mt-1.5 italic">
+          {getWeeklyHeadline(report)}
         </p>
       </div>
 
@@ -147,8 +195,17 @@ export function WeeklyThroneReport() {
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="text-center py-3 px-4">
+      {/* Share button + footer */}
+      <div className="px-4 pb-3 pt-1 flex flex-col items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full rounded-xl font-bold text-xs border-accent"
+          onClick={handleShare}
+        >
+          <Share2 className="w-3 h-3 mr-1.5" />
+          Share This Week
+        </Button>
         <p className="text-[10px] text-muted-foreground font-medium">
           Deuce Diary &middot; Drop a thought. Leave a mark.
         </p>
