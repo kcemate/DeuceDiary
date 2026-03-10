@@ -1182,6 +1182,7 @@ export class DatabaseStorage implements IStorage {
     funniestEntry: { thought: string; reactions: number } | null;
     totalReactionsReceived: number;
     weekOf: string;
+    dailyCounts: { date: string; count: number }[];
   }> {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
