@@ -60,11 +60,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [squadName, setSquadName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [celebrating, setCelebrating] = useState(false);
+  const [statCount, setStatCount] = useState(0);
   const queryClient = useQueryClient();
 
   const goToStep = (next: number) => {
     setDirection(next > step ? 1 : -1);
     setStep(next);
+    if (next === 3) {
+      // Animate stat count from 0 to 1 after step transition settles
+      setTimeout(() => setStatCount(1), 500);
+    }
   };
 
   const usernameMutation = useMutation({
@@ -117,6 +122,21 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  // Keyboard shortcut: Enter to advance on steps 2 and 3
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      const target = e.target as HTMLElement;
+      // Don't intercept Enter inside input fields or textareas
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+      if (step === 2) goToStep(3);
+      if (step === 3 && !celebrating) handleComplete();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, celebrating]);
 
   const CONFETTI_PARTICLES = [
     { emoji: "💩", angle: 0 },
@@ -315,7 +335,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <Button
                       type="submit"
                       disabled={!username || !!usernameError || usernameMutation.isPending}
-                      className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
+                      className="btn-shimmer w-full text-white min-h-[52px] text-lg font-bold rounded-xl"
                     >
                       {usernameMutation.isPending ? "Claiming..." : "Claim Your Throne Name 👑"}
                     </Button>
@@ -453,12 +473,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
                   <Button
                     onClick={() => goToStep(3)}
-                    className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
+                    className="btn-shimmer w-full text-white min-h-[52px] text-lg font-bold rounded-xl"
                   >
                     {squadMode === "create" && squadName ? `Create "${squadName}" & continue 💪` :
                      squadMode === "join" && inviteCode ? `Join with code ${inviteCode} 🔗` :
                      "Continue to first log! 💪"}
                   </Button>
+                  <p className="text-center text-xs text-muted-foreground mt-2">
+                    Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> to continue
+                  </p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -486,8 +509,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <h2 className="text-2xl font-extrabold text-foreground mb-2">
                       Log your first deuce!
                     </h2>
-                    <p className="text-muted-foreground">
-                      Your throne awaits, <strong>{username}</strong>. Christen it with your inaugural log. Every legend starts somewhere.
+                    <motion.p
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-primary font-semibold text-sm mb-2"
+                    >
+                      You're ready to rule the throne! 👑
+                    </motion.p>
+                    <p className="text-muted-foreground text-sm">
+                      Your throne awaits, <strong>{username}</strong>. Christen it with your inaugural log.
                     </p>
                   </div>
 
@@ -495,7 +526,24 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
                         <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Total Deuces</p>
-                        <p className="stat-number text-5xl text-foreground">0</p>
+                        <motion.p
+                          key={statCount}
+                          initial={{ scale: 1.4, color: "var(--primary)" }}
+                          animate={{ scale: 1, color: "var(--foreground)" }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                          className="stat-number text-5xl"
+                        >
+                          {statCount}
+                        </motion.p>
+                        {statCount === 1 && (
+                          <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-xs text-primary font-semibold mt-1"
+                          >
+                            +1 incoming!
+                          </motion.p>
+                        )}
                       </div>
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
                         <span className="text-3xl">🚽</span>
@@ -508,11 +556,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     <Button
                       onClick={handleComplete}
                       disabled={celebrating}
-                      className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
+                      className="btn-shimmer w-full text-white min-h-[52px] text-lg font-bold rounded-xl"
                     >
                       <span className="text-2xl mr-3">🚽</span>
                       {celebrating ? "Here we go! 🎉" : "Log a Deuce"}
                     </Button>
+                    <p className="text-center text-xs text-muted-foreground mt-2">
+                      Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> to continue
+                    </p>
                     {/* Confetti burst */}
                     <AnimatePresence>
                       {celebrating && CONFETTI_PARTICLES.map((p, i) => {

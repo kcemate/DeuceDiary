@@ -29,3 +29,26 @@
 **Change**: When "Log a Deuce" is clicked, 8 emoji particles (💩🚽💨🎉✨🎊) burst outward in all directions from the button center before calling onComplete(). 800ms delay between burst and navigation. Button text changes to "Here we go! 🎉" during celebration and is disabled to prevent double-tap.
 **Result**: Tests passing (466/466)
 **Notes**: Used polar coordinate math (angle → x/y) to position particles. Each particle animates from center to its computed (x, y) while scaling to 0 and fading. Staggered with 30ms delay per particle. handleComplete() wraps onComplete() with setTimeout(800ms).
+
+## Iteration 7 — Final polish: keyboard hints, tagline, counting stat, touch targets
+**Change**: Four improvements: (1) Keyboard shortcut — pressing Enter on step 2 advances to step 3, Enter on step 3 triggers handleComplete(); shown as a `<kbd>` hint below CTA buttons. (2) "You're ready to rule the throne! 👑" tagline animates in on step 3. (3) "Total Deuces" stat counts from 0 → 1 with a spring scale animation 500ms after step 3 loads, with "+1 incoming!" micro-label. (4) All CTA buttons changed from `py-5` to `min-h-[52px]` for WCAG 44px+ touch targets.
+**Result**: Tests passing (466/466)
+**Notes**: useEffect with keydown listener on [step, celebrating] deps. goToStep(3) now triggers a timeout to setStatCount(1). The stat number uses `motion.p` with `key={statCount}` so re-keying triggers entrance animation on value change.
+
+---
+
+## Final Summary
+
+The Onboarding component went through 7 focused iterations, evolving from a basic 3-step form into a polished, animated onboarding experience:
+
+| # | Iteration | Key Tech |
+|---|-----------|----------|
+| 1 | Framer Motion step transitions + labeled step pills | AnimatePresence, motion.div, spring variants |
+| 2 | Per-step emoji mascot animations (bounce/slide/spin) | framer-motion spread props, rotate loop |
+| 3 | Real-time username validation (char count, debounce, green border) | useRef debounce, AnimatePresence indicators |
+| 4 | Skip option for steps 2-3 | AnimatePresence motion.button |
+| 5 | Step 2 squad create/join/solo selection with inline forms | Toggle cards, height animate |
+| 6 | Confetti burst on completion | Polar coordinates, particle burst |
+| 7 | Keyboard shortcuts, tagline, counting stat, touch targets | keydown useEffect, motion.p key animation |
+
+All 466 tests passed after every iteration. No schema changes were made. All existing functionality (onComplete callback, username mutation, API calls) preserved.
