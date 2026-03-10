@@ -245,7 +245,9 @@ function BingoSquareCell({
             ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
             : isCompleted
             ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
-            : "border-border bg-card hover:bg-muted/30",
+            : index === 12
+            ? "border-primary/40 bg-card"
+            : "border-border/70 bg-card hover:bg-muted/30",
           isNew && "square-pop",
         )}
       >
@@ -273,12 +275,19 @@ function BingoSquareCell({
               {square.title}
             </p>
           </>
+        ) : index === 12 ? (
+          /* FREE center square */
+          <>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5" />
+            <p className="text-[11px] font-black text-primary z-10 tracking-wide">FREE</p>
+            <p className="text-[8px] text-primary/70 z-10 leading-tight">Center</p>
+          </>
         ) : (
           <>
-            <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">
+            <p className="text-[9px] font-extrabold text-foreground leading-tight mb-0.5 line-clamp-1">
               {square.title}
             </p>
-            <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">
+            <p className="text-[8px] text-muted-foreground/90 leading-tight line-clamp-2">
               {square.description}
             </p>
           </>
