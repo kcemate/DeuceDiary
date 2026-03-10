@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Copy, Share2, Download } from "lucide-react";
 import { getThroneRank, getStreakTier } from "@/lib/gamification";
 
+// Subtle dot-grid pattern as an inline SVG data URL
+const DOT_GRID_BG = `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='hsl(45%2C55%25%2C72%25)' fill-opacity='0.35'/%3E%3C/svg%3E")`;
+
 function getStreakTagline(streak: number): string {
   if (streak === 0) return "Ready to start the streak";
   if (streak === 1) return "Day one. The throne awaits.";
@@ -87,6 +90,13 @@ export function ShareCardModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-sm mx-auto sm:max-w-sm">
+        <style>{`
+          @keyframes firePulse {
+            0%, 100% { transform: scale(1) rotate(-2deg); }
+            50%       { transform: scale(1.12) rotate(2deg); }
+          }
+          .fire-shimmer { animation: firePulse 2s ease-in-out infinite; display: inline-block; }
+        `}</style>
         <DialogHeader>
           <DialogTitle className="text-center">Share Your Streak</DialogTitle>
         </DialogHeader>
@@ -95,7 +105,7 @@ export function ShareCardModal({
         <div
           className="rounded-3xl text-center mx-auto w-full relative overflow-hidden"
           style={{
-            background: "linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%)",
+            background: `${DOT_GRID_BG}, linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%)`,
             border: "1.5px solid hsl(45, 55%, 72%)",
             boxShadow: "0 2px 16px hsl(45 60% 60% / 0.12), 0 1px 3px hsl(25 20% 20% / 0.08)",
           }}
@@ -122,7 +132,7 @@ export function ShareCardModal({
             </span>
           </div>
 
-          <div className="text-5xl leading-none">🔥</div>
+          <div className="text-5xl leading-none fire-shimmer">🔥</div>
           <div
             className="text-7xl font-black leading-none mt-2 mb-1"
             style={{
