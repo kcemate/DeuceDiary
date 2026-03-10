@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Copy, Share2 } from "lucide-react";
+import { getThroneRank, getStreakTier } from "@/lib/gamification";
 
 interface ShareCardData {
   username: string | null;
@@ -64,6 +65,9 @@ export function ShareCardModal({
     }
   };
 
+  const rank = getThroneRank(data?.totalLogs ?? 0);
+  const streakTier = getStreakTier(data?.currentStreak ?? 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm mx-auto">
@@ -73,12 +77,27 @@ export function ShareCardModal({
 
         {/* Share Card Preview */}
         <div
-          className="rounded-3xl p-8 text-center mx-auto w-full"
+          className="rounded-3xl p-8 text-center mx-auto w-full relative overflow-hidden"
           style={{
             background: "hsl(38, 30%, 94%)",
             border: "1px solid hsl(38, 18%, 83%)",
           }}
         >
+          {/* Streak tier badge */}
+          <div className="flex justify-center mb-3">
+            <span
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+              style={{
+                background: "hsl(45, 88%, 48%)",
+                color: "hsl(25, 30%, 8%)",
+                opacity: data?.currentStreak ? 1 : 0.4,
+              }}
+            >
+              <span>{streakTier.icon}</span>
+              {streakTier.label} Streak
+            </span>
+          </div>
+
           <div className="text-5xl leading-none">🔥</div>
           <div
             className="text-7xl font-black leading-none mt-2 mb-1"
@@ -90,7 +109,7 @@ export function ShareCardModal({
             {data?.currentStreak ?? 0}
           </div>
           <div
-            className="text-xs font-bold uppercase tracking-widest mb-6"
+            className="text-xs font-bold uppercase tracking-widest mb-5"
             style={{ color: "hsl(25, 12%, 42%)" }}
           >
             Day Streak
@@ -99,8 +118,13 @@ export function ShareCardModal({
           <div className="text-xl font-extrabold" style={{ color: "hsl(25, 30%, 8%)" }}>
             {data?.username || "Anonymous"}
           </div>
-          <div className="text-sm mb-6" style={{ color: "hsl(25, 12%, 42%)" }}>
-            on Deuce Diary
+
+          {/* Rank title below username */}
+          <div
+            className="text-sm font-semibold mb-5"
+            style={{ color: "hsl(25, 12%, 42%)" }}
+          >
+            {rank.rank.icon} {rank.rank.title}
           </div>
 
           <div className="flex justify-center gap-8">
@@ -128,6 +152,14 @@ export function ShareCardModal({
                 Squads
               </div>
             </div>
+          </div>
+
+          {/* Brand watermark */}
+          <div
+            className="text-[11px] font-semibold mt-5"
+            style={{ color: "hsl(25, 12%, 56%)" }}
+          >
+            🚽 Deuce Diary
           </div>
         </div>
 
