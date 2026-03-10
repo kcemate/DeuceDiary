@@ -281,6 +281,27 @@ export default function InviteLanding() {
           </p>
         </div>
 
+        {/* ── Social Proof Stats Bar ─────────────────────────────────── */}
+        {preview && (
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: preview.deuceCount, label: "Total Deuces", icon: "💩" },
+              { value: preview.currentStreak, label: "Day Streak", icon: "🔥" },
+              { value: preview.memberCount, label: "Members", icon: "👥" },
+            ].map((stat, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl border border-[#E8DFD0] p-3 text-center shadow-sm"
+                style={{ animationDelay: `${i * 100}ms` }}
+              >
+                <p className="text-lg">{stat.icon}</p>
+                <p className="text-xl font-extrabold text-[#2C1A0E] leading-none mt-0.5">{stat.value}</p>
+                <p className="text-[10px] text-[#A89070] uppercase tracking-wide mt-0.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ── Group Preview Card ─────────────────────────────────────── */}
         {previewLoading ? (
           <div className="bg-white rounded-2xl border border-[#E8DFD0] p-6 animate-pulse space-y-3">
@@ -306,23 +327,6 @@ export default function InviteLanding() {
                 )}
               </div>
 
-              {/* Streak stat */}
-              <div className="flex items-center gap-3 mt-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-2xl">🔥</span>
-                  <div>
-                    <span className="text-2xl font-extrabold text-[#2C1A0E] leading-none">
-                      {preview.currentStreak}
-                    </span>
-                    <span className="text-xs text-[#8B7355] ml-1">-day streak</span>
-                  </div>
-                </div>
-                <div className="h-8 w-px bg-[#E8DFD0]" />
-                <div className="text-center">
-                  <p className="text-lg font-bold text-[#2C1A0E]">{preview.deuceCount}</p>
-                  <p className="text-[10px] text-[#A89070] uppercase tracking-wide">Total Deuces</p>
-                </div>
-              </div>
             </div>
 
             {/* Members */}
