@@ -68,45 +68,65 @@ function computeBingoLineIndices(completedSet: Set<number>): Set<number> {
   return bingoIndices;
 }
 
-// Simple CSS confetti component
-function Confetti({ show }: { show: boolean }) {
-  const colors = ["#FFD700", "#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#FF4081"];
-  const pieces = Array.from({ length: 40 }, (_, i) => i);
+// Confetti celebration component
+function Confetti({ show, blackout }: { show: boolean; blackout?: boolean }) {
+  const colors = ["#FFD700", "#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#FF4081", "#00BCD4", "#FF9800"];
+  const count = blackout ? 70 : 40;
+  const pieces = Array.from({ length: count }, (_, i) => i);
 
   if (!show) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+      <style>{`
+        @keyframes confettiFall {
+          0%   { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 1; }
+          50%  { transform: translateY(50vh) translateX(var(--sway, 0px)) rotate(360deg); opacity: 1; }
+          100% { transform: translateY(110vh) translateX(calc(var(--sway, 0px) * 2)) rotate(720deg); opacity: 0; }
+        }
+        @keyframes blackoutBanner {
+          0%   { transform: translateY(-60px) scale(0.8); opacity: 0; }
+          20%  { transform: translateY(0) scale(1.05); opacity: 1; }
+          80%  { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(-60px) scale(0.9); opacity: 0; }
+        }
+      `}</style>
       {pieces.map((i) => {
         const color = colors[i % colors.length];
         const left = `${(i * 7 + 3) % 100}%`;
-        const delay = `${(i * 0.1) % 2}s`;
-        const size = 8 + (i % 6) * 2;
-        const duration = `${2 + (i % 3) * 0.5}s`;
+        const delay = `${(i * 0.06) % 2.5}s`;
+        const size = 6 + (i % 8) * 1.5;
+        const duration = `${2.5 + (i % 4) * 0.5}s`;
+        const sway = `${(i % 2 === 0 ? 1 : -1) * (20 + (i % 5) * 10)}px`;
         return (
           <div
             key={i}
-            className="absolute top-0 animate-bounce"
+            className="absolute top-0"
             style={{
               left,
               backgroundColor: color,
               width: size,
               height: size,
-              borderRadius: i % 3 === 0 ? "50%" : "2px",
-              animationDelay: delay,
-              animationDuration: duration,
-              transform: `rotate(${i * 45}deg)`,
-              animation: `fall ${duration} ${delay} ease-in forwards`,
+              borderRadius: i % 4 === 0 ? "50%" : i % 4 === 1 ? "2px" : "1px",
+              ["--sway" as string]: sway,
+              animation: `confettiFall ${duration} ${delay} ease-in forwards`,
             }}
           />
         );
       })}
-      <style>{`
-        @keyframes fall {
-          0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-        }
-      `}</style>
+      {blackout && (
+        <div
+          className="absolute top-16 left-0 right-0 flex justify-center"
+          style={{ animation: "blackoutBanner 4s ease-in-out forwards" }}
+        >
+          <div className="bg-gradient-to-r from-amber-500 to-yellow-400 rounded-2xl px-6 py-3 shadow-2xl shadow-amber-500/50 border-2 border-yellow-300">
+            <p className="text-white font-black text-2xl tracking-wider text-center drop-shadow">
+              🏆 BLACKOUT! 🏆
+            </p>
+            <p className="text-yellow-100 text-sm text-center font-semibold mt-0.5">All 25 squares complete!</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -314,6 +334,7 @@ export default function Bingo() {
   const [completedSet, setCompletedSet] = useState<Set<number>>(new Set());
   const [newlyCompleted, setNewlyCompleted] = useState<Set<number>>(new Set());
   const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiIsBlackout, setConfettiIsBlackout] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const prevCompleted = useRef<Set<number>>(new Set());
 
@@ -334,9 +355,10 @@ export default function Bingo() {
       setCompletedSet(newSet);
       prevCompleted.current = newSet;
 
-      if (result.hasBlackout && fresh.size > 0) {
+      if (fresh.size > 0) {
+        setConfettiIsBlackout(result.hasBlackout);
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 4000);
+        setTimeout(() => setShowConfetti(false), result.hasBlackout ? 5000 : 2500);
       }
 
       if (result.newlyCompleted > 0) {
@@ -563,7 +585,7 @@ export default function Bingo() {
 
   return (
     <>
-      <Confetti show={showConfetti} />
+      <Confetti show={showConfetti} blackout={confettiIsBlackout} />
       <div className="pt-4">
         <PremiumGate featureName="Deuce Bingo">{BingoContent}</PremiumGate>
       </div>
