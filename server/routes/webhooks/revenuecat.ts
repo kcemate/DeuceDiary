@@ -1,7 +1,31 @@
 import express, { type Express, type Request, type Response } from "express";
 import crypto from "crypto";
+import { z } from "zod";
 import { storage } from "../../storage";
 import { track } from "../../lib/analytics";
+
+const RC_EVENT_TYPES = [
+  "INITIAL_PURCHASE",
+  "RENEWAL",
+  "PRODUCT_CHANGE",
+  "CANCELLATION",
+  "EXPIRATION",
+  "BILLING_ISSUES_DETECTED",
+  "SUBSCRIBER_ALIAS",
+  "TRANSFER",
+  "NON_RENEWING_PURCHASE",
+  "UNCANCELLATION",
+  "SUBSCRIPTION_PAUSED",
+  "TEST",
+] as const;
+
+const revenueCatEventSchema = z.object({
+  event: z.object({
+    type: z.string().min(1).max(100),
+    app_user_id: z.string().min(1).max(256),
+    expiration_at_ms: z.number().int().positive().optional().nullable(),
+  }),
+});
 
 /**
  * Register RevenueCat webhook route.
@@ -29,13 +53,15 @@ export function registerRevenueCatWebhook(app: Express): void {
       }
 
       try {
-        const { event } = req.body;
-        if (!event?.type || !event?.app_user_id) {
+        const parsed = revenueCatEventSchema.safeParse(req.body);
+        if (!parsed.success) {
+          console.warn('[REVENUECAT] Invalid payload:', parsed.error.flatten());
           return res.status(400).json({ message: "Invalid payload" });
         }
 
+        const { event } = parsed.data;
         const userId = event.app_user_id;
-        const expirationMs = event.expiration_at_ms;
+        const expirationMs = event.expiration_at_ms ?? undefined;
 
         switch (event.type) {
           case "INITIAL_PURCHASE":
