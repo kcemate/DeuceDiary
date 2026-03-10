@@ -56,3 +56,21 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Users can now complete challenges from the squad page.
 
 ---
+
+## Iteration 4 — Fix period_end boundary bug (`gte` → `gt`)
+
+**Date:** 2026-03-10
+**What I analyzed:** Three queries in `storage.ts` used `gte(*.periodEnd, now)` (>=) to determine if a king/challenge period is still active. The cron sets `periodEnd = Monday 00:00:00.000 UTC`. At precisely midnight, the old king's record would still show as active (because `periodEnd >= now` is true at that exact millisecond) while the cron is inserting the new king. This creates a brief window of double-king state.
+
+**What I changed:**
+- `getCurrentKing`: `gte(deuceKings.periodEnd, now)` → `gt(deuceKings.periodEnd, now)`
+- `getActiveChallenge`: `gte(challenges.periodEnd, now)` → `gt(challenges.periodEnd, now)`
+- `getChallengeWithMemberProgress`: same fix
+- Added `gt` to the drizzle-orm import in `storage.ts`
+
+**Semantics:** Period is active if `periodStart <= now < periodEnd`. A king crowned Mon–Sun expires cleanly at the start of the next Monday, not a millisecond into it.
+
+**Test results:** 493/493 passed
+**Verdict:** Period boundary is correct — no stale king at rollover time.
+
+---

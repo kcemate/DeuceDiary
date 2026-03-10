@@ -51,7 +51,7 @@ import {
   type ChallengeCompletion,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, count, sql, inArray, gte, lt, lte, isNull } from "drizzle-orm";
+import { eq, desc, and, or, count, sql, inArray, gte, gt, lt, lte, isNull } from "drizzle-orm";
 
 /** Internal helper — today as YYYY-MM-DD in UTC */
 function getTodayStorageUTC(): string {
@@ -2314,7 +2314,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(deuceKings.groupId, groupId),
           lte(deuceKings.periodStart, now),
-          gte(deuceKings.periodEnd, now),
+          gt(deuceKings.periodEnd, now),
         ),
       )
       .orderBy(desc(deuceKings.periodStart))
@@ -2334,7 +2334,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(challenges.groupId, groupId),
           lte(challenges.periodStart, now),
-          gte(challenges.periodEnd, now),
+          gt(challenges.periodEnd, now),
         ),
       )
       .orderBy(desc(challenges.periodStart))
@@ -2363,7 +2363,7 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(challenges.groupId, groupId),
           lte(challenges.periodStart, now),
-          gte(challenges.periodEnd, now),
+          gt(challenges.periodEnd, now),
         ),
       )
       .orderBy(desc(challenges.periodStart))
