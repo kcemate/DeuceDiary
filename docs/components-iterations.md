@@ -63,3 +63,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** 2× more icon choices covering toilet essentials (🧻, 🪠, 🚿) alongside the existing power and vibe options.
 
 ---
+
+## Iteration 7 — Reactions: "Popular here" quick-react row in picker
+
+**Problem:** Even with sorted picker emojis, users still had to scan the 2-row 5×2 grid to find the crowd favorites for this specific entry.
+
+**Change:** Added a "Popular here" section at the top of the picker (when there are existing reactions). Shows the top 3 most-reacted emojis as wide buttons with count labels — a fast-path for joining the most popular reactions. Hidden when no reactions exist yet.
+
+**Result:** Social proof + one-tap fast path for the most relevant reactions. Matches the UX pattern of apps like Slack, Discord, and GitHub.
+
+---

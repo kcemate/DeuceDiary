@@ -33,7 +33,7 @@ interface ReactionsProps {
 const commonEmojis = ['💩', '🚽', '🔥', '❤️', '😂', '👍', '🤢', '💀', '👏', '🤣'];
 
 /** Sort picker emojis: already-used on this entry first (by count desc), then the rest */
-function getSortedPickerEmojis(grouped: Record<string, { length: number }[]>): string[] {
+function getSortedPickerEmojis(grouped: Record<string, unknown[]>): string[] {
   const usedCounts: Record<string, number> = {};
   for (const emoji of commonEmojis) {
     if (grouped[emoji]) usedCounts[emoji] = grouped[emoji].length;
@@ -241,6 +241,36 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                       title="Tap to remove"
                     >
                       {emoji}
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t my-2" />
+              </div>
+            )}
+            {/* Quick-react: top 3 most popular on this entry */}
+            {sortedEntries.length > 0 && (
+              <div className="mb-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1 px-1">
+                  Popular here
+                </p>
+                <div className="flex gap-1">
+                  {sortedEntries.slice(0, 3).map(([emoji, list]) => (
+                    <button
+                      key={`quick-${emoji}`}
+                      onClick={() => handleEmojiClick(emoji)}
+                      className={[
+                        "flex-1 h-11 flex flex-col items-center justify-center rounded-lg text-xl gap-0.5",
+                        "transition-all duration-150 active:scale-90",
+                        userHasReacted(emoji)
+                          ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
+                          : "bg-muted hover:bg-muted/70",
+                      ].join(' ')}
+                      aria-label={`${emoji} (${list.length})`}
+                    >
+                      <span>{emoji}</span>
+                      <span className="text-[9px] font-bold tabular-nums text-muted-foreground leading-none">
+                        {list.length}
+                      </span>
                     </button>
                   ))}
                 </div>
