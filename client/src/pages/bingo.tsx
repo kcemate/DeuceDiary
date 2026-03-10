@@ -145,65 +145,77 @@ function PlaceholderBingoGrid() {
   return (
     <div className="pb-24 pt-4">
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h2 className="text-xl font-bold text-foreground">Deuce Bingo</h2>
             <p className="text-sm text-muted-foreground">This Month</p>
           </div>
           <div className="text-right">
-            <p className="stat-number text-2xl text-foreground">7/25</p>
+            <p className="stat-number text-2xl text-foreground/40">?/25</p>
+            <p className="text-xs text-muted-foreground">Premium only</p>
           </div>
         </div>
-        <div className="h-2 rounded-full bg-muted overflow-hidden">
-          <div className="h-full bg-primary rounded-full" style={{ width: "28%" }} />
+        <div className="h-3 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary/30 rounded-full" style={{ width: "28%" }} />
         </div>
-        <p className="text-xs text-muted-foreground mt-1 text-right">28% complete</p>
       </div>
-      <div className="grid grid-cols-5 gap-1 mb-4">
-        {PLACEHOLDER_SQUARES.map((sq, index) => {
-          const done = completedIndices.has(index);
-          return (
-            <div
-              key={index}
-              className={cn(
-                "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center min-h-[64px]",
-                done
-                  ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
-                  : "border-border bg-card",
-              )}
-            >
-              {done ? (
-                <>
-                  <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-                    <svg className="w-8 h-8 text-amber-700 opacity-30" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                    </svg>
-                  </div>
-                  <p className="text-[9px] font-bold text-amber-800 leading-tight z-10 line-clamp-2">{sq.title}</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">{sq.title}</p>
-                  <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">{sq.description}</p>
-                </>
-              )}
+
+      {/* Grid with lock overlay */}
+      <div className="relative mb-4">
+        <div className="grid grid-cols-5 gap-1 blur-[2px] pointer-events-none select-none">
+          {PLACEHOLDER_SQUARES.map((sq, index) => {
+            const done = completedIndices.has(index);
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center min-h-[64px]",
+                  done
+                    ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
+                    : "border-border bg-card",
+                )}
+              >
+                {done ? (
+                  <>
+                    <div className="absolute inset-0 flex items-center justify-center rounded-xl">
+                      <svg className="w-8 h-8 text-amber-700 opacity-30" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                      </svg>
+                    </div>
+                    <p className="text-[9px] font-bold text-amber-800 leading-tight z-10 line-clamp-2">{sq.title}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[9px] font-bold text-foreground leading-tight mb-0.5 line-clamp-1">{sq.title}</p>
+                    <p className="text-[8px] text-muted-foreground leading-tight line-clamp-2">{sq.description}</p>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Frosted lock overlay */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/70 backdrop-blur-[1px]">
+          <div className="flex flex-col items-center gap-2 px-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
+              <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
             </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-2 mb-4">
-        <div className="flex-1 h-10 rounded-xl bg-primary/80 flex items-center justify-center">
-          <span className="text-sm font-bold text-primary-foreground">Check Progress</span>
-        </div>
-        <div className="h-10 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
-          <span className="text-sm font-bold text-foreground">Leaderboard</span>
+            <p className="text-sm font-black text-foreground">Unlock Deuce Bingo</p>
+            <p className="text-xs text-muted-foreground leading-snug">
+              25 monthly challenges. Complete rows, columns, and diagonals for{" "}
+              <span className="font-bold text-yellow-600">BINGO!</span>
+            </p>
+          </div>
         </div>
       </div>
+
       <div className="rounded-2xl border border-border bg-card p-3">
-        <p className="text-xs font-bold text-muted-foreground mb-2">How to play</p>
+        <p className="text-xs font-bold text-muted-foreground mb-2">How it works</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Complete challenges by logging deuces throughout the month. Hit{" "}
-          <span className="font-bold text-foreground">Check Progress</span> to update your card.
+          Complete challenges by logging deuces throughout the month.
           Complete a row, column, or diagonal for{" "}
           <span className="font-bold text-yellow-600">BINGO!</span> Complete all 25 for a{" "}
           <span className="font-bold text-amber-600">BLACKOUT!</span>
