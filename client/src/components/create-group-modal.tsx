@@ -220,6 +220,24 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 <span aria-hidden>⚠️</span> {nameError}
               </p>
             )}
+
+            {/* Live preview pill */}
+            {name.trim() && !nameError && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Preview:
+                </span>
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold"
+                  style={{
+                    background: "hsl(45, 88%, 48%)",
+                    color: "hsl(25, 30%, 8%)",
+                  }}
+                >
+                  {icon} {name.trim()}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Description */}
