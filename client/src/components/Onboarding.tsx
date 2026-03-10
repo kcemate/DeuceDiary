@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [direction, setDirection] = useState(1);
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameReady, setUsernameReady] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryClient = useQueryClient();
 
   const goToStep = (next: number) => {
@@ -87,8 +90,29 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setUsername(value);
-    setUsernameError(validateUsername(value));
+    setUsernameReady(false);
+    const error = validateUsername(value);
+    setUsernameError(error);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!error && value.length >= 3) {
+      setUsernameChecking(true);
+      debounceRef.current = setTimeout(() => {
+        setUsernameChecking(false);
+        setUsernameReady(true);
+      }, 600);
+    } else {
+      setUsernameChecking(false);
+    }
   };
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const handleUsernameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,23 +204,71 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
                   <form onSubmit={handleUsernameSubmit} className="space-y-4">
                     <div>
-                      <Input
-                        id="username"
-                        value={username}
-                        onChange={handleUsernameChange}
-                        placeholder="throne_king_42"
-                        className="text-center text-lg py-5 rounded-xl"
-                        maxLength={20}
-                        autoFocus
-                      />
+                      <div className="relative">
+                        <Input
+                          id="username"
+                          value={username}
+                          onChange={handleUsernameChange}
+                          placeholder="throne_king_42"
+                          className={`text-center text-lg py-5 rounded-xl pr-16 transition-colors duration-300 ${
+                            usernameReady
+                              ? "border-green-500 focus-visible:ring-green-400"
+                              : usernameError
+                              ? "border-destructive"
+                              : ""
+                          }`}
+                          maxLength={20}
+                          autoFocus
+                        />
+                        {/* Character count */}
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+                          {username.length}/20
+                        </span>
+                        {/* Validity indicator */}
+                        <AnimatePresence>
+                          {usernameChecking && (
+                            <motion.span
+                              key="checking"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
+                            >
+                              ⏳
+                            </motion.span>
+                          )}
+                          {usernameReady && !usernameChecking && (
+                            <motion.span
+                              key="ready"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.5 }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 font-bold text-lg"
+                            >
+                              ✓
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </div>
                       {usernameError && (
                         <p className="text-destructive text-sm mt-2 text-center font-medium">
                           {usernameError}
                         </p>
                       )}
-                      <p className="text-muted-foreground text-xs mt-2 text-center">
-                        3–20 characters. Letters, numbers, underscores.
-                      </p>
+                      {usernameReady && !usernameError && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-green-600 text-sm mt-2 text-center font-medium"
+                        >
+                          Looks good — ready to claim!
+                        </motion.p>
+                      )}
+                      {!usernameError && !usernameReady && (
+                        <p className="text-muted-foreground text-xs mt-2 text-center">
+                          3–20 characters. Letters, numbers, underscores.
+                        </p>
+                      )}
                     </div>
 
                     <Button

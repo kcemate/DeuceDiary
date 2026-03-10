@@ -9,3 +9,8 @@
 **Change**: Each step's emoji now has a distinct entrance animation: Step 1 (🚽) bounces in from above with spring physics, Step 2 (🏠) slides up from below, Step 3 (💩) spins in with rotation. Added a continuous rotation animation on 🚽 during the username submit loading state.
 **Result**: Tests passing (466/466)
 **Notes**: Used framer-motion's spread props pattern with typed `as const` animation configs per step. The loading spinner is a nested motion.span with `repeat: Infinity` rotate animation.
+
+## Iteration 3 — Real-time username validation UX
+**Change**: Added character count display (e.g. "5/20") in the input corner. Input border turns green when valid. Debounced "availability checking" micro-interaction (600ms fake delay) shows hourglass then green checkmark. Added animated "Looks good — ready to claim!" confirmation text below input.
+**Result**: Tests passing (466/466)
+**Notes**: Used useRef for debounce timer with cleanup on unmount. AnimatePresence wraps the checking/ready indicators. Green border uses conditional Tailwind classes on the Input component.
