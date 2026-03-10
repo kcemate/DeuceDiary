@@ -219,5 +219,35 @@ export function createKingRouter(): Router {
     },
   );
 
+  // POST /api/groups/:groupId/challenge/complete — member marks active challenge complete
+  router.post(
+    "/api/groups/:groupId/challenge/complete",
+    isAuthenticated,
+    requireGroupMember(),
+    async (req: any, res) => {
+      try {
+        const groupId = req.groupId as string;
+        const userId = req.user.id as string;
+
+        const { challenge } = await storage.getChallengeWithMemberProgress(groupId);
+        if (!challenge) {
+          return res.status(404).json({ message: "No active challenge for this group" });
+        }
+
+        const existing = await storage.getUserChallengeCompletion(challenge.id, userId);
+        if (existing) {
+          return res.status(409).json({ message: "You already completed this challenge" });
+        }
+
+        await storage.addChallengeCompletion(challenge.id, userId);
+
+        res.json({ ok: true, challengeId: challenge.id });
+      } catch (error) {
+        console.error("[king] POST /challenge/complete error:", error);
+        res.status(500).json({ message: "Failed to mark challenge complete" });
+      }
+    },
+  );
+
   return router;
 }

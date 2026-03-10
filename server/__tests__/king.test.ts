@@ -650,6 +650,73 @@ describe("GET /api/groups/:groupId/challenge", () => {
 });
 
 /* ================================================================
+ *  TESTS: POST /api/groups/:groupId/challenge/complete
+ * ================================================================ */
+describe("POST /api/groups/:groupId/challenge/complete", () => {
+  async function setupChallengeGroup() {
+    const agent = await loginAs("alice");
+    const group = await createGroupWithMember("dev-alice");
+    const { start, end } = makePeriod(0);
+    const king = await memStore.createDeuceKing({
+      groupId: group.id,
+      userId: "dev-alice",
+      periodStart: start,
+      periodEnd: end,
+      logCount: 5,
+      consecutiveWins: 1,
+    });
+    const challenge = await memStore.createChallenge({
+      groupId: group.id,
+      kingId: "dev-alice",
+      deuceKingId: king.id,
+      title: "📍 Explorer",
+      templateKey: "explorer",
+      periodStart: start,
+      periodEnd: end,
+      isAutoSelected: false,
+    });
+    return { agent, group, challenge };
+  }
+
+  it("lets a member mark the active challenge complete", async () => {
+    const { agent, group } = await setupChallengeGroup();
+    const res = await agent.post(`/api/groups/${group.id}/challenge/complete`);
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+  });
+
+  it("returns 409 if already completed", async () => {
+    const { agent, group, challenge } = await setupChallengeGroup();
+    await memStore.addChallengeCompletion(challenge.id, "dev-alice");
+    const res = await agent.post(`/api/groups/${group.id}/challenge/complete`);
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/already completed/i);
+  });
+
+  it("returns 404 when no active challenge", async () => {
+    const agent = await loginAs("alice");
+    const group = await createGroupWithMember("dev-alice");
+    const res = await agent.post(`/api/groups/${group.id}/challenge/complete`);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    const group = await createGroupWithMember("dev-alice");
+    const res = await supertest(app).post(`/api/groups/${group.id}/challenge/complete`);
+    expect(res.status).toBe(401);
+  });
+
+  it("increments completionCount after marking complete", async () => {
+    const { agent, group } = await setupChallengeGroup();
+    await agent.post(`/api/groups/${group.id}/challenge/complete`);
+
+    const progress = await agent.get(`/api/groups/${group.id}/challenge`);
+    expect(progress.body.completionCount).toBe(1);
+    expect(progress.body.userCompleted).toBe(true);
+  });
+});
+
+/* ================================================================
  *  TESTS: GET /api/groups/:groupId/challenge/history
  * ================================================================ */
 describe("GET /api/groups/:groupId/challenge/history", () => {

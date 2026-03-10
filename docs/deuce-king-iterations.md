@@ -20,3 +20,21 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Clean — no duplicates, no dead router file.
 
 ---
+
+## Iteration 2 — Add `POST /api/groups/:groupId/challenge/complete` endpoint
+
+**Date:** 2026-03-10
+**What I analyzed:** The storage layer had `addChallengeCompletion` and `getUserChallengeCompletion` implemented but there was no HTTP endpoint. The UI showed `userCompleted: true/false` from the GET endpoint but users had no way to actually mark a challenge done. This was a missing feature gap blocking the core challenge loop.
+
+**What I changed:**
+- Added `POST /api/groups/:groupId/challenge/complete` in `server/routes/king.ts`
+  - Requires auth + group membership
+  - Returns 404 if no active challenge
+  - Returns 409 if already completed (idempotent-safe)
+  - On success: returns `{ ok: true, challengeId }`
+- Added 5 tests covering: happy path, duplicate prevention, no active challenge, unauthenticated, completionCount increment
+
+**Test results:** 493/493 passed (+5 new tests)
+**Verdict:** Challenge completion loop is now complete end-to-end.
+
+---
