@@ -63,7 +63,7 @@
   "username": "newname"
 }
 ```
-**Validation:** 3–20 characters, alphanumeric + underscores + spaces only (`/^[a-zA-Z0-9_ ]+$/`).
+**Validation:** 3–20 characters, alphanumeric + underscores only (`/^[a-zA-Z0-9_]+$/`).
 **Response 200:**
 ```json
 {

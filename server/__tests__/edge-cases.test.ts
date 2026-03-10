@@ -775,7 +775,7 @@ describe("SQL injection attempts", () => {
     const res = await agent.put("/api/auth/user").send({
       username: "'; DROP TABLE users; --",
     });
-    // The regex /^[a-zA-Z0-9_ ]+$/ in updateUserSchema will reject special chars
+    // The regex /^[a-zA-Z0-9_]+$/ in updateUserSchema will reject special chars
     // Zod validation fails, caught in error handler -> 500
     expect(res.status).toBe(500);
     // The server does not crash; the next test implicitly proves it is still alive
@@ -849,7 +849,7 @@ describe("XSS in input fields", () => {
     const res = await agent.put("/api/auth/user").send({
       username: "<script>alert('xss')</script>",
     });
-    // The regex /^[a-zA-Z0-9_ ]+$/ does not allow < > ( ) ' characters
+    // The regex /^[a-zA-Z0-9_]+$/ does not allow < > ( ) ' characters
     expect(res.status).toBe(500);
     // The server does not crash; the next test implicitly proves it is still alive
   });
@@ -1032,7 +1032,7 @@ describe("Unicode and emoji in names", () => {
     const res = await agent.put("/api/auth/user").send({
       username: "\u{1F6BD}KingOfThrones",
     });
-    // Emoji does not match /^[a-zA-Z0-9_ ]+$/
+    // Emoji does not match /^[a-zA-Z0-9_]+$/
     expect(res.status).toBe(500);
   });
 
