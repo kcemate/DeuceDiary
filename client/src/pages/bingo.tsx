@@ -472,8 +472,9 @@ export default function Bingo() {
           {showLeaderboard && leaderboardData && (
             <div className="rounded-2xl border border-border bg-card p-4 mb-4">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Squad Bingo Rankings</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Squad Rankings</h3>
                 <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">{formatMonth(leaderboardData.month)}</span>
               </div>
               {leaderboardData.leaderboard.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
@@ -481,35 +482,52 @@ export default function Bingo() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {leaderboardData.leaderboard.map((entry, i) => (
-                    <div key={entry.userId} className="flex items-center gap-3">
-                      <span className="text-sm font-black text-muted-foreground w-5 text-right">
-                        {i + 1}
-                      </span>
-                      {entry.profileImageUrl ? (
-                        <img
-                          src={entry.profileImageUrl}
-                          alt={`${entry.username || "User"}'s avatar`}
-                          className="w-7 h-7 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="text-xs font-bold text-primary">
-                            {(entry.username || "?")[0].toUpperCase()}
-                          </span>
+                  {leaderboardData.leaderboard.map((entry, i) => {
+                    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+                    const pct = Math.round((entry.completedCount / 25) * 100);
+                    const barColor = entry.completedCount === 25
+                      ? "bg-amber-500"
+                      : entry.completedCount >= 15
+                      ? "bg-green-500"
+                      : "bg-primary";
+                    return (
+                      <div
+                        key={entry.userId}
+                        className={cn(
+                          "flex items-center gap-2 rounded-xl px-2 py-1.5",
+                          i === 0 && "bg-yellow-50 border border-yellow-200",
+                        )}
+                      >
+                        <span className="w-6 text-center text-base">
+                          {medal ?? <span className="text-xs font-black text-muted-foreground">{i + 1}</span>}
+                        </span>
+                        {entry.profileImageUrl ? (
+                          <img
+                            src={entry.profileImageUrl}
+                            alt={`${entry.username || "User"}'s avatar`}
+                            className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-bold text-primary">
+                              {(entry.username || "?")[0].toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="flex-1 text-sm font-medium text-foreground truncate">
+                          {entry.username || "Anonymous"}
+                        </span>
+                        <span className="text-sm font-bold text-foreground tabular-nums">
+                          {entry.completedCount}/25
+                        </span>
+                        <div className="w-14">
+                          <div className="h-2 rounded-full bg-muted overflow-hidden">
+                            <div className={cn("h-full rounded-full transition-all", barColor)} style={{ width: `${pct}%` }} />
+                          </div>
                         </div>
-                      )}
-                      <span className="flex-1 text-sm font-medium text-foreground truncate">
-                        {entry.username || "Anonymous"}
-                      </span>
-                      <span className="text-sm font-bold text-foreground">
-                        {entry.completedCount}/25
-                      </span>
-                      <div className="w-16">
-                        <Progress value={(entry.completedCount / 25) * 100} className="h-1.5" />
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
