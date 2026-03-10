@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,17 +32,30 @@ interface ReactionsProps {
 // Poop-themed emoji set for Deuce Diary
 const commonEmojis = ['💩', '🚽', '🔥', '❤️', '😂', '👍', '🤢', '💀', '👏', '🤣'];
 
+interface Floater {
+  id: number;
+  emoji: string;
+}
+
 export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAllReactions, setShowAllReactions] = useState(false);
   const [animatingEmoji, setAnimatingEmoji] = useState<string | null>(null);
+  const [floaters, setFloaters] = useState<Floater[]>([]);
+  const floaterCounter = useRef(0);
 
   const { data: reactions = [] } = useQuery<Reaction[]>({
     queryKey: ['/api/entries', entryId, 'reactions'],
     enabled: !!entryId,
   });
+
+  const spawnFloater = (emoji: string) => {
+    const id = ++floaterCounter.current;
+    setFloaters(prev => [...prev, { id, emoji }]);
+    setTimeout(() => setFloaters(prev => prev.filter(f => f.id !== id)), 800);
+  };
 
   const addReactionMutation = useMutation({
     mutationFn: async (emoji: string) => {
@@ -55,6 +68,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
       setShowEmojiPicker(false);
       setAnimatingEmoji(emoji);
+      spawnFloater(emoji);
       setTimeout(() => setAnimatingEmoji(null), 350);
     },
   });
@@ -100,7 +114,31 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Keyframes for floating emoji burst */}
+      <style>{`
+        @keyframes floatUp {
+          0%   { opacity: 1; transform: translateY(0) scale(1); }
+          60%  { opacity: 0.9; transform: translateY(-28px) scale(1.4); }
+          100% { opacity: 0; transform: translateY(-52px) scale(0.8); }
+        }
+        .emoji-floater {
+          position: absolute;
+          pointer-events: none;
+          font-size: 1.5rem;
+          animation: floatUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          z-index: 50;
+          left: 50%;
+          bottom: 100%;
+          transform-origin: center bottom;
+        }
+      `}</style>
+
+      <div className="relative flex items-center gap-1.5 flex-wrap">
+        {/* Floating emoji burst portal */}
+        {floaters.map(f => (
+          <span key={f.id} className="emoji-floater">{f.emoji}</span>
+        ))}
+
         {/* Existing reactions */}
         {visibleEntries.map(([emoji, reactionList]) => {
           const mine = userHasReacted(emoji);
