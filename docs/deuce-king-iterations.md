@@ -74,3 +74,19 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Period boundary is correct — no stale king at rollover time.
 
 ---
+
+## Iteration 5 — Add king avatar to Crown Banner
+
+**Date:** 2026-03-10
+**What I analyzed:** The Crown Banner showed only a 👑 emoji + name. Every other user surface (feed entries, members list, check-in row) shows an avatar. The king's `profileImageUrl` was already included in the API response but unused in the banner. The banner felt flat and impersonal compared to the rest of the design system.
+
+**What I changed:**
+- Replaced the static `👑` emoji lead with a 9×9 `Avatar` component (ring-2 ring-yellow-400 for gold accent)
+- Added a `👑` overlaid as a small absolute-positioned span in the top-right of the avatar
+- Falls back to first letter of username on no profileImageUrl
+- Kept consistent with existing Avatar usage in the page (same component, same fallback pattern)
+
+**Test results:** 493/493 passed
+**Verdict:** Crown Banner now shows the king's face — consistent with the rest of the UI.
+
+---

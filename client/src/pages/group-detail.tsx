@@ -418,7 +418,16 @@ export default function GroupDetail() {
         <Card className="shadow-sm mb-3 border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
-              <span className="text-2xl shrink-0">👑</span>
+              {/* King avatar with crown overlay */}
+              <div className="relative shrink-0">
+                <Avatar className="w-9 h-9 ring-2 ring-yellow-400">
+                  <AvatarImage src={kingData.king.profileImageUrl ?? undefined} />
+                  <AvatarFallback className="text-xs bg-yellow-100 dark:bg-yellow-900/40">
+                    {(kingData.king.username ?? "?")[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -top-1.5 -right-1.5 text-sm leading-none">👑</span>
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-black text-sm text-foreground">
