@@ -174,7 +174,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                   }}
                   className={[
                     "inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-medium",
-                    "min-h-[36px] min-w-[44px] active:scale-90",
+                    "min-h-[44px] min-w-[44px] active:scale-90",
                     mine
                       ? "bg-[hsl(45,88%,48%)] text-white ring-2 ring-[hsl(45,88%,38%)] shadow-sm"
                       : "bg-muted hover:bg-muted/80 text-foreground",
@@ -196,7 +196,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
         {!showAllReactions && hiddenCount > 0 && (
           <button
             onClick={() => setShowAllReactions(true)}
-            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px] transition-colors"
+            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[44px] transition-colors"
           >
             +{hiddenCount}
             <ChevronDown className="h-3 w-3" />
@@ -205,7 +205,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
         {showAllReactions && sortedEntries.length > maxVisible && (
           <button
             onClick={() => setShowAllReactions(false)}
-            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[36px] transition-colors"
+            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[44px] transition-colors"
             aria-label="Show fewer reactions"
           >
             <ChevronDown className="h-3 w-3 rotate-180 transition-transform" />
