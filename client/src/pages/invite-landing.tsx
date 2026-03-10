@@ -152,6 +152,7 @@ export default function InviteLanding() {
   const [error, setError] = useState("");
   const [showDemo, setShowDemo] = useState(true);
   const [visibleActivity, setVisibleActivity] = useState(0);
+  const [ctaTab, setCtaTab] = useState<"new" | "existing">("new");
 
   const { data: preview, isLoading: previewLoading, error: previewError } = useQuery<GroupPreview>({
     queryKey: [`/api/groups/preview/${code}`],
@@ -451,7 +452,7 @@ export default function InviteLanding() {
         )}
 
         {/* ── Action area ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-3">
+        <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-4">
           <p className="text-center text-sm font-semibold text-[#2C1A0E]">
             Ready to take a seat? 👇
           </p>
@@ -470,30 +471,76 @@ export default function InviteLanding() {
               >
                 {loading ? "Joining..." : "🚽 Take a Seat"}
               </Button>
+              <p className="text-center text-[10px] text-[#A89070]">
+                Signed in as <strong>{user?.username}</strong>
+              </p>
             </div>
           ) : (
-            <form onSubmit={handleJoinWithLogin} className="space-y-3">
-              <Input
-                type="text"
-                placeholder="What do your dudes call you?"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                autoFocus
-                className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
-              />
-              {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
-              <Button
-                type="submit"
-                disabled={loading || !username.trim()}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50"
-              >
-                {loading ? "Joining..." : "🚽 Take a Seat — It's Free"}
-              </Button>
-              <p className="text-center text-[10px] text-[#A89070]">
-                No email. No password. Just vibes and bowel movements.
-              </p>
-            </form>
+            <div className="space-y-3">
+              {/* New vs Returning tab toggle */}
+              <div className="flex rounded-xl bg-[#F5EDE0] p-1 gap-1">
+                <button
+                  onClick={() => { setCtaTab("new"); setError(""); setUsername(""); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "new" ? "bg-white text-green-700 shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
+                >
+                  I'm New Here
+                </button>
+                <button
+                  onClick={() => { setCtaTab("existing"); setError(""); setUsername(""); }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "existing" ? "bg-white text-[#2C1A0E] shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
+                >
+                  I Have an Account
+                </button>
+              </div>
+
+              {ctaTab === "new" ? (
+                <form onSubmit={handleJoinWithLogin} className="space-y-3">
+                  <Input
+                    type="text"
+                    placeholder="Pick a username (no email needed)"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
+                    autoFocus
+                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                  />
+                  {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+                  <Button
+                    type="submit"
+                    disabled={loading || !username.trim()}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50"
+                  >
+                    {loading ? "Creating account..." : "🚽 Take a Seat — It's Free"}
+                  </Button>
+                  <p className="text-center text-[10px] text-[#A89070]">
+                    No email. No password. Just vibes and bowel movements.
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={handleJoinWithLogin} className="space-y-3">
+                  <Input
+                    type="text"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading}
+                    autoFocus
+                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                  />
+                  {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
+                  <Button
+                    type="submit"
+                    disabled={loading || !username.trim()}
+                    className="w-full bg-[#2C1A0E] hover:bg-[#3D2616] text-white font-bold py-4 text-base rounded-full shadow-md disabled:opacity-50"
+                  >
+                    {loading ? "Signing in..." : "🔑 Sign In & Join"}
+                  </Button>
+                  <p className="text-center text-[10px] text-[#A89070]">
+                    Already a Deuce Diary member? Just enter your username.
+                  </p>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </div>
