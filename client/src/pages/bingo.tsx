@@ -48,6 +48,26 @@ function formatMonth(month: string): string {
   return new Date(year, mon - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
 }
 
+// Compute which square indices are part of a completed bingo line
+function computeBingoLineIndices(completedSet: Set<number>): Set<number> {
+  const lines: number[][] = [];
+  // Rows
+  for (let r = 0; r < 5; r++) lines.push([r * 5, r * 5 + 1, r * 5 + 2, r * 5 + 3, r * 5 + 4]);
+  // Cols
+  for (let c = 0; c < 5; c++) lines.push([c, c + 5, c + 10, c + 15, c + 20]);
+  // Diagonals
+  lines.push([0, 6, 12, 18, 24]);
+  lines.push([4, 8, 12, 16, 20]);
+
+  const bingoIndices = new Set<number>();
+  for (const line of lines) {
+    if (line.every((idx) => completedSet.has(idx))) {
+      for (const idx of line) bingoIndices.add(idx);
+    }
+  }
+  return bingoIndices;
+}
+
 // Simple CSS confetti component
 function Confetti({ show }: { show: boolean }) {
   const colors = ["#FFD700", "#FF6B35", "#4CAF50", "#2196F3", "#9C27B0", "#FF4081"];
@@ -198,18 +218,22 @@ function BingoSquareCell({
   index,
   isCompleted,
   isNew,
+  isOnBingoLine,
 }: {
   square: BingoSquare;
   index: number;
   isCompleted: boolean;
   isNew: boolean;
+  isOnBingoLine: boolean;
 }) {
   return (
     <div
       className={cn(
         "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
         "min-h-[64px] cursor-default",
-        isCompleted
+        isOnBingoLine
+          ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
+          : isCompleted
           ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
           : "border-border bg-card hover:bg-muted/30",
         isNew && "animate-pulse scale-105",
@@ -218,15 +242,24 @@ function BingoSquareCell({
       {isCompleted ? (
         <>
           <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-            <svg
-              className="w-8 h-8 text-amber-700 opacity-30"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
+            {isOnBingoLine ? (
+              <svg className="w-8 h-8 text-green-700 opacity-40" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+              </svg>
+            ) : (
+              <svg
+                className="w-8 h-8 text-amber-700 opacity-30"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+              </svg>
+            )}
           </div>
-          <p className="text-[9px] font-bold text-amber-800 leading-tight z-10 line-clamp-2">
+          <p className={cn(
+            "text-[9px] font-bold leading-tight z-10 line-clamp-2",
+            isOnBingoLine ? "text-green-900" : "text-amber-800",
+          )}>
             {square.title}
           </p>
         </>
@@ -350,15 +383,19 @@ export default function Bingo() {
 
           {/* 5x5 Grid */}
           <div className="grid grid-cols-5 gap-1 mb-4">
-            {data.card.squares.map((square, index) => (
-              <BingoSquareCell
-                key={square.id}
-                square={square}
-                index={index}
-                isCompleted={completedSet.has(index)}
-                isNew={newlyCompleted.has(index)}
-              />
-            ))}
+            {(() => {
+              const bingoLineIndices = computeBingoLineIndices(completedSet);
+              return data.card.squares.map((square, index) => (
+                <BingoSquareCell
+                  key={square.id}
+                  square={square}
+                  index={index}
+                  isCompleted={completedSet.has(index)}
+                  isNew={newlyCompleted.has(index)}
+                  isOnBingoLine={bingoLineIndices.has(index)}
+                />
+              ));
+            })()}
           </div>
 
           {/* Actions */}
