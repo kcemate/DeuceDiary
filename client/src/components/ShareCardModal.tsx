@@ -77,12 +77,20 @@ export function ShareCardModal({
 
         {/* Share Card Preview */}
         <div
-          className="rounded-3xl p-8 text-center mx-auto w-full relative overflow-hidden"
+          className="rounded-3xl text-center mx-auto w-full relative overflow-hidden"
           style={{
-            background: "hsl(38, 30%, 94%)",
-            border: "1px solid hsl(38, 18%, 83%)",
+            background: "linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%)",
+            border: "1.5px solid hsl(45, 55%, 72%)",
+            boxShadow: "0 2px 16px hsl(45 60% 60% / 0.12), 0 1px 3px hsl(25 20% 20% / 0.08)",
           }}
         >
+          {/* Gold accent bar at top */}
+          <div
+            className="h-1.5 w-full rounded-t-3xl"
+            style={{ background: "linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%)" }}
+          />
+
+          <div className="p-8">
           {/* Streak tier badge */}
           <div className="flex justify-center mb-3">
             <span
@@ -161,6 +169,7 @@ export function ShareCardModal({
           >
             🚽 Deuce Diary
           </div>
+          </div>{/* end p-8 */}
         </div>
 
         {/* Action buttons */}
