@@ -55,8 +55,17 @@ export const createDeuceSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
 });
 
+// Validates that a string consists only of emoji codepoints (Extended_Pictographic)
+// plus common emoji modifier codepoints: ZWJ, variation selector, skin tones, keycap.
+// Rejects ASCII text, HTML, and arbitrary Unicode that isn't emoji.
+const EMOJI_RE = /^[\p{Extended_Pictographic}\u200D\uFE0F\u20E3\u{1F3FB}-\u{1F3FF}]+$/u;
+const emojiField = z.string().min(1).max(10).refine(
+  (s) => EMOJI_RE.test(s),
+  { message: 'emoji must be a valid emoji character' },
+);
+
 export const reactionSchema = z.object({
-  emoji: z.string().min(1).max(10),
+  emoji: emojiField,
 });
 
 export const referralApplySchema = z.object({
@@ -86,7 +95,7 @@ export const broadcastSchema = z.object({
 });
 
 export const deleteReactionSchema = z.object({
-  emoji: z.string().min(1).max(10),
+  emoji: emojiField,
 });
 
 export const unregisterPushSchema = z.object({
