@@ -1,7 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { LogDeuceModal } from "@/components/log-deuce-modal";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+
+// Lazy-load the modal — only fetched when user first opens it
+const LogDeuceModal = lazy(() =>
+  import("@/components/log-deuce-modal").then((m) => ({ default: m.LogDeuceModal }))
+);
 
 // Separate filled/outline icon paths for clear active state distinction
 const navItems = [
@@ -152,7 +156,9 @@ export function BottomNavigation() {
         </div>
       </nav>
 
-      <LogDeuceModal open={showLogModal} onOpenChange={setShowLogModal} />
+      <Suspense fallback={null}>
+        <LogDeuceModal open={showLogModal} onOpenChange={setShowLogModal} />
+      </Suspense>
     </>
   );
 }
