@@ -13,3 +13,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** Card now shows subtle dot-grid pattern matching the OG image aesthetic. Purely visual — no logic changes.
 
 ---
+
+## Iteration 2 — Reactions: Sort picker emojis by entry popularity
+
+**Problem:** The emoji picker always showed emojis in a fixed order, ignoring which emojis were already popular on the entry.
+
+**Change:** Added `getSortedPickerEmojis()` that sorts `commonEmojis` by their usage count on the current entry (descending). Emojis with existing reactions float to the top of the picker grid, making the most contextually relevant choices immediately visible.
+
+**Result:** Picker now surfaces the crowd's favorites first — feels more social and contextual.
+
+---
