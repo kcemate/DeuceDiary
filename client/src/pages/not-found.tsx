@@ -35,7 +35,20 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div
+        className="w-full max-w-sm text-center animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden relative"
+        style={{
+          background: "linear-gradient(160deg, hsl(38,40%,97%) 0%, hsl(38,28%,93%) 100%)",
+          border: "1.5px solid hsl(45, 55%, 72%)",
+          boxShadow: "0 4px 24px hsl(45 60% 50% / 0.12), 0 1px 4px hsl(25 20% 20% / 0.08)",
+        }}
+      >
+        {/* Gold accent bar */}
+        <div
+          className="h-1.5 w-full"
+          style={{ background: "linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%)" }}
+        />
+        <div className="px-6 py-8">
         <style>{`
           @keyframes float1 {
             0%, 100% { transform: translateY(0px) rotate(-8deg); }
