@@ -236,11 +236,32 @@ export default function InviteLanding() {
         {/* ── Header ────────────────────────────────────────────────── */}
         <div className="text-center pt-4">
           <div className="text-6xl mb-3">🚽</div>
-          <h1 className="text-2xl font-extrabold text-[#2C1A0E] leading-tight">
-            Your squad is holding a seat for you.
-          </h1>
-          <p className="text-[#8B7355] text-sm mt-1">
-            Check out the group first — no signup required to peek.
+          {previewLoading ? (
+            <div className="space-y-2 animate-pulse">
+              <div className="h-7 bg-[#E8DFD0] rounded-full w-3/4 mx-auto" />
+              <div className="h-4 bg-[#F0E8DC] rounded-full w-1/2 mx-auto" />
+            </div>
+          ) : preview ? (
+            <>
+              <h1 className="text-2xl font-extrabold text-[#2C1A0E] leading-tight">
+                <span className="text-green-700">{preview.name}</span> wants you in. 🎯
+              </h1>
+              <p className="text-[#8B7355] text-sm mt-1.5">
+                {preview.memberCount} {preview.memberCount === 1 ? "person is" : "people are"} already logging — join the squad.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-extrabold text-[#2C1A0E] leading-tight">
+                Your squad is holding a seat for you.
+              </h1>
+              <p className="text-[#8B7355] text-sm mt-1">
+                Check out the group first — no signup required to peek.
+              </p>
+            </>
+          )}
+          <p className="text-[10px] text-[#C4B49A] uppercase tracking-widest mt-2 font-semibold">
+            The Strava of poop tracking
           </p>
         </div>
 
