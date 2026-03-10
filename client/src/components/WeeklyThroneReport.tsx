@@ -199,7 +199,7 @@ export function WeeklyThroneReport() {
         <DailyBarChart dailyCounts={report.dailyCounts} peakDate={report.peakDay.date} />
       )}
 
-      {/* Hero stat — total deuces */}
+      {/* Hero stat — total deuces + weekly score progress */}
       <div className="px-4 pb-1">
         <div
           className="rounded-xl px-4 py-2.5 flex items-center justify-between"
@@ -208,7 +208,7 @@ export function WeeklyThroneReport() {
             border: "1.5px solid hsl(45, 60%, 72%)",
           }}
         >
-          <div>
+          <div className="flex-1">
             <p className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(45,65%,38%)" }}>
               Deuces This Week
             </p>
@@ -218,8 +218,37 @@ export function WeeklyThroneReport() {
             >
               {report.totalDeuces}
             </p>
+            {/* Weekly score bar — 7 = perfect week */}
+            <div className="mt-2">
+              <div className="flex justify-between items-center mb-0.5">
+                <span className="text-[8px] font-bold uppercase tracking-wider" style={{ color: "hsl(45,65%,38%)" }}>
+                  Weekly Score
+                </span>
+                <span className="text-[8px] font-bold" style={{ color: "hsl(45,65%,38%)" }}>
+                  {Math.min(Math.round((report.totalDeuces / 7) * 100), 100)}%
+                </span>
+              </div>
+              <div
+                className="w-full rounded-full overflow-hidden"
+                style={{ height: "5px", background: "hsl(45, 40%, 80%)" }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.min((report.totalDeuces / 7) * 100, 100)}%`,
+                    background: report.totalDeuces >= 7
+                      ? "linear-gradient(90deg, hsl(142,60%,42%) 0%, hsl(142,60%,50%) 100%)"
+                      : "linear-gradient(90deg, hsl(45,88%,42%) 0%, hsl(45,88%,55%) 100%)",
+                    transition: "width 0.6s ease",
+                  }}
+                />
+              </div>
+              <p className="text-[8px] text-muted-foreground mt-0.5">
+                {report.totalDeuces >= 7 ? "Perfect week! 🏆" : `${7 - report.totalDeuces} to go for a perfect week`}
+              </p>
+            </div>
           </div>
-          <span className="text-4xl">💩</span>
+          <span className="text-4xl ml-3">💩</span>
         </div>
       </div>
 
