@@ -43,3 +43,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** Gamification context visible on the share card — adds urgency and motivation.
 
 ---
+
+## Iteration 5 — Reactions: Random horizontal drift on emoji floaters
+
+**Problem:** Floating emoji bursts always went straight up (left: 50%), making multiple reactions in quick succession look robotic.
+
+**Change:** Added `dx` field to `Floater` (random ±18px). Applied as CSS custom property `--dx` on each floater span. Updated `@keyframes floatUp` to use `translateX(calc(var(--dx, 0) * 1px))` for organic diagonal drift.
+
+**Result:** Each reaction burst drifts slightly left or right — feels alive and playful.
+
+---
