@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { Loader2 } from "lucide-react";
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -22,7 +23,7 @@ interface CreateGroupModalProps {
 // Fun squad icon options — toilet-themed
 const SQUAD_ICONS = ['🚽', '💩', '🔥', '👑', '⚡', '🏆', '💎', '🎯', '🌊', '🦁', '🐉', '🤝'];
 
-const NAME_MAX = 90; // leave room for "🚽 " prefix (2 chars)
+const NAME_MAX = 90; // leave room for "🚽 " prefix
 const DESC_MAX = 500;
 
 export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) {
@@ -30,6 +31,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [nameError, setNameError] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -74,26 +76,25 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
     setName("");
     setDescription("");
     setShowIconPicker(false);
+    setNameError("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowIconPicker(false);
 
     const trimmed = name.trim();
     if (!trimmed) {
-      toast({
-        title: "Name required",
-        description: "Give your squad a name!",
-        variant: "destructive",
-      });
+      setNameError("Give your squad a name!");
+      return;
+    }
+    if (trimmed.length < 2) {
+      setNameError("Name must be at least 2 characters");
       return;
     }
 
-    // Prefix the icon to the group name
-    const fullName = `${icon} ${trimmed}`;
-
     createGroupMutation.mutate({
-      name: fullName,
+      name: `${icon} ${trimmed}`,
       description: description.trim() || undefined,
     });
   };
@@ -101,6 +102,11 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) resetForm();
     onOpenChange(newOpen);
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val.slice(0, NAME_MAX));
+    if (nameError) setNameError("");
   };
 
   const nameRemaining = NAME_MAX - name.length;
@@ -121,16 +127,27 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
           <div>
             <Label className="mb-1.5 block">Squad Name</Label>
             <div className="flex gap-2">
-              {/* Icon picker button */}
-              <div className="relative">
+              {/* Icon picker */}
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowIconPicker(v => !v)}
                   className="h-10 w-12 flex items-center justify-center rounded-md border border-input bg-background text-xl hover:bg-muted transition-colors"
                   aria-label="Pick squad icon"
+                  aria-expanded={showIconPicker}
                 >
                   {icon}
                 </button>
+
+                {/* Invisible overlay to close picker on outside click */}
+                {showIconPicker && (
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowIconPicker(false)}
+                    aria-hidden
+                  />
+                )}
+
                 {showIconPicker && (
                   <div className="absolute top-12 left-0 z-50 bg-popover border rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 w-[196px]">
                     {SQUAD_ICONS.map(e => (
@@ -156,17 +173,26 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 <Input
                   placeholder="e.g. Morning Crew"
                   value={name}
-                  onChange={(e) => setName(e.target.value.slice(0, NAME_MAX))}
-                  className="pr-10"
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className={["pr-10", nameError ? "border-destructive" : ""].join(' ')}
+                  aria-invalid={!!nameError}
+                  aria-describedby={nameError ? "name-error" : undefined}
                 />
                 <span className={[
-                  "absolute right-3 top-1/2 -translate-y-1/2 text-xs tabular-nums",
+                  "absolute right-3 top-1/2 -translate-y-1/2 text-xs tabular-nums pointer-events-none",
                   nameRemaining <= 10 ? "text-destructive" : "text-muted-foreground",
                 ].join(' ')}>
                   {nameRemaining}
                 </span>
               </div>
             </div>
+
+            {/* Inline error */}
+            {nameError && (
+              <p id="name-error" className="mt-1.5 text-xs text-destructive flex items-center gap-1">
+                <span aria-hidden>⚠️</span> {nameError}
+              </p>
+            )}
           </div>
 
           {/* Description */}
@@ -180,10 +206,10 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 placeholder="What's this squad about?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value.slice(0, DESC_MAX))}
-                className="h-20 resize-none pr-16"
+                className="h-20 resize-none pb-6"
               />
               <span className={[
-                "absolute right-3 bottom-2 text-xs tabular-nums",
+                "absolute right-3 bottom-2 text-xs tabular-nums pointer-events-none",
                 descRemaining <= 50 ? "text-destructive" : "text-muted-foreground",
               ].join(' ')}>
                 {descRemaining}
@@ -194,9 +220,16 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
           <Button
             type="submit"
             className="w-full"
-            disabled={createGroupMutation.isPending || !name.trim()}
+            disabled={createGroupMutation.isPending}
           >
-            {createGroupMutation.isPending ? "Creating…" : `Create ${icon} ${name.trim() || "Squad"}`}
+            {createGroupMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating…
+              </span>
+            ) : (
+              `Create ${icon} ${name.trim() || "Squad"}`
+            )}
           </Button>
         </form>
       </DialogContent>
