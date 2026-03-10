@@ -90,3 +90,18 @@ The spec flagged this as a "duplicate to consolidate." Root cause: `routes/inter
 **Verdict:** Crown Banner now shows the king's face — consistent with the rest of the UI.
 
 ---
+
+## Iteration 6 — Show "days remaining" in Crown Banner
+
+**Date:** 2026-03-10
+**What I analyzed:** The spec explicitly lists "days remaining" as a required element of the Crown Banner. The current implementation showed `· ends Mar 10` (a fixed date string). While correct, it requires mental arithmetic from the user. "3d left" is immediately actionable — it creates urgency to compete.
+
+**What I changed:**
+- Replaced the static `ends ${date}` suffix in the Crown Banner subtitle with a computed `· Xd left` / `· ends today`
+- Uses `Math.ceil(msLeft / 86400000)` so a period ending tomorrow evening shows "1d left" not "0d left"
+- Falls back to "ends today" when ≤0 days remain
+
+**Test results:** 493/493 passed
+**Verdict:** Crown Banner now matches the spec — shows log count, streak weeks, and days remaining.
+
+---

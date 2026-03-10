@@ -440,7 +440,11 @@ export default function GroupDetail() {
                 <p className="text-xs text-muted-foreground">
                   {kingData.king.logCount} logs this period
                   {kingData.king.consecutiveWins > 1 && ` · ${kingData.king.consecutiveWins} weeks running`}
-                  {` · ends ${new Date(kingData.king.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                  {(() => {
+                    const msLeft = new Date(kingData.king.periodEnd).getTime() - Date.now();
+                    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+                    return daysLeft > 0 ? ` · ${daysLeft}d left` : " · ends today";
+                  })()}
                 </p>
               </div>
               {kingData.king.userId === user?.id && !kingData.challenge && (
