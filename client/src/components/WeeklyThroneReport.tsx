@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getStreakTier } from "@/lib/gamification";
 
 interface WeeklyReport {
   totalDeuces: number;
@@ -178,6 +179,24 @@ export function WeeklyThroneReport() {
         <p className="text-[11px] font-semibold text-foreground mt-1.5 italic">
           {getWeeklyHeadline(report)}
         </p>
+        {/* Streak tier badge */}
+        {report.longestStreak > 0 && (() => {
+          const tier = getStreakTier(report.longestStreak);
+          return (
+            <div className="flex justify-center mt-2">
+              <span
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  background: "hsl(38, 28%, 88%)",
+                  color: tier.color,
+                  border: `1px solid ${tier.color}33`,
+                }}
+              >
+                {tier.icon} {tier.label} Streak
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Daily bar chart */}
