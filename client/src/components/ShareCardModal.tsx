@@ -204,8 +204,36 @@ export function ShareCardModal({
             </div>
           </div>
 
+          {/* Rank progress bar */}
+          {rank.nextRank && (
+            <div className="mt-4 px-1">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+                  {rank.rank.icon} {rank.rank.title}
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 52%)" }}>
+                  {rank.nextRank.icon} {rank.nextRank.title}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full w-full overflow-hidden" style={{ background: "hsl(38, 25%, 84%)" }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${rank.progressToNext}%`,
+                    background: "linear-gradient(90deg, hsl(45,88%,48%) 0%, hsl(38,90%,58%) 100%)",
+                  }}
+                />
+              </div>
+              <div className="text-right mt-0.5">
+                <span className="text-[9px]" style={{ color: "hsl(25, 12%, 52%)" }}>
+                  {data?.totalLogs ?? 0} / {rank.nextRank.min} logs
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Brand watermark */}
-          <div className="mt-5 pt-4" style={{ borderTop: "1px solid hsl(38, 18%, 84%)" }}>
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid hsl(38, 18%, 84%)" }}>
             <div className="text-[12px] font-bold" style={{ color: "hsl(25, 30%, 28%)" }}>
               🚽 Deuce Diary
             </div>

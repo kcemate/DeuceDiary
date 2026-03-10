@@ -33,3 +33,13 @@ Components improved: `reactions.tsx`, `ShareCardModal.tsx`, `create-group-modal.
 **Result:** More delightful and inspiring — users see "e.g. Flush Force" or "e.g. Toilet Titans" instead of the same generic placeholder.
 
 ---
+
+## Iteration 4 — ShareCardModal: Rank progress bar
+
+**Problem:** The share card showed rank title but no sense of progression — users couldn't see how close they were to leveling up.
+
+**Change:** Added a horizontal progress bar below the stats row showing current rank → next rank with a gold fill percentage based on `rank.progressToNext`. Includes log count out of next rank threshold. Hidden when user is at max rank.
+
+**Result:** Gamification context visible on the share card — adds urgency and motivation.
+
+---
