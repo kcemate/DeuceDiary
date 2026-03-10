@@ -19,3 +19,8 @@
 **Change**: Added "Skip for now →" text link in the top-right of the header row, appearing only on steps 2 and 3 (step 1 requires username). Animates in/out with AnimatePresence. Calls onComplete() directly when clicked.
 **Result**: Tests passing (466/466)
 **Notes**: Restructured the progress indicator into a flex row with justify-between so the skip link sits naturally at the right edge. Motion button slides in from the right when step > 1.
+
+## Iteration 5 — Step 2: Create OR Join squad options
+**Change**: Replaced the static info cards in Step 2 with three interactive action cards: "Create a Squad" (expands to show squad name input), "Join a Squad" (expands to show invite code input), and "Stay Solo for now" (default selected). Mini forms expand inline with AnimatePresence height animation. CTA button label updates contextually based on selection.
+**Result**: Tests passing (466/466)
+**Notes**: Added squadMode, squadName, and inviteCode state. Using button elements as toggle cards. The expand/collapse uses height: 0 → "auto" with AnimatePresence. This is UI-only (no API calls for squad creation in onboarding flow — deferred to post-onboarding).

@@ -56,6 +56,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameReady, setUsernameReady] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [squadMode, setSquadMode] = useState<"none" | "create" | "join">("none");
+  const [squadName, setSquadName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const queryClient = useQueryClient();
 
   const goToStep = (next: number) => {
@@ -323,42 +326,119 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       🏠
                     </motion.span>
                     <h2 className="text-2xl font-extrabold text-foreground mb-2">
-                      Your Solo Deuces group is ready
+                      Squad up or fly solo?
                     </h2>
-                    <p className="text-muted-foreground">
-                      We set up a private group just for you — <strong>Solo Deuces</strong>. Every log lands here by default.
+                    <p className="text-muted-foreground text-sm">
+                      Your <strong>Solo Deuces</strong> group is ready — but you can also battle friends on the leaderboard.
                     </p>
                   </div>
 
                   <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-3 bg-muted rounded-xl p-4 border border-border">
-                      <span className="text-2xl">📝</span>
-                      <div>
-                        <p className="font-bold text-foreground text-sm">Log solo</p>
-                        <p className="text-muted-foreground text-xs">Track your throne sessions privately</p>
+                    {/* Create squad card */}
+                    <button
+                      type="button"
+                      onClick={() => setSquadMode(squadMode === "create" ? "none" : "create")}
+                      className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-all text-left ${
+                        squadMode === "create"
+                          ? "bg-primary/10 border-primary"
+                          : "bg-muted border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <span className="text-2xl">🏆</span>
+                      <div className="flex-1">
+                        <p className="font-bold text-foreground text-sm">Create a Squad</p>
+                        <p className="text-muted-foreground text-xs">Start a group and invite your friends</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 bg-muted rounded-xl p-4 border border-border">
-                      <span className="text-2xl">👥</span>
-                      <div>
-                        <p className="font-bold text-foreground text-sm">Create or join a squad</p>
-                        <p className="text-muted-foreground text-xs">Compete with friends on the leaderboard</p>
+                      <span className="text-muted-foreground text-xs">{squadMode === "create" ? "▲" : "▼"}</span>
+                    </button>
+                    <AnimatePresence>
+                      {squadMode === "create" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-1 pb-2 px-1">
+                            <Input
+                              value={squadName}
+                              onChange={(e) => setSquadName(e.target.value)}
+                              placeholder="The Royal Flushers"
+                              className="rounded-xl text-sm"
+                              maxLength={40}
+                            />
+                            <p className="text-muted-foreground text-xs mt-1 text-center">You can always create a squad later from Groups</p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Join squad card */}
+                    <button
+                      type="button"
+                      onClick={() => setSquadMode(squadMode === "join" ? "none" : "join")}
+                      className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-all text-left ${
+                        squadMode === "join"
+                          ? "bg-primary/10 border-primary"
+                          : "bg-muted border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <span className="text-2xl">🔗</span>
+                      <div className="flex-1">
+                        <p className="font-bold text-foreground text-sm">Join a Squad</p>
+                        <p className="text-muted-foreground text-xs">Enter an invite code from a friend</p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 bg-muted rounded-xl p-4 border border-border">
-                      <span className="text-2xl">🔥</span>
+                      <span className="text-muted-foreground text-xs">{squadMode === "join" ? "▲" : "▼"}</span>
+                    </button>
+                    <AnimatePresence>
+                      {squadMode === "join" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-1 pb-2 px-1">
+                            <Input
+                              value={inviteCode}
+                              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                              placeholder="ABC123"
+                              className="rounded-xl text-sm text-center tracking-widest font-mono"
+                              maxLength={10}
+                            />
+                            <p className="text-muted-foreground text-xs mt-1 text-center">Get the code from a friend who invited you</p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Stay solo */}
+                    <button
+                      type="button"
+                      onClick={() => setSquadMode("none")}
+                      className={`w-full flex items-center gap-3 rounded-xl p-4 border transition-all text-left ${
+                        squadMode === "none"
+                          ? "bg-primary/10 border-primary"
+                          : "bg-muted border-border hover:border-primary/40"
+                      }`}
+                    >
+                      <span className="text-2xl">🚽</span>
                       <div>
-                        <p className="font-bold text-foreground text-sm">Build your streak</p>
-                        <p className="text-muted-foreground text-xs">Log daily to keep the fire alive</p>
+                        <p className="font-bold text-foreground text-sm">Stay Solo for now</p>
+                        <p className="text-muted-foreground text-xs">Log privately — squads can wait</p>
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   <Button
                     onClick={() => goToStep(3)}
                     className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-xl"
                   >
-                    Got it, let's go! 💪
+                    {squadMode === "create" && squadName ? `Create "${squadName}" & continue 💪` :
+                     squadMode === "join" && inviteCode ? `Join with code ${inviteCode} 🔗` :
+                     "Continue to first log! 💪"}
                   </Button>
                 </CardContent>
               </Card>
