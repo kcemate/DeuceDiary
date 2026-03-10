@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useParams, useLocation } from "wouter";
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +85,9 @@ export default function GroupDetail() {
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("feed");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [showChallengeHistory, setShowChallengeHistory] = useState(false);
+  const [challengeInput, setChallengeInput] = useState({ templateKey: "", customTitle: "" });
 
   const { data: groupDetail, isLoading } = useQuery<GroupDetail>({
     queryKey: ["/api/groups", groupId],
@@ -93,6 +97,64 @@ export default function GroupDetail() {
   const { data: streakData } = useQuery<StreakData>({
     queryKey: [`/api/groups/${groupId}/streak`],
     enabled: !!groupId,
+  });
+
+  interface KingData {
+    king: { userId: string; username: string | null; profileImageUrl: string | null; logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string } | null;
+    challenge: { id: number; title: string; templateKey: string | null; periodStart: string; periodEnd: string; completionCount: number; isAutoSelected: boolean } | null;
+    templates: { key: string; title: string; description: string }[];
+  }
+  interface ChallengeProgressData {
+    challenge: { id: number; title: string; templateKey: string | null; kingId: string; periodStart: string; periodEnd: string; isAutoSelected: boolean } | null;
+    completionCount: number;
+    memberCount: number;
+    userCompleted: boolean;
+  }
+  interface ChallengeHistoryItem {
+    king: { userId: string; username: string | null; profileImageUrl: string | null; logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string };
+    challenge: { id: number; title: string; templateKey: string | null; isAutoSelected: boolean } | null;
+    completionCount: number;
+  }
+
+  const { data: kingData } = useQuery<KingData>({
+    queryKey: [`/api/groups/${groupId}/king`],
+    enabled: !!groupId,
+  });
+
+  const { data: challengeProgress } = useQuery<ChallengeProgressData>({
+    queryKey: [`/api/groups/${groupId}/challenge`],
+    enabled: !!groupId,
+  });
+
+  const { data: challengeHistory } = useQuery<ChallengeHistoryItem[]>({
+    queryKey: [`/api/groups/${groupId}/challenge/history`],
+    enabled: !!groupId && showChallengeHistory,
+  });
+
+  const setChallengesMutation = useMutation({
+    mutationFn: async (body: { templateKey?: string; title?: string }) => {
+      const response = await fetch(`/api/groups/${groupId}/challenge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message ?? "Failed to set challenge");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      setShowChallengeModal(false);
+      setChallengeInput({ templateKey: "", customTitle: "" });
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/king`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/challenge`] });
+      toast({ title: "Challenge set! 👑", description: "Your squad has been challenged." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Couldn't set challenge", description: error.message, variant: "destructive" });
+    },
   });
 
   const leaveGroupMutation = useMutation({
@@ -329,6 +391,76 @@ export default function GroupDetail() {
           )}
         </div>
       </div>
+
+      {/* ── DEUCE KING BANNER ── */}
+      {kingData?.king && (
+        <Card className="shadow-sm mb-3 border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl shrink-0">👑</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-black text-sm text-foreground">
+                    {kingData.king.username ?? "Anonymous"} is Deuce King
+                  </span>
+                  {kingData.king.consecutiveWins >= 3 && (
+                    <span className="text-xs font-bold text-yellow-700 dark:text-yellow-400 bg-yellow-200 dark:bg-yellow-900/40 px-1.5 py-0.5 rounded-full">Dynasty 👑👑👑</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {kingData.king.logCount} logs this period
+                  {kingData.king.consecutiveWins > 1 && ` · ${kingData.king.consecutiveWins} weeks running`}
+                  {` · ends ${new Date(kingData.king.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                </p>
+              </div>
+              {kingData.king.userId === user?.id && !kingData.challenge && (
+                <Button
+                  size="sm"
+                  className="shrink-0 text-xs rounded-xl bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                  onClick={() => setShowChallengeModal(true)}
+                >
+                  Set Challenge
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── ACTIVE CHALLENGE CARD ── */}
+      {challengeProgress?.challenge && (
+        <Card className="shadow-sm mb-3 border-green-200 dark:border-green-800">
+          <CardContent className="p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-xl shrink-0 mt-0.5">🎯</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-bold text-sm text-foreground">This Week's Challenge</span>
+                  {challengeProgress.challenge.isAutoSelected && (
+                    <span className="text-xs text-muted-foreground">auto</span>
+                  )}
+                </div>
+                <p className="text-sm text-foreground font-medium mb-2">{challengeProgress.challenge.title}</p>
+                {/* Progress bar */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${challengeProgress.memberCount > 0 ? Math.round((challengeProgress.completionCount / challengeProgress.memberCount) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {challengeProgress.completionCount}/{challengeProgress.memberCount}
+                  </span>
+                </div>
+                {challengeProgress.userCompleted && (
+                  <p className="text-xs font-bold text-green-600 dark:text-green-400 mt-1.5">✅ You completed this!</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* New member onboarding banner */}
       {groupDetail.entries.length > 0 && !groupDetail.entries.some(e => e.user.id === user?.id) && (
@@ -756,8 +888,123 @@ export default function GroupDetail() {
 
           {/* Weekly Throne Report */}
           {groupId && <GroupWeeklyReport groupId={groupId} />}
+
+          {/* Challenge History */}
+          <Card className="shadow-sm mt-3">
+            <CardContent className="p-3">
+              <button
+                className="w-full flex items-center justify-between"
+                onClick={() => setShowChallengeHistory((v) => !v)}
+              >
+                <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                  <span>📜</span> Challenge History
+                </span>
+                <span className="text-muted-foreground text-sm">{showChallengeHistory ? "▲" : "▼"}</span>
+              </button>
+              {showChallengeHistory && (
+                <div className="mt-3 space-y-3">
+                  {!challengeHistory || challengeHistory.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">No past challenges yet.</p>
+                  ) : (
+                    challengeHistory.map((item, i) => (
+                      <div key={i} className="border-t pt-3 first:border-t-0 first:pt-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-sm">👑</span>
+                          <span className="text-xs font-bold text-foreground">{item.king.username ?? "Anonymous"}</span>
+                          <span className="text-xs text-muted-foreground">· {item.king.logCount} logs</span>
+                          {item.king.consecutiveWins >= 3 && <span className="text-xs text-yellow-600">Dynasty</span>}
+                        </div>
+                        {item.challenge ? (
+                          <div>
+                            <p className="text-xs font-medium text-foreground">{item.challenge.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {item.completionCount} member{item.completionCount !== 1 ? "s" : ""} completed
+                              {item.challenge.isAutoSelected && " · auto-selected"}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">No challenge set</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(item.king.periodStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} –{" "}
+                          {new Date(item.king.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* ── CHALLENGE SETTER MODAL ── */}
+      <Dialog open={showChallengeModal} onOpenChange={setShowChallengeModal}>
+        <DialogContent className="max-w-sm mx-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span>👑</span> Set Your Challenge
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You're Deuce King — pick a challenge for your squad this week!
+            </p>
+
+            {/* Template grid */}
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Pick a template</p>
+              <div className="grid grid-cols-1 gap-2">
+                {(kingData?.templates ?? []).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setChallengeInput({ templateKey: t.key, customTitle: "" })}
+                    className={`text-left p-2.5 rounded-xl border text-sm transition-colors ${
+                      challengeInput.templateKey === t.key
+                        ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 font-bold"
+                        : "border-border hover:border-yellow-300"
+                    }`}
+                  >
+                    <span className="font-semibold">{t.title}</span>
+                    <span className="text-xs text-muted-foreground block">{t.description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom text (premium only) */}
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-1">
+                Or write your own <span className="text-yellow-600">✦ Premium</span>
+              </p>
+              <textarea
+                className="w-full border rounded-xl p-2 text-sm resize-none bg-background"
+                rows={2}
+                maxLength={140}
+                placeholder="Custom challenge (max 140 chars)…"
+                value={challengeInput.customTitle}
+                onChange={(e) => setChallengeInput({ templateKey: "", customTitle: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground text-right">{challengeInput.customTitle.length}/140</p>
+            </div>
+
+            <Button
+              className="w-full font-bold"
+              disabled={!challengeInput.templateKey && !challengeInput.customTitle.trim() || setChallengesMutation.isPending}
+              onClick={() => {
+                if (challengeInput.templateKey) {
+                  setChallengesMutation.mutate({ templateKey: challengeInput.templateKey });
+                } else {
+                  setChallengesMutation.mutate({ title: challengeInput.customTitle.trim() });
+                }
+              }}
+            >
+              {setChallengesMutation.isPending ? "Setting…" : "Set Challenge 👑"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

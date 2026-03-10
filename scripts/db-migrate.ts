@@ -116,6 +116,58 @@ const migrations: { name: string; sql: string }[] = [
       created_at timestamp DEFAULT now()
     )`,
   },
+  // --- Deuce King Challenge tables ---
+  {
+    name: "table.deuce_kings",
+    sql: `CREATE TABLE IF NOT EXISTS deuce_kings (
+      id serial PRIMARY KEY NOT NULL,
+      group_id varchar NOT NULL REFERENCES groups(id),
+      user_id varchar NOT NULL REFERENCES users(id),
+      period_start timestamptz NOT NULL,
+      period_end timestamptz NOT NULL,
+      log_count integer NOT NULL,
+      consecutive_wins integer NOT NULL DEFAULT 1,
+      created_at timestamptz NOT NULL DEFAULT NOW()
+    )`,
+  },
+  {
+    name: "idx.deuce_kings_group_period",
+    sql: "CREATE INDEX IF NOT EXISTS idx_deuce_kings_group_period ON deuce_kings(group_id, period_start)",
+  },
+  {
+    name: "table.challenges",
+    sql: `CREATE TABLE IF NOT EXISTS challenges (
+      id serial PRIMARY KEY NOT NULL,
+      group_id varchar NOT NULL REFERENCES groups(id),
+      king_id varchar NOT NULL REFERENCES users(id),
+      deuce_king_id integer NOT NULL REFERENCES deuce_kings(id),
+      title varchar(140) NOT NULL,
+      template_key varchar(50),
+      period_start timestamptz NOT NULL,
+      period_end timestamptz NOT NULL,
+      is_auto_selected boolean NOT NULL DEFAULT FALSE,
+      created_at timestamptz NOT NULL DEFAULT NOW()
+    )`,
+  },
+  {
+    name: "idx.challenges_group_period",
+    sql: "CREATE INDEX IF NOT EXISTS idx_challenges_group_period ON challenges(group_id, period_start)",
+  },
+  {
+    name: "table.challenge_completions",
+    sql: `CREATE TABLE IF NOT EXISTS challenge_completions (
+      id serial PRIMARY KEY NOT NULL,
+      challenge_id integer NOT NULL REFERENCES challenges(id),
+      user_id varchar NOT NULL REFERENCES users(id),
+      completed_at timestamptz NOT NULL DEFAULT NOW(),
+      UNIQUE(challenge_id, user_id)
+    )`,
+  },
+  {
+    name: "idx.challenge_completions_challenge",
+    sql: "CREATE INDEX IF NOT EXISTS idx_challenge_completions_challenge ON challenge_completions(challenge_id)",
+  },
+
   // broadcasts table
   {
     name: "deuce_entries.ghost",

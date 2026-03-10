@@ -41,6 +41,14 @@ import {
   type BingoSquare,
   passportStamps,
   type PassportStamp,
+  deuceKings,
+  challenges,
+  challengeCompletions,
+  type DeuceKing,
+  type InsertDeuceKing,
+  type Challenge,
+  type InsertChallenge,
+  type ChallengeCompletion,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, sql, inArray, gte, lt, lte, isNull } from "drizzle-orm";
@@ -2293,6 +2301,268 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(passportStamps)
       .where(eq(passportStamps.userId, userId));
+  }
+
+  // --- Deuce King Challenge methods ---
+
+  async getCurrentKing(groupId: string): Promise<(DeuceKing & { user: User | undefined }) | null> {
+    const now = new Date();
+    const [king] = await db
+      .select()
+      .from(deuceKings)
+      .where(
+        and(
+          eq(deuceKings.groupId, groupId),
+          lte(deuceKings.periodStart, now),
+          gte(deuceKings.periodEnd, now),
+        ),
+      )
+      .orderBy(desc(deuceKings.periodStart))
+      .limit(1);
+
+    if (!king) return null;
+    const [user] = await db.select().from(users).where(eq(users.id, king.userId)).limit(1);
+    return { ...king, user };
+  }
+
+  async getActiveChallenge(groupId: string): Promise<(Challenge & { completionCount: number }) | null> {
+    const now = new Date();
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(
+        and(
+          eq(challenges.groupId, groupId),
+          lte(challenges.periodStart, now),
+          gte(challenges.periodEnd, now),
+        ),
+      )
+      .orderBy(desc(challenges.periodStart))
+      .limit(1);
+
+    if (!challenge) return null;
+
+    const [{ completionCount }] = await db
+      .select({ completionCount: count() })
+      .from(challengeCompletions)
+      .where(eq(challengeCompletions.challengeId, challenge.id));
+
+    return { ...challenge, completionCount: completionCount ?? 0 };
+  }
+
+  async getChallengeWithMemberProgress(groupId: string): Promise<{
+    challenge: Challenge | null;
+    completions: ChallengeCompletion[];
+    memberCount: number;
+  }> {
+    const now = new Date();
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(
+        and(
+          eq(challenges.groupId, groupId),
+          lte(challenges.periodStart, now),
+          gte(challenges.periodEnd, now),
+        ),
+      )
+      .orderBy(desc(challenges.periodStart))
+      .limit(1);
+
+    if (!challenge) {
+      const [{ memberCount }] = await db
+        .select({ memberCount: count() })
+        .from(groupMembers)
+        .where(eq(groupMembers.groupId, groupId));
+      return { challenge: null, completions: [], memberCount: memberCount ?? 0 };
+    }
+
+    const completions = await db
+      .select()
+      .from(challengeCompletions)
+      .where(eq(challengeCompletions.challengeId, challenge.id));
+
+    const [{ memberCount }] = await db
+      .select({ memberCount: count() })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    return { challenge, completions, memberCount: memberCount ?? 0 };
+  }
+
+  async createChallenge(data: InsertChallenge): Promise<Challenge> {
+    const [challenge] = await db.insert(challenges).values(data).returning();
+    return challenge;
+  }
+
+  async getChallenge(challengeId: number): Promise<Challenge | null> {
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.id, challengeId))
+      .limit(1);
+    return challenge ?? null;
+  }
+
+  async getChallengeHistory(groupId: string, limit = 10): Promise<{
+    king: DeuceKing & { user: User | undefined };
+    challenge: Challenge | null;
+    completionCount: number;
+  }[]> {
+    const now = new Date();
+    const pastKings = await db
+      .select()
+      .from(deuceKings)
+      .where(
+        and(
+          eq(deuceKings.groupId, groupId),
+          lt(deuceKings.periodEnd, now),
+        ),
+      )
+      .orderBy(desc(deuceKings.periodStart))
+      .limit(limit);
+
+    const result = [];
+    for (const king of pastKings) {
+      const [user] = await db.select().from(users).where(eq(users.id, king.userId)).limit(1);
+      const [challenge] = await db
+        .select()
+        .from(challenges)
+        .where(
+          and(
+            eq(challenges.groupId, groupId),
+            eq(challenges.deuceKingId, king.id),
+          ),
+        )
+        .limit(1);
+
+      const completionCount = challenge
+        ? (await db
+            .select({ c: count() })
+            .from(challengeCompletions)
+            .where(eq(challengeCompletions.challengeId, challenge.id)))[0]?.c ?? 0
+        : 0;
+
+      result.push({ king: { ...king, user }, challenge: challenge ?? null, completionCount });
+    }
+    return result;
+  }
+
+  async createDeuceKing(data: InsertDeuceKing): Promise<DeuceKing> {
+    const [king] = await db.insert(deuceKings).values(data).returning();
+    return king;
+  }
+
+  async getLatestKingForGroup(groupId: string): Promise<DeuceKing | null> {
+    const [king] = await db
+      .select()
+      .from(deuceKings)
+      .where(eq(deuceKings.groupId, groupId))
+      .orderBy(desc(deuceKings.periodStart))
+      .limit(1);
+    return king ?? null;
+  }
+
+  async getGroupLogCountsForPeriod(
+    groupId: string,
+    periodStart: Date,
+    periodEnd: Date,
+  ): Promise<{ userId: string; logCount: number; firstLogAt: Date | null }[]> {
+    const rows = await db
+      .select({
+        userId: deuceEntries.userId,
+        logCount: count(),
+        firstLogAt: sql<Date>`MIN(${deuceEntries.loggedAt})`,
+      })
+      .from(deuceEntries)
+      .where(
+        and(
+          eq(deuceEntries.groupId, groupId),
+          gte(deuceEntries.loggedAt, periodStart),
+          lt(deuceEntries.loggedAt, periodEnd),
+        ),
+      )
+      .groupBy(deuceEntries.userId);
+
+    return rows.map((r) => ({
+      userId: r.userId,
+      logCount: r.logCount,
+      firstLogAt: r.firstLogAt,
+    }));
+  }
+
+  async getUserStreakInGroup(userId: string, groupId: string): Promise<number> {
+    // Count consecutive days with at least one log up to now
+    const entries = await db
+      .select({ loggedAt: deuceEntries.loggedAt })
+      .from(deuceEntries)
+      .where(and(eq(deuceEntries.userId, userId), eq(deuceEntries.groupId, groupId)))
+      .orderBy(desc(deuceEntries.loggedAt));
+
+    if (entries.length === 0) return 0;
+
+    const days = new Set(entries.map((e) => e.loggedAt.toISOString().slice(0, 10)));
+    const sortedDays = Array.from(days).sort().reverse();
+
+    let streak = 0;
+    let prev: string | null = null;
+    for (const day of sortedDays) {
+      if (prev === null) {
+        streak = 1;
+        prev = day;
+        continue;
+      }
+      const d1 = new Date(prev);
+      const d2 = new Date(day);
+      const diff = Math.round((d1.getTime() - d2.getTime()) / 86400000);
+      if (diff === 1) {
+        streak++;
+        prev = day;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  async getAllGroupIds(): Promise<string[]> {
+    const rows = await db.select({ id: groups.id }).from(groups);
+    return rows.map((r) => r.id);
+  }
+
+  async addChallengeCompletion(challengeId: number, userId: string): Promise<ChallengeCompletion | null> {
+    try {
+      const [completion] = await db
+        .insert(challengeCompletions)
+        .values({ challengeId, userId })
+        .returning();
+      return completion;
+    } catch {
+      return null; // unique constraint violation = already completed
+    }
+  }
+
+  async getUserChallengeCompletion(challengeId: number, userId: string): Promise<ChallengeCompletion | null> {
+    const [completion] = await db
+      .select()
+      .from(challengeCompletions)
+      .where(
+        and(
+          eq(challengeCompletions.challengeId, challengeId),
+          eq(challengeCompletions.userId, userId),
+        ),
+      )
+      .limit(1);
+    return completion ?? null;
+  }
+
+  async getExistingChallengeForKing(deuceKingId: number): Promise<Challenge | null> {
+    const [challenge] = await db
+      .select()
+      .from(challenges)
+      .where(eq(challenges.deuceKingId, deuceKingId))
+      .limit(1);
+    return challenge ?? null;
   }
 }
 

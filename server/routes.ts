@@ -13,6 +13,8 @@ import { registerClerkWebhook } from "./routes/webhooks";
 import { createBingoRouter } from "./routes/bingo";
 import { createPassportRouter } from "./routes/passport";
 import { createPremiumRouter } from "./routes/premium";
+import { createKingRouter } from "./routes/king";
+import { getRandomTemplate } from "./challengeTemplates";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
 import sharp from "sharp";
@@ -312,6 +314,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[STREAK CHECK ERROR]', error);
       Errors.internal(res, 'Streak check failed');
+    }
+  });
+
+  // --- Crown transfer: calculate weekly kings and transfer crowns ---
+  app.post('/api/internal/crown-transfer', async (req, res) => {
+    const key = req.headers['x-internal-key'];
+    const internalKey = process.env.INTERNAL_API_KEY;
+    if (!internalKey || key !== internalKey) {
+      return Errors.unauthorized(res);
+    }
+
+    const results: { groupId: string; winner: string | null; error?: string }[] = [];
+
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay();
+      const daysSinceMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMon));
+      const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const groupIds = await storage.getAllGroupIds();
+
+      for (const groupId of groupIds) {
+        try {
+          const logCounts = await storage.getGroupLogCountsForPeriod(groupId, periodStart, periodEnd);
+
+          if (logCounts.length === 0) {
+            results.push({ groupId, winner: null });
+            continue;
+          }
+
+          const maxLogs = Math.max(...logCounts.map((l) => l.logCount));
+          const topTiers = logCounts.filter((l) => l.logCount === maxLogs);
+
+          let winner = topTiers[0];
+          if (topTiers.length > 1) {
+            const withStreaks = await Promise.all(
+              topTiers.map(async (t) => ({
+                ...t,
+                streak: await storage.getUserStreakInGroup(t.userId, groupId),
+              })),
+            );
+            const maxStreak = Math.max(...withStreaks.map((w) => w.streak));
+            const topStreaks = withStreaks.filter((w) => w.streak === maxStreak);
+            if (topStreaks.length > 1) {
+              topStreaks.sort((a, b) => {
+                const aTime = a.firstLogAt?.getTime() ?? Infinity;
+                const bTime = b.firstLogAt?.getTime() ?? Infinity;
+                return aTime - bTime;
+              });
+            }
+            winner = topStreaks[0];
+          }
+
+          const prevKing = await storage.getLatestKingForGroup(groupId);
+          const consecutiveWins =
+            prevKing && prevKing.userId === winner.userId ? prevKing.consecutiveWins + 1 : 1;
+
+          const kingRecord = await storage.createDeuceKing({
+            groupId,
+            userId: winner.userId,
+            periodStart,
+            periodEnd,
+            logCount: winner.logCount,
+            consecutiveWins,
+          });
+
+          const winnerUser = await storage.getUser(winner.userId);
+          const fullName = `${winnerUser?.firstName ?? ''} ${winnerUser?.lastName ?? ''}`.trim();
+          const displayName = winnerUser?.username ?? (fullName || 'Someone');
+          const dynastyNote = consecutiveWins >= 3 ? ' 👑👑👑 Dynasty!' : '';
+          await storage.createBroadcast({
+            groupId,
+            userId: winner.userId,
+            milestone: `👑 ${displayName} is the new Deuce King with ${winner.logCount} logs!${dynastyNote}`,
+          });
+
+          const existing = await storage.getExistingChallengeForKing(kingRecord.id);
+          if (!existing) {
+            const template = getRandomTemplate();
+            await storage.createChallenge({
+              groupId,
+              kingId: winner.userId,
+              deuceKingId: kingRecord.id,
+              title: template.title,
+              templateKey: template.key,
+              periodStart,
+              periodEnd,
+              isAutoSelected: true,
+            });
+          }
+
+          results.push({ groupId, winner: winner.userId });
+        } catch (groupErr: any) {
+          console.error(`[crown-transfer] group ${groupId} error:`, groupErr.message);
+          results.push({ groupId, winner: null, error: groupErr.message });
+        }
+      }
+
+      res.json({ processed: groupIds.length, results });
+    } catch (error: any) {
+      console.error('[CROWN TRANSFER ERROR]', error);
+      Errors.internal(res, 'Crown transfer failed');
     }
   });
 
@@ -2354,6 +2459,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Passport routes (premium) ---
   app.use(createPassportRouter());
+
+  // --- Deuce King Challenge routes ---
+  app.use(createKingRouter());
 
   // Cleanup expired invites periodically
   setInterval(async () => {

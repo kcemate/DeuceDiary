@@ -241,6 +241,45 @@ export const passportStamps = pgTable("passport_stamps", {
   unique("uq_passport_stamps_user_city_country").on(table.userId, table.city, table.country),
 ]);
 
+// --- Deuce King Challenge tables ---
+export const deuceKings = pgTable("deuce_kings", {
+  id: serial("id").primaryKey(),
+  groupId: varchar("group_id").notNull().references(() => groups.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+  logCount: integer("log_count").notNull(),
+  consecutiveWins: integer("consecutive_wins").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_deuce_kings_group_period").on(table.groupId, table.periodStart),
+]);
+
+export const challenges = pgTable("challenges", {
+  id: serial("id").primaryKey(),
+  groupId: varchar("group_id").notNull().references(() => groups.id),
+  kingId: varchar("king_id").notNull().references(() => users.id),
+  deuceKingId: integer("deuce_king_id").notNull().references(() => deuceKings.id),
+  title: varchar("title", { length: 140 }).notNull(),
+  templateKey: varchar("template_key", { length: 50 }),
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+  isAutoSelected: boolean("is_auto_selected").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("idx_challenges_group_period").on(table.groupId, table.periodStart),
+]);
+
+export const challengeCompletions = pgTable("challenge_completions", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").notNull().references(() => challenges.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserChallenge: unique().on(table.challengeId, table.userId),
+  challengeIdx: index("idx_challenge_completions_challenge").on(table.challengeId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupMemberships: many(groupMembers),
@@ -405,6 +444,12 @@ export type BingoCompletion = typeof bingoCompletions.$inferSelect;
 export type InsertBingoCompletion = typeof bingoCompletions.$inferInsert;
 export type PassportStamp = typeof passportStamps.$inferSelect;
 export type InsertPassportStamp = typeof passportStamps.$inferInsert;
+export type DeuceKing = typeof deuceKings.$inferSelect;
+export type InsertDeuceKing = typeof deuceKings.$inferInsert;
+export type Challenge = typeof challenges.$inferSelect;
+export type InsertChallenge = typeof challenges.$inferInsert;
+export type ChallengeCompletion = typeof challengeCompletions.$inferSelect;
+export type InsertChallengeCompletion = typeof challengeCompletions.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({
