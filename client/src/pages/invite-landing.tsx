@@ -151,11 +151,22 @@ export default function InviteLanding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showDemo, setShowDemo] = useState(false);
+  const [visibleActivity, setVisibleActivity] = useState(0);
 
   const { data: preview, isLoading: previewLoading, error: previewError } = useQuery<GroupPreview>({
     queryKey: [`/api/groups/preview/${code}`],
     enabled: !!code,
   });
+
+  // Stagger-reveal activity entries when preview loads
+  useEffect(() => {
+    if (!preview?.recentActivity?.length) return;
+    const count = preview.recentActivity.length;
+    const timers = Array.from({ length: count }, (_, i) =>
+      setTimeout(() => setVisibleActivity(i + 1), i * 200 + 400)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [preview]);
 
   async function handleJoinWithLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -375,16 +386,19 @@ export default function InviteLanding() {
             )}
 
             {/* Recent activity */}
-            {preview.recentActivity.length > 0 && (
-              <div className="px-5 py-3">
-                <p className="text-[10px] font-bold text-[#A89070] uppercase tracking-widest mb-2">
-                  Recent Activity
-                </p>
+            <div className="px-5 py-3">
+              <p className="text-[10px] font-bold text-[#A89070] uppercase tracking-widest mb-2">
+                Live Feed
+              </p>
+              {preview.recentActivity.length > 0 ? (
                 <div className="space-y-2.5">
                   {preview.recentActivity.map((entry, i) => (
-                    <div key={i} className="flex gap-2">
+                    <div
+                      key={i}
+                      className={`flex gap-2 transition-all duration-300 ${i < visibleActivity ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+                    >
                       <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-sm flex-shrink-0">
-                        🚽
+                        {["🚽", "💪", "🔥", "🏆", "✨"][i % 5]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-1.5">
@@ -401,8 +415,10 @@ export default function InviteLanding() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-[#A89070] italic">No activity yet — be the first to log! 💩</p>
+              )}
+            </div>
           </div>
         ) : null}
 
