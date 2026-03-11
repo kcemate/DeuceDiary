@@ -237,7 +237,7 @@ export default function InviteLanding() {
   // ── 404 state ────────────────────────────────────────────────────────────
   if (previewError || (!previewLoading && !preview)) {
     return (
-      <div className="min-h-screen bg-[#FBF6EF] flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-[#FBF6EF] text-[#2C1A0E] flex flex-col items-center justify-center p-4" data-theme="cream">
         <div className="max-w-sm w-full text-center space-y-5">
           <div className="text-7xl animate-bounce">🚽</div>
           <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-6 space-y-3">
@@ -264,7 +264,7 @@ export default function InviteLanding() {
   const streakTier = preview ? getStreakTier(preview.currentStreak) : null;
 
   return (
-    <div className="min-h-screen bg-[#FBF6EF]">
+    <div className="min-h-screen bg-[#FBF6EF] text-[#2C1A0E]" data-theme="cream">
       <div className="max-w-md mx-auto px-4 py-8 pb-28 space-y-5">
 
         {/* ── Header ────────────────────────────────────────────────── */}
@@ -509,7 +509,7 @@ export default function InviteLanding() {
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     autoFocus
-                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
                   />
                   {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
                   <Button
@@ -532,7 +532,7 @@ export default function InviteLanding() {
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     autoFocus
-                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
                   />
                   {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
                   <Button

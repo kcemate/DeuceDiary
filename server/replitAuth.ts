@@ -118,7 +118,7 @@ export async function setupAuth(app: Express) {
                   userId,
                   role: "member",
                 });
-                await storage.deleteInvite(inviteCode);
+                // Don't delete the invite — it should be reusable by multiple people
               }
               const group = await storage.getGroupById(invite.groupId);
               if (group) {

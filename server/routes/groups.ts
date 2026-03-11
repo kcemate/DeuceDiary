@@ -168,7 +168,7 @@ export function createGroupsRouter(): Router {
         role: "member",
       });
 
-      await storage.deleteInvite(inviteId);
+      // Don't delete the invite — it should be reusable by multiple people
 
       track("group_joined", userId);
       Events.groupJoined(userId, invite.groupId);
