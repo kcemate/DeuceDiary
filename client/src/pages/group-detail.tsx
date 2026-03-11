@@ -626,7 +626,15 @@ export default function GroupDetail() {
           {/* Invite section — premium required for multi-member squads */}
           <Card className="shadow-sm mb-4 border-primary/20 bg-primary/5">
             <CardContent className="p-3">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Grow your squad</p>
+              {/* Dynamic header: shows streak momentum when available */}
+              <p className="text-xs font-semibold text-muted-foreground mb-1">
+                {streakData?.currentStreak && streakData.currentStreak >= 3
+                  ? `🔥 ${streakData.currentStreak}-day streak — bring in some competition!`
+                  : "Challenge a friend to join your squad"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mb-2">
+                They'll see your live feed before they even sign up.
+              </p>
               {user?.subscription !== "premium" && (
                 <div className="mb-2 flex items-center gap-1.5 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg px-2 py-1.5">
                   <span>👑</span>
@@ -654,7 +662,7 @@ export default function GroupDetail() {
                     copySuccess ? "border-green-500 text-green-600 bg-green-50" : ""
                   }`}
                 >
-                  {copySuccess ? "✅ Link Copied!" : inviteCrewMutation.isPending ? "Generating..." : "📋 Copy Invite Link"}
+                  {copySuccess ? "✅ Link Copied!" : inviteCrewMutation.isPending ? "Generating..." : "📋 Copy Challenge Link"}
                 </Button>
                 <Button
                   onClick={async () => {
@@ -665,9 +673,12 @@ export default function GroupDetail() {
                     }
                     if (!code) return;
                     const link = `${window.location.origin}/invite/${code}`;
-                    const text = `Join my squad "${groupDetail.group.name}" on Deuce Diary! 🚽\n${link}`;
+                    const memberCount = groupDetail.members.length;
+                    const streak = streakData?.currentStreak;
+                    const streakLine = streak && streak >= 3 ? ` We're on a ${streak}-day streak.` : "";
+                    const text = `Think you can keep up? ${memberCount} of us are logging on Deuce Diary.${streakLine} Join "${groupDetail.group.name}" here: ${link}`;
                     if (navigator.share) {
-                      try { await navigator.share({ title: "Join my squad!", text }); } catch {}
+                      try { await navigator.share({ title: "Think you can keep up?", text }); } catch {}
                     } else {
                       try { await navigator.clipboard.writeText(text); toast({ title: "Copied!", description: "Share with your crew." }); } catch {}
                     }
@@ -676,7 +687,7 @@ export default function GroupDetail() {
                   size="sm"
                   className="flex-1 rounded-xl text-xs font-bold"
                 >
-                  📤 Share
+                  🎯 Challenge a Friend
                 </Button>
               </div>
               {inviteCode && (

@@ -457,6 +457,20 @@ export default function InviteLanding() {
           </button>
         )}
 
+        {/* ── Value strip ───────────────────────────────────────────── */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {[
+            { icon: "🔥", label: "Daily streak" },
+            { icon: "🏆", label: "Squad leaderboard" },
+            { icon: "🚽", label: "No email needed" },
+          ].map((item, i) => (
+            <div key={i} className="bg-white rounded-xl border border-[#E8DFD0] py-2.5 px-1 shadow-sm">
+              <p className="text-lg">{item.icon}</p>
+              <p className="text-[10px] font-semibold text-[#5C4A35] mt-0.5 leading-tight">{item.label}</p>
+            </div>
+          ))}
+        </div>
+
         {/* ── Action area ───────────────────────────────────────────── */}
         <div id="cta-form" className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-4">
           <p className="text-center text-sm font-semibold text-[#2C1A0E]">
@@ -555,7 +569,12 @@ export default function InviteLanding() {
       {/* ── Sticky Bottom CTA bar (mobile) ────────────────────────── */}
       {!authLoading && !isAuthenticated && preview && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#E8DFD0] px-4 py-3 safe-area-pb">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto space-y-1.5">
+            <p className="text-center text-[10px] text-[#A89070] font-semibold">
+              {preview.currentStreak >= 3
+                ? `🔥 ${preview.currentStreak}-day streak · ${preview.memberCount} logging · Free`
+                : `${preview.memberCount} ${preview.memberCount === 1 ? "person" : "people"} already logging · Free`}
+            </p>
             <Button
               onClick={() => {
                 document.getElementById("cta-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -564,7 +583,7 @@ export default function InviteLanding() {
               }}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 text-base rounded-full shadow-lg shadow-green-600/30"
             >
-              🚽 Join {preview.name} — Free
+              🚽 Join {preview.name} — Take a Seat
             </Button>
           </div>
         </div>
