@@ -849,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Invite routes (free)
-  app.post('/api/groups/:groupId/invite', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.post('/api/groups/:groupId/invite', isAuthenticated, requiresPremiumFor('squad_invite'), requireGroupMember(), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -890,11 +890,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ group, message: "Already a member of this group" });
       }
       
-      // Free users limited to 3 squads
+      // Multi-member squads require premium — solo squads are free
       if (!isPremiumUser(req.user)) {
-        const userGroups = await storage.getUserGroups(userId);
-        if (userGroups.length >= 3) {
-          return Errors.upgradRequired(res, 'unlimited_squads');
+        const members = await storage.getGroupMembers(invite.groupId);
+        if (members.length >= 1) {
+          return res.status(403).json({ feature: 'squad_social', message: 'Premium required to join multi-member squads', upgrade: true });
         }
       }
 

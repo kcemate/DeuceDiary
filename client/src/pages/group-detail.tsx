@@ -623,10 +623,16 @@ export default function GroupDetail() {
       {/* ── MEMBERS TAB ── */}
       {activeTab === "members" && (
         <div>
-          {/* Invite section */}
+          {/* Invite section — premium required for multi-member squads */}
           <Card className="shadow-sm mb-4 border-primary/20 bg-primary/5">
             <CardContent className="p-3">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Grow your squad</p>
+              {user?.subscription !== "premium" && (
+                <div className="mb-2 flex items-center gap-1.5 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg px-2 py-1.5">
+                  <span>👑</span>
+                  <span>Premium required to invite others. <a href="/premium" className="underline font-bold">Upgrade</a></span>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button
                   onClick={async () => {

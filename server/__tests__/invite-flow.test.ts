@@ -393,8 +393,8 @@ async function loginAsPremium(username: string) {
 describe("Invite flow integration", () => {
 
   it("full lifecycle: create group → invite → preview → join → verify → streak", async () => {
-    // 1) User A creates a group and gets an invite code
-    const alice = await loginAs("alice");
+    // 1) User A creates a group and gets an invite code (premium required to invite)
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Test Squad" });
     expect(groupRes.status).toBe(200);
     const groupId = groupRes.body.id;
@@ -458,20 +458,20 @@ describe("Invite flow integration", () => {
 
   it("rejects already-consumed invite code", async () => {
     // 8) Alice creates group + invite, Bob consumes it, Charlie tries same code
-    const alice = await loginAs("alice");
+    const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "One-Use Invite" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
     const inviteCode = inviteRes.body.id;
 
-    // Bob joins via invite (consumes it) — free endpoint
-    const bob = await loginAs("bob");
+    // Bob joins via invite (consumes it) — premium required for multi-member squads
+    const bob = await loginAsPremium("bob");
     const bobJoin = await bob.post(`/api/join/${inviteCode}`);
     expect(bobJoin.status).toBe(200);
     expect(bobJoin.body.group).toBeDefined();
 
     // Charlie tries the same code → fails (invite was deleted)
-    const charlie = await loginAs("charlie");
+    const charlie = await loginAsPremium("charlie");
     const charlieJoin = await charlie.post(`/api/join/${inviteCode}`);
     expect(charlieJoin.status).toBe(400);
     expect(charlieJoin.body.message).toMatch(/invalid|expired/i);

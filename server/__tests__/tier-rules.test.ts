@@ -791,7 +791,7 @@ describe("Free tier — 3-squad limit", () => {
     expect(res.body.feature).toBe("unlimited_squads");
   });
 
-  it("POST /api/join/:inviteId → 403 when free user already in 3 groups", async () => {
+  it("POST /api/join/:inviteId → 403 when free user tries to join multi-member squad", async () => {
     // Premium user creates a group and invite
     const premium = await loginAs("inviter");
     await upgradeToPremium(premium);
@@ -799,15 +799,12 @@ describe("Free tier — 3-squad limit", () => {
     const inviteRes = await premium.post(`/api/groups/${groupRes.body.id}/invite`);
     const inviteId = inviteRes.body.id;
 
-    // Free user already in 3 groups
+    // Free user tries to join — blocked because squad already has 1 member
     const free = await loginAs("limitjoin");
-    await free.post("/api/groups").send({ name: "Squad 2" });
-    await free.post("/api/groups").send({ name: "Squad 3" });
-
     const joinRes = await free.post(`/api/join/${inviteId}`);
     expect(joinRes.status).toBe(403);
     expect(joinRes.body.upgrade).toBe(true);
-    expect(joinRes.body.feature).toBe("unlimited_squads");
+    expect(joinRes.body.feature).toBe("squad_social");
   });
 
   it("premium users have no squad limit", async () => {
@@ -920,8 +917,9 @@ describe("Ghost log", () => {
   });
 
   it("GET /api/deuces (as squad member) → ghost log NOT in feed", async () => {
-    // Ghost user sets up a group and logs entries
+    // Ghost user sets up a group and logs entries (premium to invite)
     const ghostAgent = await loginAs("ghoster");
+    await upgradeToPremium(ghostAgent);
     const groupId = await getSoloGroupId("ghoster");
 
     // Create invite so another user can join the same group
@@ -933,8 +931,9 @@ describe("Ghost log", () => {
     await logDeuce(ghostAgent, groupId, { thoughts: "visible log" });
     await logDeuce(ghostAgent, groupId, { ghost: true, thoughts: "invisible log" });
 
-    // Squad member joins (groups + feed are free now)
+    // Squad member joins (premium required for multi-member squads)
     const memberAgent = await loginAs("squadmate");
+    await upgradeToPremium(memberAgent);
     const joinRes = await memberAgent.post(`/api/join/${inviteId}`);
     expect(joinRes.status).toBe(200);
 

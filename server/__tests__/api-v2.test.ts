@@ -1179,7 +1179,7 @@ describe("POST /api/join/:inviteId", () => {
     expect(joinRes.status).toBe(400);
   });
 
-  it("returns 200 for free user (join is now free)", async () => {
+  it("returns 403 for free user joining multi-member squad (premium required)", async () => {
     const alice = await loginAsPremium("alice");
     const groupRes = await alice.post("/api/groups").send({ name: "Gate Test" });
     const groupId = groupRes.body.id;
@@ -1188,9 +1188,9 @@ describe("POST /api/join/:inviteId", () => {
 
     const free = await loginAs("charlie");
     const joinRes = await free.post(`/api/join/${inviteId}`);
-    expect(joinRes.status).toBe(200);
-    expect(joinRes.body.group).toBeDefined();
-    expect(joinRes.body.group.name).toBe("Gate Test");
+    expect(joinRes.status).toBe(403);
+    expect(joinRes.body.feature).toBe("squad_social");
+    expect(joinRes.body.upgrade).toBe(true);
   });
 });
 
