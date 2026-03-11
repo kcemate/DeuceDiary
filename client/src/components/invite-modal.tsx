@@ -25,19 +25,10 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
 
   const createInviteMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/groups/${groupId}/invite`, {
+      return apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-        credentials: "include",
       });
-      
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`${response.status}: ${text}`);
-      }
-      
-      return await response.json();
     },
     onSuccess: (response: { id: string }) => {
       const inviteId = response.id;

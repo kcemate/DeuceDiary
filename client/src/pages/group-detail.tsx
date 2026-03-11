@@ -10,6 +10,7 @@ import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName, getInitials } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
 import { GoldCrownBadge } from "@/components/gold-crown-badge";
@@ -133,17 +134,10 @@ export default function GroupDetail() {
 
   const setChallengesMutation = useMutation({
     mutationFn: async (body: { templateKey?: string; title?: string }) => {
-      const response = await fetch(`/api/groups/${groupId}/challenge`, {
+      return apiRequest(`/api/groups/${groupId}/challenge`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-        credentials: "include",
       });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message ?? "Failed to set challenge");
-      }
-      return response.json();
     },
     onSuccess: () => {
       setShowChallengeModal(false);
@@ -159,15 +153,9 @@ export default function GroupDetail() {
 
   const completeChallengeMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/groups/${groupId}/challenge/complete`, {
+      return apiRequest(`/api/groups/${groupId}/challenge/complete`, {
         method: "POST",
-        credentials: "include",
       });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message ?? "Failed to mark complete");
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/challenge`] });
@@ -180,14 +168,9 @@ export default function GroupDetail() {
 
   const leaveGroupMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/groups/${groupId}/leave`, {
+      return apiRequest(`/api/groups/${groupId}/leave`, {
         method: "POST",
-        credentials: "include",
       });
-      if (!response.ok) {
-        throw new Error("Failed to leave group");
-      }
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -219,14 +202,10 @@ export default function GroupDetail() {
 
   const inviteCrewMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/groups/${groupId}/invite`, {
+      return apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-        credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to create invite");
-      return response.json();
     },
     onSuccess: (response: { id: string }) => {
       const code = response.id;

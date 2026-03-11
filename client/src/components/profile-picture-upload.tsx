@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { getAuthToken } from "@/lib/auth-token";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
 interface ProfilePictureUploadProps {
@@ -41,10 +42,14 @@ export function ProfilePictureUpload({
       formData.append('profilePicture', file);
       
       // For FormData, we need to use fetch directly since apiRequest expects JSON
+      const token = await getAuthToken();
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const response = await fetch("/api/auth/user/profile-picture", {
         method: "POST",
         body: formData,
-        credentials: "include", // Include cookies for authentication
+        headers,
+        credentials: "include",
       });
       
       if (!response.ok) {
