@@ -18,6 +18,12 @@ export function requireGroupMember(paramName = "groupId"): RequestHandler {
       return res.status(400).json({ message: "Missing group ID" });
     }
 
+    // Reject non-UUID group IDs before any DB lookup
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_RE.test(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID format" });
+    }
+
     const userId: string | undefined = req.user?.id;
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
