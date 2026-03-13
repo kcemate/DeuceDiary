@@ -2195,9 +2195,10 @@ export class DatabaseStorage implements IStorage {
         .delete(reactions)
         .where(eq(reactions.userId, userId));
 
+      // GDPR cascade: anonymize all entries — clear personal content (thoughts, photo, location)
       await tx
         .update(deuceEntries)
-        .set({ thoughts: "", location: "deleted" })
+        .set({ thoughts: "", location: "deleted", photoUrl: null })
         .where(eq(deuceEntries.userId, userId));
 
       await tx
