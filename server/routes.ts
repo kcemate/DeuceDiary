@@ -727,13 +727,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { timezone } = req.body;
       if (!timezone || typeof timezone !== 'string') {
-        return Errors.badRequest(res, "Invalid timezone");
+        return Errors.badRequest(res, "Timezone is required");
+      }
+      // Guard against oversized input before IANA lookup (max IANA tz name is ~40 chars)
+      if (timezone.length > 100) {
+        return Errors.badRequest(res, "Timezone identifier too long (max 100 characters)");
       }
       // Validate it's a real IANA timezone
       try {
         Intl.DateTimeFormat(undefined, { timeZone: timezone });
       } catch {
-        return Errors.badRequest(res, "Invalid timezone identifier");
+        return Errors.badRequest(res, `Unknown timezone: "${timezone}". Use an IANA timezone name (e.g. "America/New_York")`);
       }
       const [user] = await db
         .update(users)
