@@ -909,6 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isPremiumUser(req.user)) {
         const members = await storage.getGroupMembers(invite.groupId);
         if (members.length >= 1) {
+          console.warn(`[join] premium gate hit: userId=${userId} groupId=${invite.groupId} memberCount=${members.length}`);
           return res.status(403).json({ feature: 'squad_social', message: 'Premium required to join multi-member squads', upgrade: true });
         }
       }
