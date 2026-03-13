@@ -24,50 +24,50 @@ Seven autonomous improvement clicks on API error handling. Each click = one focu
 
 ---
 
-## Click 3 — Validate inviteCode param on public group preview endpoints
+## Click 3 — Improve input validation and error messages on PUT /api/user/timezone
 
-**What changed:** Added UUID format validation on `GET /api/groups/preview/:inviteCode` and `GET /api/groups/invite-preview/:inviteCode`. Non-UUID invite codes are rejected with 400 before any storage call.
+**What changed:** Added a length guard (max 100 chars) before the IANA timezone validation check. Also improved the error message from the generic "Invalid timezone identifier" to include the submitted value and a hint (`Use an IANA timezone name (e.g. "America/New_York")`). Improved the missing-field error from "Invalid timezone" to "Timezone is required".
 
-**Why:** Both endpoints are public (no auth). Without validation, a bot or crawler could fuzz them with arbitrary strings and generate DB query load. A quick format check at the route layer costs nothing and stops the noise.
-
-**Files modified:** `server/routes.ts`
-
----
-
-## Click 4 — Validate groupId UUID format on /api/groups/:groupId routes
-
-**What changed:** Added explicit UUID validation for the `groupId` path parameter on `GET /api/groups/:groupId` and `DELETE /api/groups/:groupId/members/:userId`. Non-UUID group IDs now return 400 with "Invalid group ID" before any DB query.
-
-**Why:** The `requireGroupMember()` middleware does a DB lookup with the raw `groupId`. A non-UUID string would silently fail the membership check and return 403 instead of 400, masking what the real problem is. Fast-failing with validation gives clients clearer errors.
+**Why:** Without a length guard, a client could send an oversized string before hitting the IANA check. The improved error messages give developers an actionable signal instead of a generic rejection.
 
 **Files modified:** `server/routes.ts`
 
 ---
 
-## Click 5 — Replace vague "Not authorized" error in /api/deuces with specific message
+## Click 4 — Validate UUID format in requireGroupMember middleware
 
-**What changed:** In `GET /api/deuces`, when a user passes a `groupId` query param and is not a member, the error was the generic "Not authorized". Changed to "Not a member of this group" to distinguish from auth failures.
+**What changed:** Added UUID format validation at the top of `requireGroupMember()` in `server/groupAuth.ts`. Non-UUID group IDs now return 400 "Invalid group ID format" before any DB lookup.
+
+**Why:** The middleware previously did a `storage.isUserInGroup()` DB call with whatever string was in the route param. A non-UUID string would silently fail membership check and return 403 "Not authorized" — masking that the real problem is a malformed path param. Fast-fail with 400 gives clients a clearer diagnostic.
+
+**Files modified:** `server/groupAuth.ts`
+
+---
+
+## Click 5 — Replace vague "Not authorized" with specific message on GET /api/deuces
+
+**What changed:** In `GET /api/deuces`, when a user passes a `groupId` query param and is not a member, the error was the generic "Not authorized". Changed to "Not a member of this group". Updated the corresponding test regex to accept both forms.
 
 **Why:** "Not authorized" conflates authentication failures (wrong/missing token) with authorization failures (valid user, wrong group). The specific message "Not a member of this group" makes it immediately obvious what's wrong — helpful for debugging both on the client side and in logs.
 
+**Files modified:** `server/routes.ts`, `server/__tests__/routes-coverage.test.ts`
+
+---
+
+## Click 6 — Add structured warning log for premium gate on POST /api/join/:inviteId
+
+**What changed:** Added a `console.warn` when a free user hits the multi-member squad premium gate on `POST /api/join/:inviteId`. The log includes userId, groupId, and memberCount.
+
+**Why:** The premium gate was a silent 403 — completely invisible in server logs. This is a conversion funnel event. Logging it turns an invisible rejection into an observable product signal for understanding upgrade conversion pressure.
+
 **Files modified:** `server/routes.ts`
 
 ---
 
-## Click 6 — Add structured error log for /api/join/:inviteId 403 (premium gate)
+## Click 7 — Validate UUID format on /api/entries/:entryId/reactions endpoints
 
-**What changed:** In `POST /api/join/:inviteId`, the premium-gate branch (non-premium user trying to join a multi-member squad) was returning a 403 silently with no server-side log. Added a `console.warn` with userId, groupId, and member count so ops can see how often the premium gate is being hit.
+**What changed:** Added UUID format validation on all three reaction endpoints (POST/DELETE/GET `/api/entries/:entryId/reactions`) before any DB lookup. Extracted the regex as a shared constant `ENTRY_UUID_RE` to avoid repetition. Updated two tests that used synthetic non-UUID entry IDs (`"fake"`, `"some-entry"`) to use the zero UUID (`00000000-0000-0000-0000-000000000001`) so they continue to exercise the real code path.
 
-**Why:** Silent 403s are invisible in server logs. This is a conversion funnel event — knowing how often free users hit the premium wall when joining squads is valuable product signal, and without a log it's invisible.
+**Why:** Without format validation, the three reaction endpoints did a `storage.getEntryById()` call for any string in the URL. Non-UUID paths generate pointless DB queries. Uniform format validation at the route layer is the right place to stop garbage input.
 
-**Files modified:** `server/routes.ts`
-
----
-
-## Click 7 — Validate timezone string length before IANA check on PUT /api/user/timezone
-
-**What changed:** `PUT /api/user/timezone` accepted any string and passed it to `Intl.DateTimeFormat` for validation. Added an explicit length check (max 100 chars) before the IANA validation to reject obviously bogus payloads fast and with a clearer error.
-
-**Why:** Without a length guard, a client could send a 50KB timezone string that gets passed into `Intl.DateTimeFormat`. The IANA check would still catch it, but the error message would be "Invalid timezone identifier" rather than something helpful. The length check ensures we fail fast and log a useful message.
-
-**Files modified:** `server/routes.ts`
+**Files modified:** `server/routes.ts`, `server/__tests__/api.test.ts`, `server/__tests__/routes-coverage.test.ts`
