@@ -884,6 +884,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { inviteId } = req.params;
 
+      // Reject non-UUID invite codes immediately — avoids DB query on garbage input
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!UUID_RE.test(inviteId)) {
+        return Errors.badRequest(res, "Invalid invite code format");
+      }
+
       const invite = await storage.getInviteById(inviteId);
       if (!invite || invite.expiresAt < new Date()) {
         return Errors.badRequest(res, "Invalid or expired invite");
