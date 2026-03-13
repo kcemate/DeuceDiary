@@ -456,25 +456,26 @@ describe("Invite flow integration", () => {
     expect(streakAfterAll.body.longestStreak).toBe(1);
   });
 
-  it("rejects already-consumed invite code", async () => {
-    // 8) Alice creates group + invite, Bob consumes it, Charlie tries same code
+  it("allows reuse of invite code after first join", async () => {
+    // 8) Alice creates group + invite, Bob joins, Charlie joins same code (reusable invites)
+    // Invites are intentionally reusable — they are NOT deleted after the first use.
     const alice = await loginAsPremium("alice");
-    const groupRes = await alice.post("/api/groups").send({ name: "One-Use Invite" });
+    const groupRes = await alice.post("/api/groups").send({ name: "Reusable Invite" });
     const groupId = groupRes.body.id;
     const inviteRes = await alice.post(`/api/groups/${groupId}/invite`);
     const inviteCode = inviteRes.body.id;
 
-    // Bob joins via invite (consumes it) — premium required for multi-member squads
+    // Bob joins via invite
     const bob = await loginAsPremium("bob");
     const bobJoin = await bob.post(`/api/join/${inviteCode}`);
     expect(bobJoin.status).toBe(200);
     expect(bobJoin.body.group).toBeDefined();
 
-    // Charlie tries the same code → fails (invite was deleted)
+    // Charlie joins via the same code — should succeed because invites are reusable
     const charlie = await loginAsPremium("charlie");
     const charlieJoin = await charlie.post(`/api/join/${inviteCode}`);
-    expect(charlieJoin.status).toBe(400);
-    expect(charlieJoin.body.message).toMatch(/invalid|expired/i);
+    expect(charlieJoin.status).toBe(200);
+    expect(charlieJoin.body.group).toBeDefined();
   });
 
   it("returns 404 for invalid invite code on preview", async () => {
