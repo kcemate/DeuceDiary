@@ -1016,7 +1016,7 @@ describe("GET /api/deuces", () => {
 
     const res = await agent.get(`/api/deuces?groupId=${bobGroupId}`);
     expect(res.status).toBe(403);
-    expect(res.body.message).toMatch(/not authorized/i);
+    expect(res.body.message).toMatch(/not authorized|not a member/i);
   });
 
   it("returns 200 for free user (feed is now free)", async () => {

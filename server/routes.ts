@@ -1369,7 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Single group — verify membership
         const isInGroup = await storage.isUserInGroup(userId, groupId as string);
         if (!isInGroup) {
-          return Errors.forbidden(res, "Not authorized");
+          return Errors.forbidden(res, "Not a member of this group");
         }
         groupIds = [groupId as string];
       } else {
