@@ -1066,7 +1066,7 @@ describe("DELETE /api/entries/:entryId/reactions", () => {
   it("returns error when emoji is missing", async () => {
     const agent = await loginAsPremium("alice");
     const res = await agent
-      .delete("/api/entries/some-entry/reactions")
+      .delete("/api/entries/00000000-0000-0000-0000-000000000001/reactions")
       .send({});
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/emoji is required/i);
@@ -1075,7 +1075,7 @@ describe("DELETE /api/entries/:entryId/reactions", () => {
   it("is accessible to free users (reactions are now free)", async () => {
     const agent = await loginAs("alice");
     const res = await agent
-      .delete("/api/entries/some-entry/reactions")
+      .delete("/api/entries/00000000-0000-0000-0000-000000000001/reactions")
       .send({ emoji: "fire" });
     // Should not return 403 upgrade-gate; may return 200 or 404 depending on entry
     expect(res.status).not.toBe(403);

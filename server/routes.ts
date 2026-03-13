@@ -990,17 +990,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Shared UUID validator for entry path params
+  const ENTRY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   // Reaction routes (free)
   app.post('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
+      if (!ENTRY_UUID_RE.test(entryId)) {
+        return Errors.badRequest(res, "Invalid entry ID format");
+      }
       const parsed = reactionSchema.safeParse(req.body);
       if (!parsed.success) {
         return Errors.badRequest(res, "Emoji is required");
       }
       const { emoji } = parsed.data;
-      
+
       // Check if entry exists and user can access it
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
@@ -1032,6 +1038,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
+      if (!ENTRY_UUID_RE.test(entryId)) {
+        return Errors.badRequest(res, "Invalid entry ID format");
+      }
       const parsed = deleteReactionSchema.safeParse(req.body);
       if (!parsed.success) {
         return Errors.badRequest(res, "Emoji is required");
@@ -1060,6 +1069,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
+      if (!ENTRY_UUID_RE.test(entryId)) {
+        return Errors.badRequest(res, "Invalid entry ID format");
+      }
       const entry = await storage.getEntryById(entryId);
       if (!entry) {
         return Errors.notFound(res, "Entry");

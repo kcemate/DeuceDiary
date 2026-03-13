@@ -727,7 +727,7 @@ describe("Premium gating", () => {
 
   it("free user CAN access reactions (not 403 premium gate)", async () => {
     const agent = await loginAs("freebie");
-    const res = await agent.post("/api/entries/fake/reactions").send({ emoji: "💩" });
+    const res = await agent.post("/api/entries/00000000-0000-0000-0000-000000000001/reactions").send({ emoji: "💩" });
     // 404 = entry not found (not a premium gate), 200 = success — both are fine
     expect([200, 404]).toContain(res.status);
     if (res.status === 403) throw new Error("Reactions should not be premium-gated");
