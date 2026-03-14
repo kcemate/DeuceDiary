@@ -14,28 +14,44 @@ async function authHeaders(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 export async function apiRequest<T = unknown>(
   url: string,
   options?: {
     method?: string;
     body?: string;
     headers?: Record<string, string>;
+    signal?: AbortSignal;
   }
 ): Promise<T> {
-  const auth = await authHeaders();
-  const res = await fetch(url, {
-    method: options?.method || "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...auth,
-      ...options?.headers,
-    },
-    body: options?.body,
-    credentials: "include",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  await throwIfResNotOk(res);
-  return res.json() as Promise<T>;
+  // Merge caller's signal with the timeout signal
+  const signal = options?.signal
+    ? AbortSignal.any([options.signal, controller.signal])
+    : controller.signal;
+
+  try {
+    const auth = await authHeaders();
+    const res = await fetch(url, {
+      method: options?.method || "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...auth,
+        ...options?.headers,
+      },
+      body: options?.body,
+      credentials: "include",
+      signal,
+    });
+
+    await throwIfResNotOk(res);
+    return res.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
