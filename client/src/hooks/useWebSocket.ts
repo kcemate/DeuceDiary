@@ -74,7 +74,10 @@ export function useWebSocket() {
         if (shouldReconnectRef.current) {
           const attempt = reconnectAttemptRef.current;
           // Exponential backoff: 2s, 4s, 8s, 16s, capped at 30s
-          const delay = Math.min(2000 * 2 ** attempt, 30000);
+          // ±25% jitter prevents thundering herd when many clients reconnect simultaneously
+          const baseDelay = Math.min(2000 * 2 ** attempt, 30000);
+          const jitter = baseDelay * 0.25 * (Math.random() * 2 - 1);
+          const delay = Math.round(baseDelay + jitter);
           reconnectAttemptRef.current = attempt + 1;
           reconnectTimeoutRef.current = setTimeout(() => {
             if (shouldReconnectRef.current) {
