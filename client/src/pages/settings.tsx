@@ -235,11 +235,14 @@ export default function Settings() {
             <Palette className="w-4 h-4 text-muted-foreground" />
             <Label className="text-sm font-medium text-foreground">Theme</Label>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Theme">
             {THEMES.map((t) => (
               <button
                 key={t.id}
                 onClick={() => handleThemeSelect(t)}
+                role="radio"
+                aria-checked={theme === t.id}
+                aria-label={`${t.name} theme${t.premium && !isPremium ? " (Premium)" : ""}${theme === t.id ? ", selected" : ""}`}
                 className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                   theme === t.id
                     ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
