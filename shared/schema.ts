@@ -36,7 +36,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   username: varchar("username").unique(),
   profileImageUrl: varchar("profile_image_url"),
-  deuceCount: integer("deuce_count").default(0),
+  deuceCount: integer("deuce_count").default(0).notNull(),
   subscription: varchar("subscription", { length: 10 }).default("free").notNull(), // 'free' | 'premium'
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   streakInsuranceUsed: boolean("streak_insurance_used").default(false).notNull(),
@@ -45,7 +45,7 @@ export const users = pgTable("users", {
   reminderMinute: integer("reminder_minute"),
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
-  referralCount: integer("referral_count").default(0),
+  referralCount: integer("referral_count").default(0).notNull(),
   timezone: varchar("timezone", { length: 64 }).default("UTC").notNull(),
   deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
