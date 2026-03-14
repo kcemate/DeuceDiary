@@ -122,7 +122,7 @@ export const themeSchema = z.object({
 });
 
 export const broadcastSchema = z.object({
-  milestone: z.string().min(1).max(200),
+  milestone: z.string().min(1).max(200).transform(sanitizeLine).refine(s => s.length >= 1, 'Milestone cannot be blank'),
 });
 
 export const deleteReactionSchema = z.object({
