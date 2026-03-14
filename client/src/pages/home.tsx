@@ -194,6 +194,7 @@ export default function Home() {
   const {
     data: feedEntries = [],
     isLoading: feedLoading,
+    isError: feedError,
   } = useQuery<FeedEntry[]>({
     queryKey: ["/api/deuces", { limit: 15 }],
     enabled: !isFree,
@@ -504,6 +505,12 @@ export default function Home() {
             {[1, 2, 3].map((i) => (
               <FeedEntrySkeleton key={i} />
             ))}
+          </div>
+        ) : feedError ? (
+          <div className="bg-card border border-border rounded-2xl p-8 text-center">
+            <p className="text-2xl mb-2">⚠️</p>
+            <p className="text-sm font-semibold text-foreground">Couldn't load your feed</p>
+            <p className="text-xs text-muted-foreground mt-1">Check your connection and pull down to retry.</p>
           </div>
         ) : feedEntries.length > 0 ? (
           <div className="space-y-1">
