@@ -587,14 +587,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clerkData = req.body;
       const userId = req.user.id;
 
-      const user = await storage.upsertUser({
-        id: userId,
-        email: clerkData.email ?? req.user.email ?? null,
-        firstName: clerkData.firstName ?? req.user.firstName ?? null,
-        lastName: clerkData.lastName ?? req.user.lastName ?? null,
-        username: clerkData.username ?? undefined,
-        profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
-      });
+      // In Clerk mode, identity fields (email, name) come from the verified JWT,
+      // not the request body, to prevent spoofing. Only username is user-supplied.
+      const jwtClaims = req.clerkAuth as any;
+      const upsertData = clerkEnabled
+        ? {
+            id: userId,
+            email: jwtClaims?.email ?? req.user.email ?? null,
+            firstName: jwtClaims?.first_name ?? req.user.firstName ?? null,
+            lastName: jwtClaims?.last_name ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: jwtClaims?.image_url ?? req.user.profileImageUrl ?? null,
+          }
+        : {
+            id: userId,
+            email: clerkData.email ?? req.user.email ?? null,
+            firstName: clerkData.firstName ?? req.user.firstName ?? null,
+            lastName: clerkData.lastName ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
+          };
+
+      const user = await storage.upsertUser(upsertData);
 
       // Auto-create "Solo Deuces" if user has no groups
       let groups = await storage.getUserGroups(userId);
