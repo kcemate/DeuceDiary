@@ -61,8 +61,8 @@ export const groups = pgTable("groups", {
   currentStreak: integer("current_streak").default(0).notNull(),
   longestStreak: integer("longest_streak").default(0).notNull(),
   lastStreakDate: varchar("last_streak_date"), // ISO date string YYYY-MM-DD
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_groups_current_streak").on(table.currentStreak),
 ]);
@@ -72,7 +72,7 @@ export const groupMembers = pgTable("group_members", {
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   role: varchar("role").notNull().default("member"), // "admin" or "member"
-  joinedAt: timestamp("joined_at").defaultNow(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
 }, (table) => [
   unique("uq_group_members_user_group").on(table.userId, table.groupId),
   index("idx_group_members_group").on(table.groupId),
@@ -91,7 +91,7 @@ export const deuceEntries = pgTable("deuce_entries", {
   longitude: numeric("longitude"),
   loggedAt: timestamp("logged_at").notNull(),
   lastLoggedAt: timestamp("last_logged_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_deuce_entries_user_group").on(table.userId, table.groupId),
   index("idx_deuce_entries_logged_at").on(table.loggedAt),
@@ -105,7 +105,7 @@ export const invites = pgTable("invites", {
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
   createdBy: varchar("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_invites_group").on(table.groupId),
 ]);
