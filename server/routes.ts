@@ -28,6 +28,7 @@ import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
 import { getMetricsSnapshot } from "./lib/metrics";
+import { recordWsConnect, recordWsDisconnect, recordWsAuthRejection, getWsStats } from "./lib/wsMonitor";
 import { apiError, Errors } from "./lib/apiError";
 import { reverseGeocode } from "./lib/geocode";
 import {
@@ -434,6 +435,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const errors = getRecentErrors(limit);
     res.json({ errors, count: errors.length });
+  });
+
+  // --- WebSocket stats endpoint (internal) ---
+  app.get('/api/internal/ws-stats', (req, res) => {
+    const key = req.headers['x-internal-key'];
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+      return Errors.unauthorized(res);
+    }
+    res.json(getWsStats());
   });
 
   // --- API metrics endpoint (internal) ---
@@ -2353,6 +2363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           userId = user.id;
         } catch {
+          recordWsAuthRejection();
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
@@ -2428,7 +2439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws: WebSocket, req) => {
     const userId = (ws as any).userId as string;
-    console.log(`WebSocket connection authenticated for user ${userId}`);
+    recordWsConnect(userId);
 
     // Heartbeat tracking
     (ws as any).missedPongs = 0;
@@ -2470,6 +2481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
+      recordWsDisconnect(userId);
       // Clean up connection
       const groupId = (ws as any).groupId;
       if (groupId && groupConnections.has(groupId)) {
