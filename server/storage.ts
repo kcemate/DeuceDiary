@@ -2178,6 +2178,31 @@ export class DatabaseStorage implements IStorage {
         .delete(reactions)
         .where(eq(reactions.userId, userId));
 
+      // GDPR cascade: remove referral records — these link two users and must not outlive either
+      await tx
+        .delete(referrals)
+        .where(or(eq(referrals.referrerId, userId), eq(referrals.refereeId, userId)));
+
+      // GDPR cascade: remove challenge completion records
+      await tx
+        .delete(challengeCompletions)
+        .where(eq(challengeCompletions.userId, userId));
+
+      // GDPR cascade: remove bingo completions before cards (FK dependency)
+      await tx
+        .delete(bingoCompletions)
+        .where(eq(bingoCompletions.userId, userId));
+
+      // GDPR cascade: remove bingo cards
+      await tx
+        .delete(bingoCards)
+        .where(eq(bingoCards.userId, userId));
+
+      // GDPR cascade: remove passport stamps (location data is PII)
+      await tx
+        .delete(passportStamps)
+        .where(eq(passportStamps.userId, userId));
+
       // GDPR cascade: anonymize all entries — clear personal content (thoughts, photo, location)
       await tx
         .update(deuceEntries)
