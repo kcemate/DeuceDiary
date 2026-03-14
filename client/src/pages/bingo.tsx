@@ -408,6 +408,17 @@ export default function Bingo() {
         </div>
       )}
 
+      {!isLoading && error && !isPremiumError && (
+        <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+          <p className="text-4xl mb-3">🚽</p>
+          <p className="font-bold text-foreground mb-1">Couldn't load your bingo card</p>
+          <p className="text-sm text-muted-foreground mb-4">Check your connection and try again.</p>
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/bingo/current"] })}>
+            Try Again
+          </Button>
+        </div>
+      )}
+
       {!isLoading && !error && data && (
         <>
           {/* Header */}
