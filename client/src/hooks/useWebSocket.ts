@@ -17,10 +17,13 @@ interface WebSocketMessage {
   userId?: string;
 }
 
+export type ConnectionState = "idle" | "connecting" | "connected" | "reconnecting";
+
 export function useWebSocket() {
   const { isAuthenticated } = useAuth();
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guard to prevent stale closures from triggering reconnects after logout
@@ -60,6 +63,8 @@ export function useWebSocket() {
       wsUrl += `?token=${encodeURIComponent(token)}`;
     }
 
+    setConnectionState("connecting");
+
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -67,6 +72,7 @@ export function useWebSocket() {
       ws.onopen = () => {
         console.log("WebSocket connected");
         setIsConnected(true);
+        setConnectionState("connected");
         reconnectAttemptRef.current = 0; // reset backoff on successful connect
         // Replay any group joins buffered while we were disconnected
         flushPendingGroupJoins(ws);
@@ -98,6 +104,7 @@ export function useWebSocket() {
         // Only reconnect if the ref says we should — avoids stale-closure
         // scheduling a reconnect after logout clears the flag.
         if (shouldReconnectRef.current) {
+          setConnectionState("reconnecting");
           const attempt = reconnectAttemptRef.current;
           // Exponential backoff: 2s, 4s, 8s, 16s, capped at 30s
           // ±25% jitter prevents thundering herd when many clients reconnect simultaneously
@@ -139,6 +146,7 @@ export function useWebSocket() {
     }
 
     setIsConnected(false);
+    setConnectionState("idle");
   };
 
   const joinGroup = (groupId: string) => {
@@ -195,6 +203,7 @@ export function useWebSocket() {
 
   return {
     isConnected,
+    connectionState,
     lastMessage,
     joinGroup,
     connect,
