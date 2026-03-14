@@ -196,6 +196,7 @@ export interface IStorage {
   addGroupMember(member: InsertGroupMember): Promise<GroupMember>;
   getGroupMembers(groupId: string): Promise<(GroupMember & { user: User & { personalRecord?: { date: string; count: number } } })[]>;
   isUserInGroup(userId: string, groupId: string): Promise<boolean>;
+  isUserInGroups(userId: string, groupIds: string[]): Promise<Set<string>>;
   removeGroupMember(userId: string, groupId: string): Promise<void>;
   
   // Deuce entry operations
@@ -592,6 +593,15 @@ export class DatabaseStorage implements IStorage {
       .from(groupMembers)
       .where(and(eq(groupMembers.userId, userId), eq(groupMembers.groupId, groupId)));
     return !!member;
+  }
+
+  async isUserInGroups(userId: string, groupIds: string[]): Promise<Set<string>> {
+    if (groupIds.length === 0) return new Set();
+    const rows = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.userId, userId), inArray(groupMembers.groupId, groupIds)));
+    return new Set(rows.map(r => r.groupId));
   }
 
   async removeGroupMember(userId: string, groupId: string): Promise<void> {

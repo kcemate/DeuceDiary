@@ -225,10 +225,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: "At least one group must be selected" });
       }
 
-      // Check if user is in all selected groups
+      // Check if user is in all selected groups — single batch query instead of N queries
+      const memberGroupIds = await storage.isUserInGroups(userId, targetGroupIds);
       for (const gid of targetGroupIds) {
-        const isInGroup = await storage.isUserInGroup(userId, gid);
-        if (!isInGroup) {
+        if (!memberGroupIds.has(gid)) {
           return res.status(403).json({ message: `Not authorized for group ${gid}` });
         }
       }
