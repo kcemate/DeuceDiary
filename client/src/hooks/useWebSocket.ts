@@ -5,6 +5,7 @@ import { getAuthToken } from "@/lib/auth-token";
 interface WebSocketMessage {
   type: string;
   message: string;
+  msgId?: string;
   entry?: {
     id: string;
     userId: string;
@@ -29,6 +30,10 @@ export function useWebSocket() {
   // Group IDs to join when (re)connected — buffered during disconnection so
   // joinGroup calls made while offline are replayed automatically on reconnect.
   const pendingGroupJoinsRef = useRef<Set<string>>(new Set());
+  // Rolling window of recently seen msgIds — prevents duplicate notifications
+  // when the same broadcast is somehow delivered more than once (e.g. during
+  // rapid reconnects). Capped at 100 entries to avoid unbounded growth.
+  const seenMsgIdsRef = useRef<Set<string>>(new Set());
 
   const flushPendingGroupJoins = (ws: WebSocket) => {
     for (const groupId of pendingGroupJoinsRef.current) {
@@ -70,6 +75,16 @@ export function useWebSocket() {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          // Drop duplicate messages using the server-stamped msgId
+          if (message.msgId) {
+            if (seenMsgIdsRef.current.has(message.msgId)) return;
+            seenMsgIdsRef.current.add(message.msgId);
+            // Evict oldest entries when the window grows beyond 100
+            if (seenMsgIdsRef.current.size > 100) {
+              const first = seenMsgIdsRef.current.values().next().value;
+              if (first !== undefined) seenMsgIdsRef.current.delete(first);
+            }
+          }
           setLastMessage(message);
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
