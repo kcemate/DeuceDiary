@@ -214,6 +214,7 @@ export const bingoCards = pgTable("bingo_cards", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_bingo_cards_user_month").on(table.userId, table.month),
+  unique("uq_bingo_cards_user_month").on(table.userId, table.month),
 ]);
 
 export const bingoCompletions = pgTable("bingo_completions", {

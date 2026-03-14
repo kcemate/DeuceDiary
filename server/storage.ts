@@ -2055,7 +2055,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBingoCard(data: InsertBingoCard): Promise<BingoCard> {
-    const [card] = await db.insert(bingoCards).values(data).returning();
+    // Use onConflictDoNothing so a race condition between two concurrent requests
+    // for the same user+month doesn't create duplicate cards — the unique constraint
+    // uq_bingo_cards_user_month ensures at most one card per user per month.
+    const [card] = await db
+      .insert(bingoCards)
+      .values(data)
+      .onConflictDoNothing({ target: [bingoCards.userId, bingoCards.month] })
+      .returning();
+
+    // If the insert was a no-op (card already existed), fetch the existing one
+    if (!card) {
+      const [existing] = await db
+        .select()
+        .from(bingoCards)
+        .where(and(eq(bingoCards.userId, data.userId), eq(bingoCards.month, data.month)));
+      return existing;
+    }
+
     return card;
   }
 
