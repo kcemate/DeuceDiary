@@ -384,26 +384,26 @@ describe("GET /api/config", () => {
  * ================================================================ */
 describe("GET /api/groups/invite-preview/:inviteCode", () => {
   it("is publicly accessible without auth", async () => {
-    memStore._seedInvitePreview("CODE1", {
+    memStore._seedInvitePreview("11111111-0000-0000-0000-000000000001", {
       name: "The Throne Room",
       memberCount: 3,
       memberNames: ["alice", "bob", "carol"],
       currentStreak: 5,
       deuceCount: 42,
     });
-    const res = await supertest(app).get("/api/groups/invite-preview/CODE1");
+    const res = await supertest(app).get("/api/groups/invite-preview/11111111-0000-0000-0000-000000000001");
     expect(res.status).toBe(200);
   });
 
   it("returns group name, memberCount, memberNames, currentStreak, deuceCount", async () => {
-    memStore._seedInvitePreview("SQUAD42", {
+    memStore._seedInvitePreview("11111111-0000-0000-0000-000000000002", {
       name: "Porcelain Posse",
       memberCount: 4,
       memberNames: ["alice", "bob", "carol", "dave"],
       currentStreak: 7,
       deuceCount: 100,
     });
-    const res = await supertest(app).get("/api/groups/invite-preview/SQUAD42");
+    const res = await supertest(app).get("/api/groups/invite-preview/11111111-0000-0000-0000-000000000002");
     expect(res.status).toBe(200);
     expect(res.body.name).toBe("Porcelain Posse");
     expect(res.body.memberCount).toBe(4);
@@ -429,27 +429,27 @@ describe("GET /api/groups/invite-preview/:inviteCode", () => {
  * ================================================================ */
 describe("GET /api/og/invite/:inviteCode", () => {
   it("is publicly accessible without auth", async () => {
-    memStore._seedInvitePreview("OGTEST1", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000001", {
       name: "Flush Squad",
       memberCount: 2,
       memberNames: ["alice", "bob"],
       currentStreak: 0,
       deuceCount: 10,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST1");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000001");
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toMatch(/text\/html/);
   });
 
   it("returns HTML with OG meta tags for a valid invite", async () => {
-    memStore._seedInvitePreview("OGTEST2", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000002", {
       name: "The Regulars",
       memberCount: 3,
       memberNames: ["alice", "bob", "carol"],
       currentStreak: 5,
       deuceCount: 33,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST2");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000002");
     expect(res.status).toBe(200);
     const html = res.text;
     expect(html).toContain("og:title");
@@ -460,72 +460,72 @@ describe("GET /api/og/invite/:inviteCode", () => {
   });
 
   it("includes member count in the OG description", async () => {
-    memStore._seedInvitePreview("OGTEST3", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000003", {
       name: "The Crew",
       memberCount: 5,
       memberNames: ["a", "b", "c", "d", "e"],
       currentStreak: 0,
       deuceCount: 20,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST3");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000003");
     expect(res.status).toBe(200);
     expect(res.text).toContain("5 members");
   });
 
   it("includes streak in OG description when streak > 0", async () => {
-    memStore._seedInvitePreview("OGTEST4", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000004", {
       name: "Streak Masters",
       memberCount: 2,
       memberNames: ["alice", "bob"],
       currentStreak: 12,
       deuceCount: 60,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST4");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000004");
     expect(res.status).toBe(200);
     expect(res.text).toContain("12-day streak");
   });
 
   it("omits streak from description when streak is 0", async () => {
-    memStore._seedInvitePreview("OGTEST5", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000005", {
       name: "New Squad",
       memberCount: 1,
       memberNames: ["alice"],
       currentStreak: 0,
       deuceCount: 1,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST5");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000005");
     expect(res.status).toBe(200);
     expect(res.text).not.toContain("-day streak");
   });
 
   it("truncates member list to 5 and adds 'and N more'", async () => {
-    memStore._seedInvitePreview("OGTEST6", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000006", {
       name: "Big Squad",
       memberCount: 8,
       memberNames: ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
       currentStreak: 0,
       deuceCount: 80,
     });
-    const res = await supertest(app).get("/api/og/invite/OGTEST6");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000006");
     expect(res.status).toBe(200);
     expect(res.text).toContain("and 3 more");
   });
 
   it("returns 404 HTML when invite code is not found", async () => {
-    const res = await supertest(app).get("/api/og/invite/NONEXISTENT");
+    const res = await supertest(app).get("/api/og/invite/99999999-0000-0000-0000-000000000000");
     expect(res.status).toBe(404);
     expect(res.text).toContain("not found");
   });
 
   it("escapes HTML in group name to prevent XSS", async () => {
-    memStore._seedInvitePreview("XSSTEST", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000007", {
       name: '<script>alert("xss")</script>',
       memberCount: 1,
       memberNames: ["attacker"],
       currentStreak: 0,
       deuceCount: 1,
     });
-    const res = await supertest(app).get("/api/og/invite/XSSTEST");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000007");
     expect(res.status).toBe(200);
     // Raw script tag should not appear unescaped
     expect(res.text).not.toContain('<script>alert("xss")</script>');
@@ -534,14 +534,14 @@ describe("GET /api/og/invite/:inviteCode", () => {
   });
 
   it("singular 'member' when memberCount is 1", async () => {
-    memStore._seedInvitePreview("SOLO", {
+    memStore._seedInvitePreview("22222222-0000-0000-0000-000000000008", {
       name: "Solo Deuces",
       memberCount: 1,
       memberNames: ["alice"],
       currentStreak: 0,
       deuceCount: 5,
     });
-    const res = await supertest(app).get("/api/og/invite/SOLO");
+    const res = await supertest(app).get("/api/og/invite/22222222-0000-0000-0000-000000000008");
     expect(res.status).toBe(200);
     expect(res.text).toContain("1 member");
     expect(res.text).not.toContain("1 members");
