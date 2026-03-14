@@ -121,10 +121,10 @@ export const locations = pgTable("locations", {
 export const streakAlerts = pgTable("streak_alerts", {
   id: serial("id").primaryKey(),
   groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
-  triggeredAt: timestamp("triggered_at").defaultNow(),
+  triggeredAt: timestamp("triggered_at").defaultNow().notNull(),
   streakLength: integer("streak_length").notNull(),
   missingMembers: text("missing_members").notNull(), // JSON array of names
-  notified: boolean("notified").default(false),
+  notified: boolean("notified").default(false).notNull(),
 }, (table) => [
   index("idx_streak_alerts_group").on(table.groupId),
 ]);
