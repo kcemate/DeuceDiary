@@ -2,22 +2,42 @@ agent: claude-code
 model: claude-sonnet-4-6
 
 defaults:
-  clicks: 5
+  clicks: 3
   test_command: npm test
   auto_commit: true
 
 targets:
-  - name: routes
-    path: ./server/routes
-    description: "Express route handlers — error handling, validation, types"
+  - name: groups
+    path: ./server/routes/groups.ts
+    description: "Group management routes — CRUD, invites, join/leave"
+
+  - name: public
+    path: ./server/routes/public.ts
+    description: "Public API routes — leaderboards, stats, public profiles"
+
+  - name: deuces
+    path: ./server/routes/deuces.ts
+    description: "Core deuce logging routes — create, read, update, reactions"
+
+  - name: helpers
+    path: ./server/routes/helpers.ts
+    description: "Shared route helper functions and middleware"
+
+  - name: premium
+    path: ./server/routes/premium.ts
+    description: "Premium/subscription routes — billing, feature gates"
+
+  - name: king
+    path: ./server/routes/king.ts
+    description: "King of the Throne feature routes — crown transfers, rankings"
+
+  - name: bingo
+    path: ./server/routes/bingo.ts
+    description: "Bingo card routes — challenges, completions"
 
   - name: lib
     path: ./server/lib
     description: "Server library code — utilities, helpers, core logic"
-
-  - name: server
-    path: ./server
-    description: "Full backend — broader sweep after routes/lib are clean"
 
   - name: client
     path: ./client/src
