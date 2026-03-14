@@ -27,4 +27,24 @@ pool.on('error', (err) => {
   console.error('[DB POOL] Unexpected error on idle client:', err.message);
 });
 
+// --- Slow query detection ---
+// Wrap pool.query to log any query that exceeds the threshold.
+const SLOW_QUERY_THRESHOLD_MS = 200;
+const _originalQuery = pool.query.bind(pool);
+(pool as any).query = async (...args: Parameters<typeof pool.query>) => {
+  const start = process.hrtime.bigint();
+  try {
+    return await (_originalQuery as any)(...args);
+  } finally {
+    const durationMs = Math.round(Number(process.hrtime.bigint() - start) / 1e6);
+    if (durationMs > SLOW_QUERY_THRESHOLD_MS) {
+      // Log first 120 chars of SQL to avoid leaking full query text with values
+      const sql = typeof args[0] === 'string'
+        ? args[0].slice(0, 120)
+        : (args[0] as any)?.text?.slice(0, 120) ?? '?';
+      console.warn(`[SLOW QUERY] ${durationMs}ms — ${sql}`);
+    }
+  }
+};
+
 export const db = drizzle({ client: pool, schema });
