@@ -11,6 +11,9 @@ export interface ErrorEntry {
   message: string;
   stack: string | null;
   userId: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  requestId: string | null;
 }
 
 // --- In-memory ring buffer ---
@@ -91,6 +94,10 @@ export function errorTrackingMiddleware(
 ): void {
   const status = err.status || err.statusCode || 500;
 
+  const forwarded = req.headers["x-forwarded-for"];
+  const rawIp = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  const ip = rawIp?.split(",")[0]?.trim() ?? req.socket?.remoteAddress ?? null;
+
   const entry: ErrorEntry = {
     timestamp: new Date().toISOString(),
     method: req.method,
@@ -99,6 +106,9 @@ export function errorTrackingMiddleware(
     message: err.message || "Unknown error",
     stack: status >= 500 ? (err.stack ?? null) : null,
     userId: (req as any).user?.id ?? null,
+    ip,
+    userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
+    requestId: (req.headers["x-request-id"] as string | undefined) ?? null,
   };
 
   recordError(entry);
