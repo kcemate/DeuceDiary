@@ -142,7 +142,13 @@ export const queryClient = new QueryClient({
       retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
     },
     mutations: {
-      retry: false,
+      // Retry mutations once on transient server/network errors (5xx or no status).
+      // 4xx errors (validation, auth, rate limits) are not retried — user action required.
+      retry: (failureCount, error) => {
+        if (failureCount >= 1) return false;
+        return isTransientError(error);
+      },
+      retryDelay: 1000,
     },
   },
 });
