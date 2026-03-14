@@ -4,6 +4,11 @@ import { Button } from "@/components/ui/button";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  /**
+   * Called after a soft reset (state cleared without page reload).
+   * Use this to re-fetch data or navigate away when the boundary resets.
+   */
+  onReset?: () => void;
 }
 
 interface State {
@@ -36,6 +41,12 @@ export class ErrorBoundary extends Component<Props, State> {
     );
   }
 
+  /** Soft reset — clears error state and re-renders children without a page reload. */
+  private softReset = () => {
+    this.setState({ hasError: false, error: null });
+    this.props.onReset?.();
+  };
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
@@ -62,14 +73,19 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="text-sm text-muted-foreground mb-6">
             The throne room had an unexpected issue. Try refreshing.
           </p>
-          <Button
-            onClick={() => {
-              this.setState({ hasError: false, error: null });
-              window.location.reload();
-            }}
-          >
-            Flush &amp; Retry
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={this.softReset}>
+              Try Again
+            </Button>
+            <Button
+              onClick={() => {
+                this.softReset();
+                window.location.reload();
+              }}
+            >
+              Flush &amp; Retry
+            </Button>
+          </div>
         </div>
       );
     }
