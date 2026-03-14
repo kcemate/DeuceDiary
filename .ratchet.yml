@@ -1,0 +1,35 @@
+agent: claude-code
+model: claude-sonnet-4-6
+
+defaults:
+  clicks: 5
+  test_command: npm test
+  auto_commit: true
+
+targets:
+  - name: routes
+    path: ./server/routes
+    description: "Express route handlers — error handling, validation, types"
+
+  - name: lib
+    path: ./server/lib
+    description: "Server library code — utilities, helpers, core logic"
+
+  - name: server
+    path: ./server
+    description: "Full backend — broader sweep after routes/lib are clean"
+
+  - name: client
+    path: ./client/src
+    description: "React frontend components and hooks"
+
+boundaries:
+  - path: "**/*.test.ts"
+    rule: no-modify
+    reason: "Do not modify existing tests"
+  - path: server/__tests__/
+    rule: no-modify
+    reason: "Test directory is read-only"
+  - path: migrations/
+    rule: no-modify
+    reason: "Migration files are immutable"
