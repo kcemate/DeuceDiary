@@ -76,7 +76,10 @@ export const createDeuceSchema = z.object({
   groupId: z.string().uuid('groupId must be a valid UUID').optional(),
   location: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Location cannot be blank'),
   thoughts: z.string().max(500, "Thought must be 500 characters or less").transform(sanitizeText).optional(),
-  loggedAt: z.union([z.string(), z.null()]).optional(),
+  loggedAt: z.union([
+    z.string().refine(s => !isNaN(Date.parse(s)), { message: 'loggedAt must be a valid ISO 8601 date string' }),
+    z.null(),
+  ]).optional(),
   ghost: z.boolean().optional(),
   bristolScore: z.number().int().min(1).max(7).optional(),
   photoUrl: z.string().url().optional(),
