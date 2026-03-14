@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { z } from "zod";
+import { timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import { db, pool } from "./db";
 import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
@@ -104,6 +105,23 @@ const unregisterPushSchema = z.object({
   token: z.string().min(1).max(500),
 });
 
+
+/** Constant-time string comparison to prevent timing attacks on API keys */
+function safeKeyCompare(provided: string | undefined, expected: string | undefined): boolean {
+  if (!provided || !expected) return false;
+  try {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) {
+      // Still do a comparison to avoid length-based timing leak
+      timingSafeEqual(Buffer.alloc(b.length), b);
+      return false;
+    }
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
 function getTodayInZone(tz: string): string {
@@ -283,8 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn('[WARN] ADMIN_KEY not set — admin endpoints will reject all requests in dev');
   }
   app.get('/api/admin/stats', async (req, res) => {
-    const key = req.headers['x-admin-key'];
-    if (!ADMIN_KEY || key !== ADMIN_KEY) {
+    const key = req.headers['x-admin-key'] as string | undefined;
+    if (!ADMIN_KEY || !safeKeyCompare(key, ADMIN_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
@@ -305,8 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn('[WARN] INTERNAL_API_KEY not set — internal endpoints will reject all requests in dev');
   }
   app.post('/api/internal/streak-check', async (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
@@ -320,9 +338,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Crown transfer: calculate weekly kings and transfer crowns ---
   app.post('/api/internal/crown-transfer', async (req, res) => {
-    const key = req.headers['x-internal-key'];
+    const key = req.headers['x-internal-key'] as string | undefined;
     const internalKey = process.env.INTERNAL_API_KEY;
-    if (!internalKey || key !== internalKey) {
+    if (!internalKey || !safeKeyCompare(key, internalKey)) {
       return Errors.unauthorized(res);
     }
 
@@ -423,8 +441,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Error log endpoint (internal) ---
   app.get('/api/internal/errors', (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -434,8 +452,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Detailed health endpoint (internal) ---
   app.get('/api/internal/health/detailed', async (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
