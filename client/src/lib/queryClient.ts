@@ -58,6 +58,18 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+/** Retry on transient network errors and 5xx, but never on 4xx client errors. */
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  if (failureCount >= 2) return false;
+  if (error instanceof TypeError) return true; // network-level failure
+  if (error instanceof Error) {
+    const status = parseInt(error.message.split(":")[0], 10);
+    if (!isNaN(status) && status >= 400 && status < 500) return false; // 4xx → don't retry
+    if (!isNaN(status) && status >= 500) return true; // 5xx → retry
+  }
+  return false;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -65,7 +77,8 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: shouldRetry,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
     },
     mutations: {
       retry: false,
