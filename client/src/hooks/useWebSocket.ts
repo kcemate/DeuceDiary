@@ -26,6 +26,15 @@ export function useWebSocket() {
   const shouldReconnectRef = useRef(false);
   // Exponential backoff: tracks how many consecutive failures have occurred
   const reconnectAttemptRef = useRef(0);
+  // Group IDs to join when (re)connected — buffered during disconnection so
+  // joinGroup calls made while offline are replayed automatically on reconnect.
+  const pendingGroupJoinsRef = useRef<Set<string>>(new Set());
+
+  const flushPendingGroupJoins = (ws: WebSocket) => {
+    for (const groupId of pendingGroupJoinsRef.current) {
+      ws.send(JSON.stringify({ type: "join_group", groupId }));
+    }
+  };
 
   const connect = async () => {
     // Don't open a second connection if one is already open or connecting
@@ -54,6 +63,8 @@ export function useWebSocket() {
         console.log("WebSocket connected");
         setIsConnected(true);
         reconnectAttemptRef.current = 0; // reset backoff on successful connect
+        // Replay any group joins buffered while we were disconnected
+        flushPendingGroupJoins(ws);
       };
 
       ws.onmessage = (event) => {
@@ -100,6 +111,7 @@ export function useWebSocket() {
     // Stop any pending reconnect first
     shouldReconnectRef.current = false;
     reconnectAttemptRef.current = 0;
+    pendingGroupJoinsRef.current.clear();
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -115,12 +127,15 @@ export function useWebSocket() {
   };
 
   const joinGroup = (groupId: string) => {
+    // Always record the group so it can be replayed after reconnect
+    pendingGroupJoinsRef.current.add(groupId);
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: "join_group",
         groupId,
       }));
     }
+    // If not connected, the join will be sent automatically in ws.onopen
   };
 
   useEffect(() => {
