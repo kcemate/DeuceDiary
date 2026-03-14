@@ -113,7 +113,7 @@ export const invites = pgTable("invites", {
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
   name: varchar("name").notNull(),
-  isDefault: boolean("is_default").default(false),
+  isDefault: boolean("is_default").default(false).notNull(),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
