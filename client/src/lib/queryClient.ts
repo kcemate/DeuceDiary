@@ -2,10 +2,30 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getAuthToken } from "./auth-token";
 import { toast } from "@/hooks/use-toast";
 
+/**
+ * Custom error class that carries the HTTP status and, for 429 responses,
+ * the number of seconds until the rate limit resets (from Retry-After header).
+ */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly retryAfterSeconds?: number,
+  ) {
+    super(`${status}: ${message}`);
+    this.name = "ApiError";
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    if (res.status === 429) {
+      const retryAfter = res.headers.get("Retry-After");
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+      throw new ApiError(429, text, Number.isFinite(seconds) ? seconds : undefined);
+    }
+    throw new ApiError(res.status, text);
   }
 }
 
@@ -102,30 +122,30 @@ export const getQueryFn: <T>(options: {
 
 /** Returns true if the error is a server error (5xx) or pure network failure. */
 function isTransientError(error: unknown): boolean {
+  if (error instanceof ApiError) return error.status >= 500;
   if (error instanceof Error) {
     const match = error.message.match(/^(\d{3}):/);
-    if (match) {
-      const status = parseInt(match[1], 10);
-      return status >= 500;
-    }
-    // No HTTP status = network/fetch failure
+    if (match) return parseInt(match[1], 10) >= 500;
+    // No HTTP status = network/fetch failure (timeout, offline)
     return true;
   }
   return false;
 }
 
-/** Retry on network errors and 5xx responses; skip 4xx (auth/validation failures). */
+/** Retry on network errors and 5xx responses; skip 4xx (auth/validation/rate-limit). */
 function shouldRetry(failureCount: number, error: unknown): boolean {
   if (failureCount >= 3) return false;
+  if (error instanceof ApiError) {
+    // 4xx = client error, do not retry (includes 429 rate limits)
+    if (error.status >= 400 && error.status < 500) return false;
+    return true;
+  }
   if (error instanceof Error) {
-    // Extract HTTP status from "NNN: ..." error messages produced by throwIfResNotOk
     const match = error.message.match(/^(\d{3}):/);
     if (match) {
       const status = parseInt(match[1], 10);
-      // 4xx = client error, do not retry
       if (status >= 400 && status < 500) return false;
     }
-    // Network errors (no status) or 5xx → retry
     return true;
   }
   return false;
@@ -158,6 +178,19 @@ export const queryClient = new QueryClient({
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.action.error;
+
+    if (error instanceof ApiError && error.status === 429) {
+      const wait = error.retryAfterSeconds
+        ? ` Try again in ${error.retryAfterSeconds}s.`
+        : " Slow down and try again shortly.";
+      toast({
+        title: "Too many requests",
+        description: `You're moving too fast for the throne room.${wait}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (isTransientError(error)) {
       toast({
         title: "Connection issue",
