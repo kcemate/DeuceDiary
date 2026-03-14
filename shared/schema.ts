@@ -192,6 +192,9 @@ export const referrals = pgTable("referrals", {
 }, (table) => [
   index("idx_referrals_referrer").on(table.referrerId),
   index("idx_referrals_referee").on(table.refereeId),
+  // Each user can be referred at most once — prevents race conditions between
+  // concurrent /api/referral/apply calls from bypassing the application-level check
+  unique("uq_referrals_referee").on(table.refereeId),
 ]);
 
 // Bingo types

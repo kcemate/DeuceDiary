@@ -1653,27 +1653,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async applyReferral(refereeId: string, referrerId: string): Promise<Referral> {
-    // Wrap all three mutations in a transaction — if any step fails, all roll back
-    return await db.transaction(async (tx) => {
-      // Set referredBy on referee
-      await tx
-        .update(users)
-        .set({ referredBy: referrerId, updatedAt: new Date() })
-        .where(eq(users.id, refereeId));
+    // Wrap all three mutations in a transaction — if any step fails, all roll back.
+    // The DB-level unique constraint on referrals(refereeId) acts as a final safety
+    // net against concurrent requests: if two requests race past the application-level
+    // referredBy check simultaneously, only one INSERT will succeed.
+    try {
+      return await db.transaction(async (tx) => {
+        // Set referredBy on referee
+        await tx
+          .update(users)
+          .set({ referredBy: referrerId, updatedAt: new Date() })
+          .where(eq(users.id, refereeId));
 
-      // Increment referrer's referralCount
-      await tx
-        .update(users)
-        .set({ referralCount: sql`${users.referralCount} + 1`, updatedAt: new Date() })
-        .where(eq(users.id, referrerId));
+        // Increment referrer's referralCount
+        await tx
+          .update(users)
+          .set({ referralCount: sql`${users.referralCount} + 1`, updatedAt: new Date() })
+          .where(eq(users.id, referrerId));
 
-      // Insert referral row
-      const [referral] = await tx
-        .insert(referrals)
-        .values({ referrerId, refereeId })
-        .returning();
-      return referral;
-    });
+        // Insert referral row — unique constraint uq_referrals_referee guards against
+        // duplicate inserts from concurrent requests for the same referee
+        const [referral] = await tx
+          .insert(referrals)
+          .values({ referrerId, refereeId })
+          .returning();
+        return referral;
+      });
+    } catch (err: any) {
+      if (err?.code === '23505' && err?.constraint === 'uq_referrals_referee') {
+        throw new Error('REFERRAL_ALREADY_APPLIED');
+      }
+      throw err;
+    }
   }
 
   async getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }> {

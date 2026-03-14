@@ -54,7 +54,11 @@ export function createPremiumRouter(): Router {
       await storage.applyReferral(userId, referrer.id);
 
       res.json({ ok: true, referrerUsername: referrer.username });
-    } catch (error) {
+    } catch (error: any) {
+      // DB unique constraint fired — concurrent duplicate application
+      if (error?.message === 'REFERRAL_ALREADY_APPLIED') {
+        return res.status(400).json({ message: 'You have already used a referral code' });
+      }
       console.error('Error applying referral:', error);
       res.status(500).json({ message: 'Failed to apply referral' });
     }
