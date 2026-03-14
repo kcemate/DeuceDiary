@@ -2538,6 +2538,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Track all subscribed groups so close handler can clean all of them up
           (ws as any).subscribedGroups.add(groupId);
+
+          // Acknowledge the join so clients know they are subscribed and can
+          // trigger broadcasts (e.g. by logging a deuce) without a fixed timeout.
+          ws.send(JSON.stringify({ type: 'join_group_ok', groupId }));
         } else if (data.type === 'leave_group') {
           const groupId = data.groupId;
           if (!groupId || typeof groupId !== 'string') {
@@ -2575,9 +2579,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function broadcastToGroup(groupId: string, message: any) {
     const connections = groupConnections.get(groupId);
     if (connections) {
+      // Stamp every broadcast with a unique msgId so clients can deduplicate.
+      // The same msgId is sent to all subscribers of a group for a given event.
+      const stamped = { msgId: uuidv4(), ...message };
+      const payload = JSON.stringify(stamped);
       connections.forEach((ws) => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(message));
+          ws.send(payload);
         }
       });
     }
