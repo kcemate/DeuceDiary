@@ -562,10 +562,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const syncBodySchema = z.object({
+    email: z.string().max(254).nullish(),
+    firstName: z.string().max(100).nullish(),
+    lastName: z.string().max(100).nullish(),
+    username: z.string().max(50).nullish(),
+    imageUrl: z.string().max(2048).nullish(),
+  });
+
   // Clerk frontend sync — called after Clerk login to upsert user + return profile
   app.post('/api/auth/sync', isAuthenticated, async (req: any, res) => {
     try {
-      const clerkData = req.body;
+      const bodyParsed = syncBodySchema.safeParse(req.body);
+      const clerkData = bodyParsed.success ? bodyParsed.data : {};
       const userId = req.user.id;
 
       const user = await storage.upsertUser({
