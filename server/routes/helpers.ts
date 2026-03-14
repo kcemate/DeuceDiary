@@ -4,6 +4,24 @@ import { groups, groupMembers, deuceEntries } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 
+// --- Public user projection ---
+
+/**
+ * Strip sensitive fields from a User object before including it in
+ * API responses visible to other users (e.g. entries in a group feed).
+ * Keeps only the fields needed for display purposes.
+ */
+export function sanitizeUserForResponse(user: Record<string, any>) {
+  return {
+    id: user.id,
+    username: user.username ?? null,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+    profileImageUrl: user.profileImageUrl ?? null,
+    deuceCount: user.deuceCount ?? 0,
+  };
+}
+
 // --- Shared sanitization helpers ---
 
 /**

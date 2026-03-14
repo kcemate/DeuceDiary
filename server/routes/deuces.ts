@@ -12,6 +12,7 @@ import {
   MAX_LOGS_PER_DAY,
   getTodayUTC,
   recalculateStreak,
+  sanitizeUserForResponse,
 } from "./helpers";
 import { reverseGeocode } from "../lib/geocode";
 
@@ -293,12 +294,13 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
+        const safeUser = user ? sanitizeUserForResponse(user) : null;
         for (const groupId of targetGroupIds) {
           const groupEntry = entries.find(e => e.groupId === groupId);
           broadcastToGroup(groupId, {
             type: 'deuce_logged',
             message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user },
+            entry: { ...groupEntry, user: safeUser },
             userId: userId, // Don't notify the user who logged the deuce
           });
         }

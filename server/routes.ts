@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { z, ZodError } from "zod";
+import { timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import { db, pool } from "./db";
 import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
@@ -36,6 +37,7 @@ import {
   getTitle,
   escapeHtml,
   MAX_LOGS_PER_DAY,
+  sanitizeUserForResponse,
 } from "./routes/helpers";
 
 // --- Zod Validation Schemas ---
@@ -104,6 +106,23 @@ const unregisterPushSchema = z.object({
   token: z.string().min(1).max(500),
 });
 
+
+/** Constant-time string comparison to prevent timing attacks on API keys */
+function safeKeyCompare(provided: string | undefined, expected: string | undefined): boolean {
+  if (!provided || !expected) return false;
+  try {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length) {
+      // Still do a comparison to avoid length-based timing leak
+      timingSafeEqual(Buffer.alloc(b.length), b);
+      return false;
+    }
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 /** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
 function getTodayInZone(tz: string): string {
@@ -283,8 +302,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn('[WARN] ADMIN_KEY not set — admin endpoints will reject all requests in dev');
   }
   app.get('/api/admin/stats', async (req, res) => {
-    const key = req.headers['x-admin-key'];
-    if (!ADMIN_KEY || key !== ADMIN_KEY) {
+    const key = req.headers['x-admin-key'] as string | undefined;
+    if (!ADMIN_KEY || !safeKeyCompare(key, ADMIN_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
@@ -305,8 +324,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.warn('[WARN] INTERNAL_API_KEY not set — internal endpoints will reject all requests in dev');
   }
   app.post('/api/internal/streak-check', async (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
@@ -320,9 +339,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Crown transfer: calculate weekly kings and transfer crowns ---
   app.post('/api/internal/crown-transfer', async (req, res) => {
-    const key = req.headers['x-internal-key'];
+    const key = req.headers['x-internal-key'] as string | undefined;
     const internalKey = process.env.INTERNAL_API_KEY;
-    if (!internalKey || key !== internalKey) {
+    if (!internalKey || !safeKeyCompare(key, internalKey)) {
       return Errors.unauthorized(res);
     }
 
@@ -423,8 +442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Error log endpoint (internal) ---
   app.get('/api/internal/errors', (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     const limit = Math.min(Number(req.query.limit) || 50, 200);
@@ -434,8 +453,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Detailed health endpoint (internal) ---
   app.get('/api/internal/health/detailed', async (req, res) => {
-    const key = req.headers['x-internal-key'];
-    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+    const key = req.headers['x-internal-key'] as string | undefined;
+    if (!INTERNAL_KEY || !safeKeyCompare(key, INTERNAL_KEY)) {
       return Errors.unauthorized(res);
     }
     try {
@@ -580,14 +599,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clerkData = bodyParsed.success ? bodyParsed.data : {};
       const userId = req.user.id;
 
-      const user = await storage.upsertUser({
-        id: userId,
-        email: clerkData.email ?? req.user.email ?? null,
-        firstName: clerkData.firstName ?? req.user.firstName ?? null,
-        lastName: clerkData.lastName ?? req.user.lastName ?? null,
-        username: clerkData.username ?? undefined,
-        profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
-      });
+      // In Clerk mode, identity fields (email, name) come from the verified JWT,
+      // not the request body, to prevent spoofing. Only username is user-supplied.
+      const jwtClaims = req.clerkAuth as any;
+      const upsertData = clerkEnabled
+        ? {
+            id: userId,
+            email: jwtClaims?.email ?? req.user.email ?? null,
+            firstName: jwtClaims?.first_name ?? req.user.firstName ?? null,
+            lastName: jwtClaims?.last_name ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: jwtClaims?.image_url ?? req.user.profileImageUrl ?? null,
+          }
+        : {
+            id: userId,
+            email: clerkData.email ?? req.user.email ?? null,
+            firstName: clerkData.firstName ?? req.user.firstName ?? null,
+            lastName: clerkData.lastName ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
+          };
+
+      const user = await storage.upsertUser(upsertData);
 
       // Auto-create "Solo Deuces" if user has no groups
       let groups = await storage.getUserGroups(userId);
@@ -836,7 +869,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
       const members = await storage.getGroupMembers(groupId);
-      const entries = await storage.getGroupEntries(groupId, limit, offset);
+      const rawEntries = await storage.getGroupEntries(groupId, limit, offset);
+      // Strip sensitive user fields (email, referralCode, etc.) from entry author data
+      const entries = rawEntries.map(e => ({ ...e, user: sanitizeUserForResponse(e.user) }));
       res.json({ group, members, entries });
     } catch (error) {
       console.error("Error fetching group details:", error);
@@ -1287,10 +1322,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OG HTML page for invite links — crawlers get rich meta tags (public)
+  const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   app.get('/api/og/invite/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+      // Validate UUID format before using in HTML href to prevent injection
+      if (!INVITE_UUID_RE.test(inviteCode)) {
         return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
       }
       const preview = await storage.getGroupInvitePreview(inviteCode);
@@ -1517,12 +1554,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
+        const safeUser = user ? sanitizeUserForResponse(user) : null;
         for (const groupId of targetGroupIds) {
           const groupEntry = entries.find(e => e.groupId === groupId);
           broadcastToGroup(groupId, {
             type: 'deuce_logged',
             message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user },
+            entry: { ...groupEntry, user: safeUser },
             userId: userId, // Don't notify the user who logged the deuce
           });
         }
@@ -1671,12 +1709,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
+        const safeUser = user ? sanitizeUserForResponse(user) : null;
         for (const groupId of targetGroupIds) {
           const groupEntry = entries.find(e => e.groupId === groupId);
           broadcastToGroup(groupId, {
             type: 'deuce_logged',
             message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user },
+            entry: { ...groupEntry, user: safeUser },
             userId: userId,
           });
         }
@@ -1985,8 +2024,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subscription upgrade (dev mode — no real payment)
+  // Subscription upgrade (dev mode only — real payments go through RevenueCat webhook)
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
+    if (clerkEnabled) {
+      return Errors.forbidden(res, "Subscription management is handled via the app store");
+    }
     try {
       const userId = req.user.id;
       const parsed = subscriptionUpgradeSchema.safeParse(req.body);

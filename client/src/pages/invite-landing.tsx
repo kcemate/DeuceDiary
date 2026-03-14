@@ -498,14 +498,20 @@ export default function InviteLanding() {
           ) : (
             <div className="space-y-3">
               {/* New vs Returning tab toggle */}
-              <div className="flex rounded-xl bg-[#F5EDE0] p-1 gap-1">
+              <div className="flex rounded-xl bg-[#F5EDE0] p-1 gap-1" role="tablist" aria-label="Account type">
                 <button
+                  role="tab"
+                  aria-selected={ctaTab === "new"}
+                  aria-controls="tab-panel-new"
                   onClick={() => { setCtaTab("new"); setError(""); setUsername(""); }}
                   className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "new" ? "bg-white text-green-700 shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
                 >
                   I'm New Here
                 </button>
                 <button
+                  role="tab"
+                  aria-selected={ctaTab === "existing"}
+                  aria-controls="tab-panel-existing"
                   onClick={() => { setCtaTab("existing"); setError(""); setUsername(""); }}
                   className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "existing" ? "bg-white text-[#2C1A0E] shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
                 >
@@ -514,7 +520,7 @@ export default function InviteLanding() {
               </div>
 
               {ctaTab === "new" ? (
-                <form onSubmit={handleJoinWithLogin} className="space-y-3">
+                <form id="tab-panel-new" role="tabpanel" onSubmit={handleJoinWithLogin} className="space-y-3">
                   <Input
                     id="username-input"
                     type="text"
@@ -538,7 +544,7 @@ export default function InviteLanding() {
                   </p>
                 </form>
               ) : (
-                <form onSubmit={handleJoinWithLogin} className="space-y-3">
+                <form id="tab-panel-existing" role="tabpanel" onSubmit={handleJoinWithLogin} className="space-y-3">
                   <Input
                     type="text"
                     placeholder="Enter your username"

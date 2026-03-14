@@ -388,9 +388,14 @@ export function createGroupsRouter(): Router {
   });
 
   // OG HTML page for invite links -- crawlers get rich meta tags (public)
+  const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   router.get('/api/og/invite/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      // Validate UUID format before using in HTML href to prevent injection
+      if (!INVITE_UUID_RE.test(inviteCode)) {
+        return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
+      }
       const preview = await storage.getGroupInvitePreview(inviteCode);
 
       if (!preview) {
