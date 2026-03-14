@@ -1960,8 +1960,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subscription upgrade (dev mode — no real payment)
+  // Subscription upgrade (dev mode only — real payments go through RevenueCat webhook)
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
+    if (clerkEnabled) {
+      return Errors.forbidden(res, "Subscription management is handled via the app store");
+    }
     try {
       const userId = req.user.id;
       const parsed = subscriptionUpgradeSchema.safeParse(req.body);
