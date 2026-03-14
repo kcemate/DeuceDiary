@@ -48,17 +48,18 @@ function MilestoneBadge({
 }) {
   return (
     <div
+      aria-label={`${milestone.label}: ${unlocked ? "unlocked" : `locked — requires ${milestone.count} deuces`}`}
       className={`flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all ${
         unlocked
           ? "border-primary/30 bg-primary/5"
           : "border-border bg-muted/50 opacity-40 grayscale"
       }`}
     >
-      <span className="text-2xl">{milestone.emoji}</span>
-      <span className="text-[10px] font-black uppercase tracking-wider text-center leading-tight text-foreground">
+      <span className="text-2xl" aria-hidden="true">{milestone.emoji}</span>
+      <span className="text-[10px] font-black uppercase tracking-wider text-center leading-tight text-foreground" aria-hidden="true">
         {milestone.label}
       </span>
-      <span className="text-[9px] text-muted-foreground font-medium">
+      <span className="text-[9px] text-muted-foreground font-medium" aria-hidden="true">
         {milestone.count}+
       </span>
     </div>
