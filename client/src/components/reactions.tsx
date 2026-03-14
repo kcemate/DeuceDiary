@@ -196,10 +196,11 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
         {!showAllReactions && hiddenCount > 0 && (
           <button
             onClick={() => setShowAllReactions(true)}
+            aria-label={`Show ${hiddenCount} more reaction${hiddenCount !== 1 ? 's' : ''}`}
             className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[44px] transition-colors"
           >
             +{hiddenCount}
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown className="h-3 w-3" aria-hidden="true" />
           </button>
         )}
         {showAllReactions && sortedEntries.length > maxVisible && (
@@ -265,7 +266,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                           ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
                           : "bg-muted hover:bg-muted/70",
                       ].join(' ')}
-                      aria-label={`${emoji} (${list.length})`}
+                      aria-label={`React with ${emoji} (${list.length} reaction${list.length !== 1 ? 's' : ''})`}
                     >
                       <span>{emoji}</span>
                       <span className="text-[9px] font-bold tabular-nums text-muted-foreground leading-none">
@@ -292,7 +293,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                       ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
                       : "hover:bg-muted",
                   ].join(' ')}
-                  aria-label={emoji}
+                  aria-label={`React with ${emoji}`}
                 >
                   {emoji}
                 </button>
