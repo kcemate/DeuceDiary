@@ -1186,49 +1186,77 @@ export class DatabaseStorage implements IStorage {
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
     const weekOf = sevenDaysAgo.toISOString().slice(0, 10);
 
-    // 1. Total deuces in last 7 days (use loggedAt — the user-provided timestamp)
-    const [totalResult] = await db
-      .select({ total: sql<number>`COUNT(*)::int` })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
-    const totalDeuces = totalResult?.total ?? 0;
+    // Parallelize all 7 independent queries — runs in one round-trip instead of 7
+    const [
+      [totalResult],
+      peakDayRows,
+      squadRows,
+      userGroupIds,
+      funnyRows,
+      [reactionsResult],
+      dailyRows,
+    ] = await Promise.all([
+      // 1. Total deuces
+      db.select({ total: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo))),
+      // 2. Peak day
+      db.select({
+          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+        .orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+      // 3. Most active squad
+      db.select({ name: groups.name, count: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries)
+        .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(groups.name).orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+      // 4. User group IDs (for streak lookup)
+      db.select({ groupId: groupMembers.groupId })
+        .from(groupMembers).where(eq(groupMembers.userId, userId)),
+      // 5. Funniest entry
+      db.select({
+          thought: deuceEntries.thoughts,
+          reactionCount: sql<number>`COUNT(${reactions.id})::int`,
+        })
+        .from(deuceEntries)
+        .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(deuceEntries.id, deuceEntries.thoughts)
+        .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`)).limit(1),
+      // 6. Total reactions received
+      db.select({ total: sql<number>`COUNT(*)::int` })
+        .from(reactions)
+        .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo))),
+      // 7. Daily counts
+      db.select({
+          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+        .orderBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`),
+    ]);
 
-    // 2. Peak day (day with most deuces)
-    const peakDayRows = await db
-      .select({
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
+    const totalDeuces = totalResult?.total ?? 0;
     const peakDay = peakDayRows.length > 0
       ? { date: peakDayRows[0].date, count: peakDayRows[0].count }
       : { date: weekOf, count: 0 };
-
-    // 3. Most active squad (group with most deuces this week)
-    const squadRows = await db
-      .select({
-        name: groups.name,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(groups.name)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
     const mostActiveSquad = squadRows.length > 0
       ? { name: squadRows[0].name, count: squadRows[0].count }
       : { name: "None", count: 0 };
+    const funniestEntry = funnyRows.length > 0
+      ? { thought: funnyRows[0].thought, reactions: funnyRows[0].reactionCount }
+      : null;
+    const totalReactionsReceived = reactionsResult?.total ?? 0;
 
-    // 4. Longest streak across user's groups
-    const userGroupIds = await db
-      .select({ groupId: groupMembers.groupId })
-      .from(groupMembers)
-      .where(eq(groupMembers.userId, userId));
+    // Streak lookup depends on userGroupIds — one extra query if user has groups
     let longestStreak = 0;
     if (userGroupIds.length > 0) {
       const [streakResult] = await db
@@ -1237,41 +1265,6 @@ export class DatabaseStorage implements IStorage {
         .where(inArray(groups.id, userGroupIds.map(g => g.groupId)));
       longestStreak = streakResult?.maxStreak ?? 0;
     }
-
-    // 5. Funniest entry (most reacted entry this week)
-    const funnyRows = await db
-      .select({
-        thought: deuceEntries.thoughts,
-        reactionCount: sql<number>`COUNT(${reactions.id})::int`,
-      })
-      .from(deuceEntries)
-      .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(deuceEntries.id, deuceEntries.thoughts)
-      .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
-      .limit(1);
-    const funniestEntry = funnyRows.length > 0
-      ? { thought: funnyRows[0].thought, reactions: funnyRows[0].reactionCount }
-      : null;
-
-    // 6. Total reactions received this week
-    const [reactionsResult] = await db
-      .select({ total: sql<number>`COUNT(*)::int` })
-      .from(reactions)
-      .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
-    const totalReactionsReceived = reactionsResult?.total ?? 0;
-
-    // 7. Daily counts for the past 7 days (for bar chart)
-    const dailyRows = await db
-      .select({
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`);
 
     // Build a full 7-day array (fill zeros for missing days)
     const dailyMap = new Map(dailyRows.map(r => [r.date, r.count]));
