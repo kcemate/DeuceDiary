@@ -574,6 +574,8 @@ Logs a new deuce entry. Can target multiple groups in a single call.
 | `groupId` | UUID | One of `groupIds`/`groupId` | Backward compat |
 | `loggedAt` | ISO 8601 string | No | Cannot be in the future (1 min tolerance) |
 | `ghost` | boolean | No | Ghost logs are hidden from group feed + WebSocket |
+| `bristolScore` | integer | No | Bristol stool scale 1–7 (stored but not shown in UI) |
+| `photoUrl` | URL string | No | Pre-uploaded photo URL |
 | `latitude` | number | No | −90 to 90 |
 | `longitude` | number | No | −180 to 180 |
 
