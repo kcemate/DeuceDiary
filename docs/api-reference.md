@@ -895,7 +895,7 @@ Returns the user's current subscription status.
 
 ### POST /api/subscription/streak-insurance 🔑 👑
 
-Uses streak insurance to preserve an at-risk streak for today. One use per month.
+Uses streak insurance to preserve an at-risk streak for today. One use per month. Alias: `PUT /api/user/streak-insurance` (same behavior, both endpoints available).
 
 **Response:**
 ```json
@@ -906,8 +906,16 @@ Uses streak insurance to preserve an at-risk streak for today. One use per month
 }
 ```
 
+If no streaks were at risk: `"message": "Insurance activated (no at-risk streaks found)"` and `"extended": false`.
+
 **Errors:**
 - `400` — Insurance already used this month
+
+---
+
+### PUT /api/user/streak-insurance 🔑 👑
+
+Alias for `POST /api/subscription/streak-insurance`. Used by the frontend. Same request/response shape.
 
 ---
 
