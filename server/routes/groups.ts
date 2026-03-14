@@ -14,7 +14,7 @@ import {
   checkAndNotifyStreakRisk,
   escapeHtml,
 } from "./helpers";
-import { leaderboardCache } from "../lib/cache";
+import { leaderboardCache, weeklyReportCache } from "../lib/cache";
 
 export function createGroupsRouter(): Router {
   const router = Router();
@@ -276,7 +276,16 @@ export function createGroupsRouter(): Router {
   router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), async (req: any, res) => {
     try {
       const groupId = req.groupId;
+
+      const cached = weeklyReportCache.get(groupId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=300');
+        return res.json(cached);
+      }
+
       const report = await storage.getGroupWeeklyReport(groupId);
+      weeklyReportCache.set(groupId, report);
+      res.setHeader('Cache-Control', 'private, max-age=300');
       res.json(report);
     } catch (error) {
       if (error instanceof Error && error.message === "Group not found") {
