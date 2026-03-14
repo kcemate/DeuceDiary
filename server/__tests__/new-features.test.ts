@@ -352,6 +352,7 @@ const memStore = vi.hoisted(() => {
       return map;
     },
     async updateGroupStreak(_groupId: string, _currentStreak: number, _longestStreak: number, _lastStreakDate: string) {},
+    async resetGroupStreak() {},
     async getMembersLogStatusToday(groupId: string, _today: string) {
       const memberIds = _members.filter((m) => m.groupId === groupId).map((m) => m.userId);
       return memberIds.map((uid) => ({

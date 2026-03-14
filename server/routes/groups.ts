@@ -206,10 +206,15 @@ export function createGroupsRouter(): Router {
       const streak = await storage.getGroupStreak(groupId);
       const logsToday = await storage.getMembersLogStatusToday(groupId, today);
 
-      // If streak is stale (lastStreakDate is not today and not yesterday), reset it for the response
+      // If streak is stale (lastStreakDate is not today and not yesterday), reset it in the
+      // DB so subsequent reads are consistent — not just the response for this request.
       let currentStreak = streak.currentStreak;
       if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
         currentStreak = 0;
+        // Fire-and-forget persistence: non-critical, safe to proceed even if it fails
+        storage.resetGroupStreak(groupId).catch(err =>
+          console.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
+        );
       }
 
       res.json({

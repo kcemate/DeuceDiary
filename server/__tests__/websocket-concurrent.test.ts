@@ -76,6 +76,7 @@ const memStore = vi.hoisted(() => {
     async getGroupStreak(_groupId: string) { return { currentStreak: 0, longestStreak: 0, lastStreakDate: null }; },
     async getGroupStreaksBatch(groupIds: string[]) { const map = new Map<string, any>(); for (const id of groupIds) map.set(id, { currentStreak: 0, longestStreak: 0, lastStreakDate: null }); return map; },
     async updateGroupStreak() {},
+    async resetGroupStreak() {},
     async getMembersLogStatusToday(_groupId: string, _today: string) { return []; },
     async getAllGroupsWithActiveStreaks(_minStreak: number) { return []; },
     async createStreakAlert(_alert: any) { return { id: 1 }; },

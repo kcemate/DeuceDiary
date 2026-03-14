@@ -233,6 +233,7 @@ export interface IStorage {
   getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
   getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>>;
   updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void>;
+  resetGroupStreak(groupId: string): Promise<void>;
   getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; email: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
 
   // Streak alert operations
@@ -854,6 +855,14 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(groups)
       .set({ currentStreak, longestStreak, lastStreakDate, updatedAt: new Date() })
+      .where(eq(groups.id, groupId));
+  }
+
+  async resetGroupStreak(groupId: string): Promise<void> {
+    // Persist a stale-streak reset: sets currentStreak to 0 without touching longestStreak
+    await db
+      .update(groups)
+      .set({ currentStreak: 0, updatedAt: new Date() })
       .where(eq(groups.id, groupId));
   }
 

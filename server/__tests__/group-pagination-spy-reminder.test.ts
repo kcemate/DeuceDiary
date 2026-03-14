@@ -158,6 +158,7 @@ const memStore = vi.hoisted(() => {
       return map;
     },
     async updateGroupStreak() {},
+    async resetGroupStreak() {},
     async getMembersLogStatusToday(_groupId: string, _today: string) { return []; },
     async getAllGroupsWithActiveStreaks(_minStreak: number) { return []; },
     async createStreakAlert(_alert: any) { return { id: 1 }; },

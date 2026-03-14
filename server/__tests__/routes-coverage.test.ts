@@ -398,6 +398,7 @@ const memStore = vi.hoisted(() => {
       _longestStreak: number,
       _lastStreakDate: string,
     ) {},
+    async resetGroupStreak() {},
     async getMembersLogStatusToday(groupId: string, _today: string) {
       const memberIds = _members
         .filter((m) => m.groupId === groupId)

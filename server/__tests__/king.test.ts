@@ -282,6 +282,7 @@ const memStore = vi.hoisted(() => {
     async getGroupMemberTypicalHours_full() { return []; },
     async recalculateStreak() {},
     async updateGroupStreak() {},
+    async resetGroupStreak() {},
 
     /* ---- test helper ---- */
     _reset() {

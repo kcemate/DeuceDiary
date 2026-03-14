@@ -176,6 +176,7 @@ const memStore = vi.hoisted(() => {
       return map;
     },
     async updateGroupStreak() {},
+    async resetGroupStreak() {},
     async getMembersLogStatusToday(groupId: string, _today: string) {
       return _members.filter((m) => m.groupId === groupId).map((m) => ({ userId: m.userId, username: null, firstName: null, profileImageUrl: null, hasLogged: false }));
     },
