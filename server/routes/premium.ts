@@ -4,6 +4,7 @@ import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
+import { subscriptionCache } from "../lib/cache";
 
 export function createPremiumRouter(): Router {
   const router = Router();
@@ -96,15 +97,26 @@ export function createPremiumRouter(): Router {
 
   router.get('/api/subscription', isAuthenticated, async (req: any, res) => {
     try {
-      const sub = await storage.getUserSubscription(req.user.id);
+      const userId = req.user.id;
+
+      const cached = subscriptionCache.get(userId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=60');
+        return res.json(cached);
+      }
+
+      const sub = await storage.getUserSubscription(userId);
       const isPremium = sub.subscription === 'premium' && sub.subscriptionExpiresAt && new Date(sub.subscriptionExpiresAt) > new Date();
-      res.json({
+      const payload = {
         tier: isPremium ? 'premium' : 'free',
         expiresAt: sub.subscriptionExpiresAt,
         features: isPremium
           ? ['custom_themes', 'streak_insurance', 'gold_badge', 'priority_support', 'detailed_analytics']
           : [],
-      });
+      };
+      subscriptionCache.set(userId, payload);
+      res.setHeader('Cache-Control', 'private, max-age=60');
+      res.json(payload);
     } catch (error) {
       console.error("Error fetching subscription:", error);
       res.status(500).json({ message: "Failed to fetch subscription" });
@@ -218,6 +230,7 @@ export function createPremiumRouter(): Router {
       }
 
       const updatedUser = await storage.updateUserSubscription(userId, 'premium', expiresAt);
+      subscriptionCache.delete(userId);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error upgrading subscription:", error);
