@@ -266,9 +266,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const base = { timestamp: new Date().toISOString(), uptime: process.uptime() };
     try {
       const start = Date.now();
-      await pool.query('SELECT 1');
+      const versionResult = await pool.query('SELECT version()');
       const dbLatencyMs = Date.now() - start;
-      res.json({ status: 'ok', db: 'connected', dbLatencyMs, ...base });
+      const dbVersion: string = versionResult.rows?.[0]?.version ?? 'unknown';
+      // Extract short version string: "PostgreSQL 16.2 on ..." → "PostgreSQL 16.2"
+      const dbVersionShort = dbVersion.split(' on ')[0] ?? dbVersion;
+      res.json({ status: 'ok', db: 'connected', dbLatencyMs, dbVersion: dbVersionShort, ...base });
     } catch (err) {
       res.status(503).json({ status: 'degraded', db: 'unreachable', ...base });
     }
