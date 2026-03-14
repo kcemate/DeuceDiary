@@ -11,6 +11,8 @@ export interface ErrorEntry {
   message: string;
   stack: string | null;
   userId: string | null;
+  userAgent: string | null;
+  requestId: string | null;
 }
 
 // --- In-memory ring buffer ---
@@ -99,6 +101,8 @@ export function errorTrackingMiddleware(
     message: err.message || "Unknown error",
     stack: status >= 500 ? (err.stack ?? null) : null,
     userId: (req as any).user?.id ?? null,
+    userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
+    requestId: (req.headers["x-request-id"] as string | undefined) ?? null,
   };
 
   recordError(entry);
