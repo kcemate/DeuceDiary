@@ -58,6 +58,23 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+/** Retry on network errors and 5xx responses; skip 4xx (auth/validation failures). */
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  if (failureCount >= 3) return false;
+  if (error instanceof Error) {
+    // Extract HTTP status from "NNN: ..." error messages produced by throwIfResNotOk
+    const match = error.message.match(/^(\d{3}):/);
+    if (match) {
+      const status = parseInt(match[1], 10);
+      // 4xx = client error, do not retry
+      if (status >= 400 && status < 500) return false;
+    }
+    // Network errors (no status) or 5xx → retry
+    return true;
+  }
+  return false;
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -65,7 +82,8 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      retry: shouldRetry,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
     },
     mutations: {
       retry: false,
