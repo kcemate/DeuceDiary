@@ -482,9 +482,20 @@ Public group preview for the invite landing page. No auth required. Returns slim
 
 ### GET /api/groups/invite-preview/:inviteCode 🔓
 
-Rich invite preview (for OG tags and detailed invite card).
+Rich invite preview for OG tags and the detailed invite card. No auth required.
 
-**Response:** Extended preview object from `storage.getGroupInvitePreview()`.
+**Response:**
+```json
+{
+  "name": "The Porcelain Crew",
+  "description": "We hold each other accountable",
+  "memberCount": 4,
+  "deuceCount": 127,
+  "currentStreak": 5,
+  "longestStreak": 12,
+  "memberNames": ["jordan", "alex", "sam", "taylor"]
+}
+```
 
 ---
 
@@ -492,9 +503,15 @@ Rich invite preview (for OG tags and detailed invite card).
 
 ### GET /api/locations 🔑
 
-Returns saved locations for the authenticated user.
+Returns saved locations for the authenticated user, including app-wide defaults.
 
-**Response:** Array of location objects.
+**Response:**
+```json
+[
+  { "id": 1, "name": "Home", "isDefault": true, "createdBy": null },
+  { "id": 2, "name": "The Executive Suite", "isDefault": false, "createdBy": "user_abc123" }
+]
+```
 
 ---
 
@@ -504,9 +521,10 @@ Creates a custom location.
 
 **Request:** `{ "name": "The Executive Suite" }` (1–100 chars)
 
-**Response:** Created location object.
+**Response:** Created location object `{ id, name, isDefault, createdBy }`.
 
 **Errors:**
+- `400` — Location name is required
 - `400` — Location already exists
 
 ---
