@@ -123,6 +123,16 @@ const reactionLimiter = rateLimit({
 });
 app.use("/api/entries", reactionLimiter);
 
+// Subscription upgrade — prevent abuse of the dev-mode upgrade endpoint
+const subscriptionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,  // 1 hour window
+  max: process.env.NODE_ENV === "test" ? 10000 : 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many subscription requests, please try again later." },
+});
+app.use("/api/subscription/upgrade", subscriptionLimiter);
+
 // Referral apply — prevent brute-force code guessing
 const referralLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
