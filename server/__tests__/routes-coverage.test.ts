@@ -865,14 +865,14 @@ describe("PUT /api/auth/user", () => {
   it("returns error for missing username (empty body)", async () => {
     const agent = await loginAs("alice");
     const res = await agent.put("/api/auth/user").send({});
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   it("returns error for username too short", async () => {
     const agent = await loginAs("alice");
     const res = await agent.put("/api/auth/user").send({ username: "ab" });
-    // Zod validation rejects < 3 chars, caught as 500 (generic error handler)
-    expect(res.status).toBe(500);
+    // Zod validation rejects < 3 chars -> 400
+    expect(res.status).toBe(400);
   });
 
   it("returns 400 for duplicate username", async () => {

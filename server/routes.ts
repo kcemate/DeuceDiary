@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { storage } from "./storage";
 import { db, pool } from "./db";
 import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
@@ -495,6 +495,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/groups/preview/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return Errors.notFound(res, "Invite");
+      }
       const invite = await storage.getInviteById(inviteCode);
       if (!invite || invite.expiresAt < new Date()) {
         return Errors.notFound(res, "Invite");
@@ -562,10 +565,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const syncBodySchema = z.object({
+    email: z.string().max(254).nullish(),
+    firstName: z.string().max(100).nullish(),
+    lastName: z.string().max(100).nullish(),
+    username: z.string().max(50).nullish(),
+    imageUrl: z.string().max(2048).nullish(),
+  });
+
   // Clerk frontend sync — called after Clerk login to upsert user + return profile
   app.post('/api/auth/sync', isAuthenticated, async (req: any, res) => {
     try {
-      const clerkData = req.body;
+      const bodyParsed = syncBodySchema.safeParse(req.body);
+      const clerkData = bodyParsed.success ? bodyParsed.data : {};
       const userId = req.user.id;
 
       const user = await storage.upsertUser({
@@ -617,10 +629,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUserUsername(userId, userData.username);
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error updating user:", error);
+      if (error instanceof ZodError) {
+        return Errors.badRequest(res, error.errors[0]?.message ?? "Invalid input");
+      }
       if (error instanceof Error && error.message.includes('duplicate key value')) {
         return Errors.badRequest(res, "Username already taken");
       }
+      console.error("Error updating user:", error);
       Errors.internal(res, "Failed to update user");
     }
   });
@@ -1257,6 +1272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/groups/invite-preview/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return Errors.notFound(res, "Invite");
+      }
       const preview = await storage.getGroupInvitePreview(inviteCode);
       if (!preview) {
         return Errors.notFound(res, "Invite");
@@ -1272,6 +1290,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/og/invite/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
+      }
       const preview = await storage.getGroupInvitePreview(inviteCode);
 
       if (!preview) {
@@ -1375,6 +1396,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const { groupId } = req.query;
+
+      if (groupId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(groupId as string)) {
+        return Errors.badRequest(res, "Invalid groupId format");
+      }
 
       let groupIds: string[];
 
@@ -2117,10 +2142,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const USER_ID_RE = /^[\w.\-]{1,128}$/;
+
   // --- Share Card Data (public) ---
   app.get('/api/share/streak/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
+      if (!USER_ID_RE.test(userId)) {
+        return Errors.notFound(res, "User");
+      }
       const data = await storage.getShareCardData(userId);
       res.json(data);
     } catch (error) {
@@ -2148,6 +2178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/og/streak/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
+      if (!USER_ID_RE.test(userId)) {
+        return res.status(404).send('<html><body><h1>User not found</h1></body></html>');
+      }
       const data = await storage.getShareCardData(userId);
 
       const displayName = escapeHtml(data.username || 'Anonymous');

@@ -709,12 +709,12 @@ async function getSoloGroupId(username: string): Promise<string> {
  *  1. EMPTY STRING EDGE CASES
  * ================================================================ */
 describe("Empty string inputs", () => {
-  it("PUT /api/auth/user with empty username rejects with 500 (Zod min length 3 fails)", async () => {
+  it("PUT /api/auth/user with empty username rejects with 400 (Zod min length 3 fails)", async () => {
     const name = uniqueName("empty");
     const agent = await loginAs(name);
     const res = await agent.put("/api/auth/user").send({ username: "" });
-    // updateUserSchema requires min(3), so empty string fails Zod parse -> caught as 500
-    expect(res.status).toBe(500);
+    // updateUserSchema requires min(3), so empty string fails Zod parse -> 400
+    expect(res.status).toBe(400);
   });
 
   it("PUT /api/auth/user with whitespace-only username rejects", async () => {
@@ -776,8 +776,8 @@ describe("SQL injection attempts", () => {
       username: "'; DROP TABLE users; --",
     });
     // The regex /^[a-zA-Z0-9_]+$/ in updateUserSchema will reject special chars
-    // Zod validation fails, caught in error handler -> 500
-    expect(res.status).toBe(500);
+    // Zod validation fails -> 400
+    expect(res.status).toBe(400);
     // The server does not crash; the next test implicitly proves it is still alive
   });
 
@@ -850,7 +850,7 @@ describe("XSS in input fields", () => {
       username: "<script>alert('xss')</script>",
     });
     // The regex /^[a-zA-Z0-9_]+$/ does not allow < > ( ) ' characters
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
     // The server does not crash; the next test implicitly proves it is still alive
   });
 
@@ -916,14 +916,14 @@ describe("Long string inputs (>10000 characters)", () => {
     const agent = await loginAs(name);
     const res = await agent.put("/api/auth/user").send({ username: longString });
     // updateUserSchema has max(20), so Zod rejects this
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   it("PUT /api/auth/user with 21-char username is rejected", async () => {
     const name = uniqueName("longUser21");
     const agent = await loginAs(name);
     const res = await agent.put("/api/auth/user").send({ username: "A".repeat(21) });
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   it("PUT /api/auth/user with exactly 20-char username succeeds", async () => {
@@ -1033,7 +1033,7 @@ describe("Unicode and emoji in names", () => {
       username: "\u{1F6BD}KingOfThrones",
     });
     // Emoji does not match /^[a-zA-Z0-9_]+$/
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   it("POST /api/groups with emoji name succeeds (premium)", async () => {
@@ -1289,7 +1289,7 @@ describe("Additional edge cases", () => {
     const name = uniqueName("minLen2");
     const agent = await loginAs(name);
     const res = await agent.put("/api/auth/user").send({ username: "ab" });
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   it("POST /api/deuces with null thoughts does not crash", async () => {

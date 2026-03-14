@@ -43,8 +43,8 @@ export const createLocationSchema = z.object({
 });
 
 export const createDeuceSchema = z.object({
-  groupIds: z.array(z.string()).optional(),
-  groupId: z.string().optional(),
+  groupIds: z.array(z.string().uuid('Each groupId must be a valid UUID')).optional(),
+  groupId: z.string().uuid('groupId must be a valid UUID').optional(),
   location: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Location cannot be blank'),
   thoughts: z.string().max(500, "Thought must be 500 characters or less").transform(sanitizeText).optional(),
   loggedAt: z.union([z.string(), z.null()]).optional(),
