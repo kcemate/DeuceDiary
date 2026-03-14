@@ -2538,6 +2538,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Track all subscribed groups so close handler can clean all of them up
           (ws as any).subscribedGroups.add(groupId);
+        } else if (data.type === 'leave_group') {
+          const groupId = data.groupId;
+          if (!groupId || typeof groupId !== 'string') {
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid groupId' }));
+            return;
+          }
+
+          // Remove from group broadcast set and subscription tracking
+          const conns = groupConnections.get(groupId);
+          if (conns) {
+            conns.delete(ws);
+            if (conns.size === 0) groupConnections.delete(groupId);
+          }
+          (ws as any).subscribedGroups.delete(groupId);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);

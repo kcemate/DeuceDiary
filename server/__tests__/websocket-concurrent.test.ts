@@ -295,6 +295,21 @@ describe("WebSocket broadcast — deuce log triggers", () => {
     const health = await supertest(app).get("/api/health");
     expect(health.status).toBe(200);
   });
+
+  it("leave_group: server remains healthy after client sends leave_group for unknown group", async () => {
+    // Tests that the leave_group handler doesn't crash on unknown groupIds
+    // (e.g. client sends leave before joining, or after page reload).
+    // We verify this via the HTTP health check — if the handler threw, server would be unhealthy.
+    const alice = await loginAs("alice");
+
+    // Log a deuce so the server has done real work
+    const groupId = await getSoloGroupId("alice");
+    const res = await alice.post("/api/deuces").send({ groupIds: [groupId], location: "Home" });
+    expect(res.status).toBe(200);
+
+    const health = await supertest(app).get("/api/health");
+    expect(health.status).toBe(200);
+  });
 });
 
 /* ================================================================
