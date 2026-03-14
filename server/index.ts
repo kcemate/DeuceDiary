@@ -252,8 +252,41 @@ app.use((req, res, next) => {
   startCronJobs();
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  server.listen(port, "0.0.0.0", () => {
+  server.listen(port, "0.0.0.0", async () => {
     log(`serving on port ${port}`);
+
+    // --- Startup diagnostics ---
+    const mem = process.memoryUsage();
+    const toMb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+
+    // Which env vars are present (values never logged, only names)
+    const envVarsPresent = [
+      "DATABASE_URL", "CLERK_SECRET_KEY", "CLERK_PUBLISHABLE_KEY",
+      "SENTRY_DSN", "ADMIN_KEY", "INTERNAL_API_KEY", "PORT",
+      "NODE_ENV", "DB_SSL", "REVENUECAT_WEBHOOK_SECRET",
+    ].filter((k) => !!process.env[k]);
+
+    const diagnostics: Record<string, unknown> = {
+      ts: new Date().toISOString(),
+      event: "startup",
+      nodeVersion: process.version,
+      env: process.env.NODE_ENV ?? "development",
+      port,
+      memory: { rss: toMb(mem.rss), heapUsed: toMb(mem.heapUsed), heapTotal: toMb(mem.heapTotal) },
+      envVarsPresent,
+    };
+
+    // Attempt to fetch DB version for diagnostics (non-fatal if it fails)
+    try {
+      const { pool: dbPool } = await import("./db.js");
+      const result = await dbPool.query("SELECT version()");
+      const rawVersion: string = result.rows?.[0]?.version ?? "unknown";
+      diagnostics.dbVersion = rawVersion.split(" on ")[0] ?? rawVersion;
+    } catch {
+      diagnostics.dbVersion = "unavailable";
+    }
+
+    process.stdout.write(JSON.stringify(diagnostics) + "\n");
   });
 
   // --- Graceful Shutdown ---
