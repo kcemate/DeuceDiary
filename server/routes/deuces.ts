@@ -306,14 +306,17 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       for (const groupId of targetGroupIds) {
         try {
           await recalculateStreak(groupId);
-          // Fire streak_milestone event when a milestone is hit
-          const { currentStreak } = await storage.getGroupStreak(groupId);
-          if (currentStreak > maxStreak) maxStreak = currentStreak;
-          if (STREAK_MILESTONES.includes(currentStreak)) {
-            Events.streakMilestone(userId, groupId, currentStreak);
-          }
         } catch (err) {
           console.error(`Error recalculating streak for group ${groupId}:`, err);
+        }
+      }
+      // Batch fetch streaks after all recalculations — single query instead of N
+      const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
+      for (const groupId of targetGroupIds) {
+        const { currentStreak } = streakMap.get(groupId) ?? { currentStreak: 0 };
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
+        if (STREAK_MILESTONES.includes(currentStreak)) {
+          Events.streakMilestone(userId, groupId, currentStreak);
         }
       }
 
