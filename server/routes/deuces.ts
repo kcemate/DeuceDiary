@@ -14,6 +14,7 @@ import {
   recalculateStreak,
 } from "./helpers";
 import { reverseGeocode } from "../lib/geocode";
+import { locationsCache } from "../lib/cache";
 
 type BroadcastFn = (groupId: string, message: any) => void;
 
@@ -23,7 +24,14 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   // Location routes
   router.get('/api/locations', async (req, res) => {
     try {
+      const cached = locationsCache.get('all');
+      if (cached) {
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.json(cached);
+      }
       const locations = await storage.getLocations();
+      locationsCache.set('all', locations);
+      res.setHeader('Cache-Control', 'public, max-age=300');
       res.json(locations);
     } catch (error) {
       console.error("Error fetching locations:", error);
@@ -56,6 +64,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         createdBy: userId,
       });
 
+      locationsCache.delete('all');
       res.json(location);
     } catch (error) {
       console.error("Error creating location:", error);
