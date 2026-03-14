@@ -137,6 +137,7 @@ export const pushTokens = pgTable("push_tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_push_tokens_user").on(table.userId),
+  unique("uq_push_tokens_token").on(table.token),
 ]);
 
 export const reactions = pgTable("reactions", {
