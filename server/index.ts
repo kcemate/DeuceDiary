@@ -131,6 +131,20 @@ const referralLimiter = rateLimit({
 });
 app.use("/api/referral/apply", referralLimiter);
 
+// Public profile/share endpoints — prevent user enumeration
+const publicProfileLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+});
+app.use("/api/share", publicProfileLimiter);
+app.use("/api/og", publicProfileLimiter);
+app.use("/api/users", publicProfileLimiter);
+app.use("/api/groups/preview", publicProfileLimiter);
+app.use("/api/groups/invite-preview", publicProfileLimiter);
+
 // --- Request ID (trace each request through logs & error responses) ---
 app.use((req, res, next) => {
   const id = (req.headers['x-request-id'] as string) || crypto.randomUUID();
