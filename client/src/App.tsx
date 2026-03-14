@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 // Route-level code splitting — each page loaded on demand
 const Landing = lazy(() => import("@/pages/landing"));
@@ -119,6 +120,20 @@ function AppRoutes({
         <Route component={NotFound} />
       </Switch>
     </Suspense>
+  );
+}
+
+function OfflineBanner() {
+  const { isOnline } = useNetworkStatus();
+  if (isOnline) return null;
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed top-0 inset-x-0 z-50 bg-yellow-500 text-yellow-950 text-center text-sm font-medium py-1.5 px-4"
+    >
+      You&apos;re offline — deuces will sync when you reconnect.
+    </div>
   );
 }
 
@@ -246,6 +261,7 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineBanner />
       {/* Skip to main content — keyboard/screen reader shortcut */}
       <a
         href="#main-content"
