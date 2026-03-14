@@ -25,9 +25,35 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("ErrorBoundary caught:", error, info.componentStack);
   }
 
+  private isChunkLoadError(): boolean {
+    const { error } = this.state;
+    if (!error) return false;
+    return (
+      error.name === "ChunkLoadError" ||
+      error.message.includes("Failed to fetch dynamically imported module") ||
+      error.message.includes("Importing a module script failed") ||
+      error.message.includes("Loading chunk")
+    );
+  }
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+
+      if (this.isChunkLoadError()) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-96 p-8 text-center">
+            <p className="text-5xl mb-4">🔄</p>
+            <h2 className="text-xl font-extrabold text-foreground mb-2">New version available</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              A page chunk failed to load. This usually means a new deploy is live — reload to get it.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Reload Page
+            </Button>
+          </div>
+        );
+      }
 
       return (
         <div className="flex flex-col items-center justify-center min-h-96 p-8 text-center">
