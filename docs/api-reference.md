@@ -724,9 +724,22 @@ Checks which members haven't logged today (streak risk check).
 
 ### GET /api/groups/:groupId/leaderboard 🔑
 
-Returns weekly/monthly/all-time log counts per member with MVP designation.
+Returns weekly/monthly/all-time log counts per member with MVP designation. Requires group membership.
 
-**Response:** Array of member stats objects.
+**Response:**
+```json
+[
+  {
+    "userId": "user_abc123",
+    "username": "jordan",
+    "profileImageUrl": "https://...",
+    "weeklyCount": 7,
+    "monthlyCount": 23,
+    "allTimeCount": 142,
+    "isMvp": true
+  }
+]
+```
 
 ---
 
