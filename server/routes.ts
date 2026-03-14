@@ -37,6 +37,7 @@ import {
   getTitle,
   escapeHtml,
   MAX_LOGS_PER_DAY,
+  sanitizeUserForResponse,
 } from "./routes/helpers";
 
 // --- Zod Validation Schemas ---
@@ -839,7 +840,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
       const members = await storage.getGroupMembers(groupId);
-      const entries = await storage.getGroupEntries(groupId, limit, offset);
+      const rawEntries = await storage.getGroupEntries(groupId, limit, offset);
+      // Strip sensitive user fields (email, referralCode, etc.) from entry author data
+      const entries = rawEntries.map(e => ({ ...e, user: sanitizeUserForResponse(e.user) }));
       res.json({ group, members, entries });
     } catch (error) {
       console.error("Error fetching group details:", error);
@@ -1515,12 +1518,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
+        const safeUser = user ? sanitizeUserForResponse(user) : null;
         for (const groupId of targetGroupIds) {
           const groupEntry = entries.find(e => e.groupId === groupId);
           broadcastToGroup(groupId, {
             type: 'deuce_logged',
             message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user },
+            entry: { ...groupEntry, user: safeUser },
             userId: userId, // Don't notify the user who logged the deuce
           });
         }
@@ -1669,12 +1673,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
+        const safeUser = user ? sanitizeUserForResponse(user) : null;
         for (const groupId of targetGroupIds) {
           const groupEntry = entries.find(e => e.groupId === groupId);
           broadcastToGroup(groupId, {
             type: 'deuce_logged',
             message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user },
+            entry: { ...groupEntry, user: safeUser },
             userId: userId,
           });
         }
