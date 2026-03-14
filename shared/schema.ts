@@ -74,7 +74,7 @@ export const groupMembers = pgTable("group_members", {
   role: varchar("role").notNull().default("member"), // "admin" or "member"
   joinedAt: timestamp("joined_at").defaultNow(),
 }, (table) => [
-  index("idx_group_members_user_group").on(table.userId, table.groupId),
+  unique("uq_group_members_user_group").on(table.userId, table.groupId),
   index("idx_group_members_group").on(table.groupId),
 ]);
 
