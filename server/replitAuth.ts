@@ -15,7 +15,7 @@ import { storage } from "./storage";
 import { v4 as uuidv4 } from "uuid";
 
 const loginSchema = z.object({
-  username: z.string().min(1).max(50),
+  username: z.string().min(3).max(50),
   inviteCode: z.string().optional(),
 });
 
