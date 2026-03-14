@@ -195,7 +195,10 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       const rid = req.headers['x-request-id'] as string | undefined;
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms${rid ? ` [${rid.slice(0, 8)}]` : ''}`;
+      const userId = (req as any).user?.id as string | undefined;
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (rid) logLine += ` [${rid.slice(0, 8)}]`;
+      if (userId) logLine += ` uid=${userId.slice(0, 12)}`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
