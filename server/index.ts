@@ -11,6 +11,7 @@ import { startCronJobs } from "./cron";
 import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
+import { runStartupDiagnostics } from "./lib/startupDiagnostics";
 import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
@@ -210,6 +211,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Validate env vars and log startup diagnostics before anything else
+  runStartupDiagnostics();
+
   // Run DB migrations inline before starting the server
   await runMigrations();
 
