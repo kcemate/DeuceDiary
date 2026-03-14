@@ -7,41 +7,59 @@ defaults:
   auto_commit: true
 
 targets:
+  # Big files first — most improvement potential
   - name: groups
     path: ./server/routes/groups.ts
-    description: "Group management routes — CRUD, invites, join/leave"
+    description: "Group management routes — CRUD, invites, join/leave (506 lines)"
 
   - name: public
     path: ./server/routes/public.ts
-    description: "Public API routes — leaderboards, stats, public profiles"
+    description: "Public API routes — leaderboards, stats, public profiles (410 lines)"
 
   - name: deuces
     path: ./server/routes/deuces.ts
-    description: "Core deuce logging routes — create, read, update, reactions"
+    description: "Core deuce logging routes — create, read, update, reactions (358 lines)"
 
   - name: helpers
     path: ./server/routes/helpers.ts
-    description: "Shared route helper functions and middleware"
+    description: "Shared route helper functions and middleware (324 lines)"
 
   - name: premium
     path: ./server/routes/premium.ts
-    description: "Premium/subscription routes — billing, feature gates"
+    description: "Premium/subscription routes — billing, feature gates (270 lines)"
 
   - name: king
     path: ./server/routes/king.ts
-    description: "King of the Throne feature routes — crown transfers, rankings"
+    description: "King of the Throne feature routes — crown transfers, rankings (253 lines)"
 
   - name: bingo
     path: ./server/routes/bingo.ts
-    description: "Bingo card routes — challenges, completions"
+    description: "Bingo card routes — challenges, completions (185 lines)"
 
-  - name: lib
-    path: ./server/lib
-    description: "Server library code — utilities, helpers, core logic"
+  - name: auth
+    path: ./server/routes/auth.ts
+    description: "Authentication routes — login, signup, sessions (158 lines)"
 
-  - name: client
-    path: ./client/src
-    description: "React frontend components and hooks"
+  - name: notifications
+    path: ./server/routes/notifications.ts
+    description: "Push notification routes — subscribe, send, manage (106 lines)"
+
+  - name: webhooks
+    path: ./server/routes/webhooks.ts
+    description: "Webhook handler routes — external service callbacks (142 lines)"
+
+  # Lib files — smaller, focused
+  - name: error-tracker
+    path: ./server/lib/errorTracker.ts
+    description: "Error tracking and reporting utility (112 lines)"
+
+  - name: geocode
+    path: ./server/lib/geocode.ts
+    description: "Geocoding utility for location features (66 lines)"
+
+  - name: perf-baseline
+    path: ./server/lib/perfBaseline.ts
+    description: "Performance baseline measurement utility (86 lines)"
 
 boundaries:
   - path: "**/*.test.ts"
@@ -53,3 +71,6 @@ boundaries:
   - path: migrations/
     rule: no-modify
     reason: "Migration files are immutable"
+  - path: drizzle.config.ts
+    rule: no-modify
+    reason: "DB config is locked"
