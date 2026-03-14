@@ -5,6 +5,7 @@ import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { track } from "../lib/analytics";
 import { getTitle, themeSchema, VALID_THEMES } from "./helpers";
+import { userCache } from "../lib/cache";
 import multer from "multer";
 import sharp from "sharp";
 import path from "path";
@@ -32,14 +33,24 @@ export function createAuthRouter(uploadsDir: string): Router {
     try {
       const userId = req.user.id;
       track("user_login", userId);
+
+      const cached = userCache.get(userId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=60');
+        return res.json(cached);
+      }
+
       const user = await storage.getUser(userId);
-      res.json({
+      const payload = {
         ...user,
         title: getTitle(user?.deuceCount ?? 0),
         subscription: user?.subscription ?? 'free',
         subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
         streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
-      });
+      };
+      userCache.set(userId, payload);
+      res.setHeader('Cache-Control', 'private, max-age=60');
+      res.json(payload);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -90,6 +101,7 @@ export function createAuthRouter(uploadsDir: string): Router {
         return res.status(400).json({ message: msg });
       }
       const updatedUser = await storage.updateUserUsername(userId, parsed.data.username);
+      userCache.delete(userId);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -121,7 +133,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       // Update user's profile image URL
       const profileImageUrl = `/uploads/${filename}`;
       const updatedUser = await storage.updateUserProfilePicture(userId, profileImageUrl);
-
+      userCache.delete(userId);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error uploading profile picture:", error);
