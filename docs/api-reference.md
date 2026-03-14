@@ -3,8 +3,10 @@
 Base URL: `https://deuce-diary-web-production.up.railway.app`
 
 All authenticated endpoints require either:
-- `Authorization: Bearer <clerk_session_token>` (production)
-- A valid session cookie from `POST /api/login` (development)
+- `Authorization: Bearer <clerk_session_token>` (production, Clerk mode)
+- A valid session cookie from `POST /api/login` (development, non-Clerk mode)
+
+WebSocket authenticated connections pass the Clerk token via `?token=<clerk_session_token>` query param (browsers cannot set WebSocket headers). In dev mode, the session cookie is used instead.
 
 **Legend:** 🔓 Public · 🔑 Auth required · 👑 Premium required · 🔧 Admin/Internal key
 
@@ -17,6 +19,7 @@ All authenticated endpoints require either:
 - [User](#user)
 - [Groups](#groups)
 - [Invites](#invites)
+- [Locations](#locations)
 - [Deuce Entries](#deuce-entries)
 - [Reactions](#reactions)
 - [Streaks](#streaks)
@@ -30,6 +33,7 @@ All authenticated endpoints require either:
 - [Social Sharing](#social-sharing)
 - [Admin Endpoints](#admin-endpoints)
 - [Internal Endpoints](#internal-endpoints)
+- [WebSocket Protocol](#websocket-protocol)
 
 ---
 
@@ -58,6 +62,13 @@ Liveness/readiness probe. Checks DB connectivity. Load balancers use this endpoi
   "status": "ok",
   "db": "connected",
   "dbLatencyMs": 3,
+  "ws": {
+    "totalConnections": 120,
+    "activeConnections": 8,
+    "failedAuthentications": 2,
+    "gracefulDisconnects": 110,
+    "forcedDisconnects": 0
+  },
   "timestamp": "2026-03-13T10:00:00.000Z",
   "uptime": 86400.5
 }
