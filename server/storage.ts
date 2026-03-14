@@ -557,25 +557,22 @@ export class DatabaseStorage implements IStorage {
 
     if (rows.length === 0) return [];
 
-    // Batch personal records for all member userIds in one query
+    // Batch personal records — DISTINCT ON returns only the best day per user,
+    // avoiding a full-scan result set that the app then has to filter down
     const userIds = rows.map((r) => r.member.userId);
-    const records = await db
-      .select({
-        userId: deuceEntries.userId,
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(inArray(deuceEntries.userId, userIds))
-      .groupBy(deuceEntries.userId, sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(deuceEntries.userId, desc(sql<number>`COUNT(*)::int`));
-
-    // Keep only the top record per user (first occurrence due to ORDER BY)
+    const prRows = await db.execute<{ userId: string; date: string; count: number }>(sql`
+      SELECT DISTINCT ON (user_id)
+        user_id   AS "userId",
+        DATE(logged_at AT TIME ZONE 'UTC') AS date,
+        COUNT(*)::int AS count
+      FROM deuce_entries
+      WHERE user_id = ANY(${userIds})
+      GROUP BY user_id, DATE(logged_at AT TIME ZONE 'UTC')
+      ORDER BY user_id, count DESC
+    `);
     const personalRecordMap = new Map<string, { date: string; count: number }>();
-    for (const r of records) {
-      if (!personalRecordMap.has(r.userId)) {
-        personalRecordMap.set(r.userId, { date: r.date, count: r.count });
-      }
+    for (const r of prRows.rows) {
+      personalRecordMap.set(r.userId, { date: r.date, count: r.count });
     }
 
     return rows.map((row) => ({
