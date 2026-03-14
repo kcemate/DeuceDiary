@@ -14,7 +14,7 @@ import {
   recalculateStreak,
 } from "./helpers";
 import { reverseGeocode } from "../lib/geocode";
-import { locationsCache } from "../lib/cache";
+import { locationsCache, analyticsCache, userCache, leaderboardCache, streakCache } from "../lib/cache";
 
 type BroadcastFn = (groupId: string, message: any) => void;
 
@@ -348,6 +348,14 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           .catch((err) => {
             console.error("[passport] Failed to create stamp:", err);
           });
+      }
+
+      // Invalidate caches affected by a new deuce
+      analyticsCache.delete(userId);
+      userCache.delete(userId);
+      for (const gid of targetGroupIds) {
+        leaderboardCache.delete(gid);
+        streakCache.delete(gid);
       }
 
       res.json({ entries, count: entries.length, streak: maxStreak });

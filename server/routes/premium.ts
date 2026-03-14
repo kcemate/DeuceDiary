@@ -4,7 +4,7 @@ import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
-import { subscriptionCache } from "../lib/cache";
+import { subscriptionCache, analyticsCache } from "../lib/cache";
 
 export function createPremiumRouter(): Router {
   const router = Router();
@@ -175,7 +175,17 @@ export function createPremiumRouter(): Router {
 
   router.get('/api/analytics/me', isAuthenticated, requiresPremiumFor('analytics'), async (req: any, res) => {
     try {
-      const analytics = await storage.getPremiumAnalytics(req.user.id);
+      const userId = req.user.id;
+
+      const cached = analyticsCache.get(userId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=60');
+        return res.json(cached);
+      }
+
+      const analytics = await storage.getPremiumAnalytics(userId);
+      analyticsCache.set(userId, analytics);
+      res.setHeader('Cache-Control', 'private, max-age=60');
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching premium analytics:", error);
