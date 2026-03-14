@@ -170,8 +170,10 @@ app.use((req, res, next) => {
 });
 
 // --- Body parsers ---
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+// 50 KB is well above the largest legit JSON payload (thoughts: 500 chars + metadata ≈ 2 KB).
+// File uploads bypass this via multer (5 MB limit, applied only on profile picture routes).
+app.use(express.json({ limit: '50kb' }));
+app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 
 // --- Response time tracking (must be before routes) ---
 app.use(responseTimeMiddleware);
