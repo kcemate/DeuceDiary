@@ -14,6 +14,7 @@ import {
   checkAndNotifyStreakRisk,
   escapeHtml,
 } from "./helpers";
+import { leaderboardCache } from "../lib/cache";
 
 export function createGroupsRouter(): Router {
   const router = Router();
@@ -246,6 +247,12 @@ export function createGroupsRouter(): Router {
     try {
       const groupId = req.groupId;
 
+      const cached = leaderboardCache.get(groupId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=30');
+        return res.json(cached);
+      }
+
       const members = await storage.getGroupMembers(groupId);
       const ranked = members
         .map(m => ({
@@ -256,6 +263,8 @@ export function createGroupsRouter(): Router {
         }))
         .sort((a, b) => b.deuceCount - a.deuceCount);
 
+      leaderboardCache.set(groupId, ranked);
+      res.setHeader('Cache-Control', 'private, max-age=30');
       res.json(ranked);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
