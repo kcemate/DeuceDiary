@@ -1432,3 +1432,98 @@ Premium upgrade errors include additional fields:
 | 429 | Rate limited |
 | 500 | Internal server error |
 | 503 | Service degraded (DB unreachable) |
+
+---
+
+## WebSocket Protocol
+
+**Endpoint:** `wss://deuce-diary-web-production.up.railway.app/ws`
+
+**Authentication:**
+- Clerk mode: `wss://.../ws?token=<clerk_session_token>`
+- Dev mode: session cookie is used automatically
+
+The server upgrades HTTP connections at `/ws` only. Unauthenticated connections receive `HTTP 401` and are destroyed.
+
+### Heartbeat
+
+The server pings all clients every **30 seconds**. Clients must respond with a pong (this is automatic in all WebSocket libraries). Connections that miss **2 consecutive pongs** are terminated.
+
+### Client → Server Messages
+
+#### join_group
+
+Subscribe to real-time events for a group. The user must be a member of the group.
+
+```json
+{ "type": "join_group", "groupId": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+**Server acknowledgement:**
+```json
+{ "type": "join_group_ok", "groupId": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+**Error (if not a member):**
+```json
+{ "type": "error", "message": "Not a member of this group" }
+```
+
+#### leave_group
+
+Unsubscribe from a group's events.
+
+```json
+{ "type": "leave_group", "groupId": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+No acknowledgement is sent.
+
+### Server → Client Messages
+
+All server-initiated messages include a `msgId` (UUID) for client-side deduplication.
+
+#### deuce_logged
+
+Broadcast when a group member logs a deuce (ghost logs are suppressed).
+
+```json
+{
+  "msgId": "uuid-v4",
+  "type": "deuce_logged",
+  "message": "jordan logged a new deuce",
+  "entry": {
+    "id": "entry-uuid",
+    "location": "The Office",
+    "thoughts": "Monday blues",
+    "loggedAt": "2026-03-13T10:30:00.000Z",
+    "ghost": false,
+    "groupId": "550e8400-e29b-41d4-a716-446655440000",
+    "user": {
+      "id": "user_abc123",
+      "username": "jordan",
+      "profileImageUrl": "https://..."
+    }
+  },
+  "userId": "user_abc123"
+}
+```
+
+`userId` is the ID of the user who logged; clients should use this to avoid self-notifications.
+
+#### error
+
+Sent in response to a malformed or unauthorized client message.
+
+```json
+{ "type": "error", "message": "Not a member of this group" }
+```
+
+### Connection Lifecycle
+
+1. Client opens `wss://.../ws?token=<token>`
+2. Server authenticates and upgrades the connection
+3. Client sends `join_group` for each group it wants to monitor
+4. Server confirms with `join_group_ok`
+5. Server pushes `deuce_logged` events as they occur
+6. On disconnect or logout, client sends `leave_group` (or the connection closes and the server cleans up automatically)
