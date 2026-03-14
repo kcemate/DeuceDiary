@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from "@shared/schema";
+import { instrumentPool } from './lib/slowQueryLogger';
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -18,6 +19,9 @@ export const pool = new pg.Pool({
     ? { rejectUnauthorized: false }
     : undefined,
 });
+
+// Instrument pool.query to log slow queries (>100ms)
+instrumentPool(pool);
 
 // Prevent idle client errors from crashing the process.
 // pg.Pool emits 'error' when a backend terminates an idle connection
