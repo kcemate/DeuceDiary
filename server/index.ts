@@ -11,6 +11,7 @@ import { startCronJobs } from "./cron";
 import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
+import { structuredRequestLogger } from "./lib/structuredLogger";
 import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
@@ -159,6 +160,9 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // --- Response time tracking (must be before routes) ---
 app.use(responseTimeMiddleware);
+
+// --- Structured JSON request logger (machine-parseable, before morgan) ---
+app.use(structuredRequestLogger);
 
 // --- Request Logging (morgan) ---
 app.use(morgan("short"));
