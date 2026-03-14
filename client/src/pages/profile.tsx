@@ -150,7 +150,14 @@ export default function Profile() {
               </div>
               {nextRank && (
                 <div className="max-w-[200px] mx-auto">
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    role="progressbar"
+                    aria-valuenow={Math.round(progressToNext)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Progress to ${nextRank.title}: ${Math.round(progressToNext)}%`}
+                    className="h-1.5 bg-muted rounded-full overflow-hidden"
+                  >
                     <div
                       className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
                       style={{ width: `${progressToNext}%` }}
