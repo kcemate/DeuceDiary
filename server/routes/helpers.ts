@@ -51,9 +51,20 @@ export const loginSchema = z.object({
   inviteCode: z.string().optional(),
 });
 
+/** Validate that a string is a recognised IANA timezone name. */
+function isValidIANATimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const createGroupSchema = z.object({
   name: z.string().min(1).max(100).transform(sanitizeLine).refine(s => s.length >= 1, 'Group name cannot be blank'),
   description: z.string().max(500).transform(sanitizeText).optional(),
+  timezone: z.string().max(64).refine(isValidIANATimezone, 'timezone must be a valid IANA timezone name').optional(),
 });
 
 export const createLocationSchema = z.object({
