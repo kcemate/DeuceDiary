@@ -108,8 +108,12 @@ export default function Groups() {
                   <h3 className="font-bold text-foreground truncate">{group.name}</h3>
                   <div className="flex items-center gap-2 shrink-0">
                     {group.currentStreak > 0 && (
-                      <Badge variant="secondary" className="rounded-full text-xs font-bold bg-orange-100 text-orange-700 border-orange-200">
-                        🔥 {group.currentStreak}d
+                      <Badge
+                        variant="secondary"
+                        aria-label={`${group.currentStreak}-day streak`}
+                        className="rounded-full text-xs font-bold bg-orange-100 text-orange-700 border-orange-200"
+                      >
+                        <span aria-hidden="true">🔥 {group.currentStreak}d</span>
                       </Badge>
                     )}
                     <Badge variant={group.lastActivity ? "default" : "secondary"} className="rounded-full text-xs font-bold">
