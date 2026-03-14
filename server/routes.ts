@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { storage } from "./storage";
 import { db, pool } from "./db";
 import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
@@ -617,10 +617,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUserUsername(userId, userData.username);
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error updating user:", error);
+      if (error instanceof ZodError) {
+        return Errors.badRequest(res, error.errors[0]?.message ?? "Invalid input");
+      }
       if (error instanceof Error && error.message.includes('duplicate key value')) {
         return Errors.badRequest(res, "Username already taken");
       }
+      console.error("Error updating user:", error);
       Errors.internal(res, "Failed to update user");
     }
   });
