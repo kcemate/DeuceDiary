@@ -85,16 +85,18 @@ function AppRoutes({
 
   if (!isAuthenticated) {
     return (
-      <Suspense fallback={<PageFallback />}>
-        <Switch>
-          <Route path="/" component={Landing} />
-          <Route path="/privacy" component={Privacy} />
-          <Route path="/terms" component={Terms} />
-          <Route path="/invite/:code" component={InviteLanding} />
-          <Route path="/legacy/:username" component={Legacy} />
-          <Route path="*"><Redirect to="/" /></Route>
-        </Switch>
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<PageFallback />}>
+          <Switch>
+            <Route path="/" component={Landing} />
+            <Route path="/privacy" component={Privacy} />
+            <Route path="/terms" component={Terms} />
+            <Route path="/invite/:code" component={InviteLanding} />
+            <Route path="/legacy/:username" component={Legacy} />
+            <Route path="*"><Redirect to="/" /></Route>
+          </Switch>
+        </Suspense>
+      </ErrorBoundary>
     );
   }
 
