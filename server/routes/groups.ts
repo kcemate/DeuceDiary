@@ -14,7 +14,7 @@ import {
   checkAndNotifyStreakRisk,
   escapeHtml,
 } from "./helpers";
-import { leaderboardCache, weeklyReportCache } from "../lib/cache";
+import { leaderboardCache, weeklyReportCache, streakCache } from "../lib/cache";
 
 export function createGroupsRouter(): Router {
   const router = Router();
@@ -202,6 +202,12 @@ export function createGroupsRouter(): Router {
     try {
       const groupId = req.groupId;
 
+      const cached = streakCache.get(groupId);
+      if (cached) {
+        res.setHeader('Cache-Control', 'private, max-age=30');
+        return res.json(cached);
+      }
+
       const today = getTodayUTC();
       const yesterday = getYesterdayUTC();
       const streak = await storage.getGroupStreak(groupId);
@@ -213,7 +219,7 @@ export function createGroupsRouter(): Router {
         currentStreak = 0;
       }
 
-      res.json({
+      const payload = {
         currentStreak,
         longestStreak: streak.longestStreak,
         memberCount: logsToday.length,
@@ -223,7 +229,10 @@ export function createGroupsRouter(): Router {
           hasLogged: m.hasLogged,
           profileImageUrl: m.profileImageUrl,
         })),
-      });
+      };
+      streakCache.set(groupId, payload);
+      res.setHeader('Cache-Control', 'private, max-age=30');
+      res.json(payload);
     } catch (error) {
       console.error("Error fetching streak:", error);
       res.status(500).json({ message: "Failed to fetch streak" });
