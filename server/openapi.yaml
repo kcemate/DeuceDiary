@@ -1,0 +1,2009 @@
+openapi: 3.0.3
+info:
+  title: Deuce Diary API
+  description: |
+    REST API for Deuce Diary — the social poop tracking app.
+
+    **Authentication:**
+    - Production (Clerk): `Authorization: Bearer <clerk_session_token>`
+    - Development (session): cookie-based via `POST /api/login`
+
+    **Premium features** return HTTP 402 with `{ "feature": "<name>", "upgrade": true }` for free users.
+  version: 1.0.0
+  contact:
+    name: Deuce Diary
+servers:
+  - url: https://deuce-diary-web-production.up.railway.app
+    description: Production
+
+security:
+  - ClerkBearer: []
+
+components:
+  securitySchemes:
+    ClerkBearer:
+      type: http
+      scheme: bearer
+      description: Clerk session JWT
+    AdminKey:
+      type: apiKey
+      in: header
+      name: X-Admin-Key
+      description: Admin API key for internal stats endpoints
+    InternalKey:
+      type: apiKey
+      in: header
+      name: X-Internal-Key
+      description: Internal API key for cron-triggered endpoints
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user_abc123
+        username:
+          type: string
+          nullable: true
+          example: jordan
+        email:
+          type: string
+          nullable: true
+          example: jordan@example.com
+        firstName:
+          type: string
+          nullable: true
+          example: Jordan
+        lastName:
+          type: string
+          nullable: true
+          example: Smith
+        profileImageUrl:
+          type: string
+          nullable: true
+          example: https://cdn.example.com/avatar.jpg
+        deuceCount:
+          type: integer
+          example: 42
+        subscription:
+          type: string
+          enum: [free, premium]
+          example: premium
+        subscriptionExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        streakInsuranceUsed:
+          type: boolean
+        theme:
+          type: string
+          enum: [default, dark, cream, midnight, ocean, retro]
+          example: cream
+        timezone:
+          type: string
+          example: America/New_York
+        title:
+          type: string
+          example: Seasoned Squatter
+        createdAt:
+          type: string
+          format: date-time
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: The Porcelain Crew
+        description:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          example: user_abc123
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        timezone:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    DeuceEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        groupId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+        location:
+          type: string
+          example: The Office
+        thoughts:
+          type: string
+          nullable: true
+          example: Finally, some peace and quiet
+        loggedAt:
+          type: string
+          format: date-time
+        ghost:
+          type: boolean
+        latitude:
+          type: string
+          nullable: true
+        longitude:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/SafeUser'
+
+    SafeUser:
+      type: object
+      description: User object with sensitive fields stripped (no email, referralCode, etc.)
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
+
+    Reaction:
+      type: object
+      properties:
+        id:
+          type: string
+        entryId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+        emoji:
+          type: string
+          example: "💩"
+        createdAt:
+          type: string
+          format: date-time
+
+    GroupMember:
+      type: object
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, member]
+        deuceCount:
+          type: integer
+        profileImageUrl:
+          type: string
+          nullable: true
+
+    StreakStatus:
+      type: object
+      properties:
+        currentStreak:
+          type: integer
+        longestStreak:
+          type: integer
+        lastStreakDate:
+          type: string
+          nullable: true
+          example: "2026-03-13"
+        memberCount:
+          type: integer
+        logsToday:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: string
+              username:
+                type: string
+              hasLogged:
+                type: boolean
+              profileImageUrl:
+                type: string
+                nullable: true
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        unlocked:
+          type: boolean
+        unlockedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PassportStamp:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        city:
+          type: string
+        country:
+          type: string
+        countryCode:
+          type: string
+          example: US
+        region:
+          type: string
+          nullable: true
+        latitude:
+          type: string
+        longitude:
+          type: string
+        logCount:
+          type: integer
+        firstVisit:
+          type: string
+          format: date-time
+        lastVisit:
+          type: string
+          format: date-time
+
+    DeuceKing:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+        username:
+          type: string
+          nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
+        logCount:
+          type: integer
+        consecutiveWins:
+          type: integer
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Unauthorized
+
+    PremiumError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Premium required for this feature
+        feature:
+          type: string
+          example: squad_spy
+        upgrade:
+          type: boolean
+          example: true
+
+paths:
+
+  # ─── Config & Health ──────────────────────────────────────────────────────
+
+  /api/config:
+    get:
+      summary: Get runtime config
+      description: Returns Clerk publishable key for frontend bootstrapping. No auth required.
+      security: []
+      tags: [Config]
+      responses:
+        '200':
+          description: Runtime config
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clerkPublishableKey:
+                    type: string
+                    nullable: true
+
+  /api/health:
+    get:
+      summary: Health check
+      description: Checks DB connectivity. Returns 503 if DB is unreachable.
+      security: []
+      tags: [Config]
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  db:
+                    type: string
+                    example: connected
+                  dbLatencyMs:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+        '503':
+          description: DB unreachable
+
+  # ─── Authentication ────────────────────────────────────────────────────────
+
+  /api/login:
+    post:
+      summary: Dev login (dev mode only)
+      description: Creates/upserts a user by username and starts a session. Not available when Clerk is enabled.
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                inviteCode:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  user:
+                    type: object
+                  joinedGroup:
+                    type: object
+                    nullable: true
+
+  /api/auth/user:
+    get:
+      summary: Get current user
+      tags: [Auth]
+      responses:
+        '200':
+          description: Authenticated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+    put:
+      summary: Update username
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username]
+              properties:
+                username:
+                  type: string
+      responses:
+        '200':
+          description: Updated user
+        '400':
+          description: Username taken or invalid
+
+  /api/auth/sync:
+    post:
+      summary: Sync user after Clerk login
+      description: Upserts user record from JWT claims. Call immediately after Clerk login. Returns profile + streak data.
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+      responses:
+        '200':
+          description: Synced user with streaks
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/User'
+                  - type: object
+                    properties:
+                      streaks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            groupId:
+                              type: string
+                              format: uuid
+                            groupName:
+                              type: string
+                            currentStreak:
+                              type: integer
+                            longestStreak:
+                              type: integer
+                            lastStreakDate:
+                              type: string
+                              nullable: true
+
+  /api/auth/user/profile-picture:
+    post:
+      summary: Upload profile picture
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Updated user with new profile image
+
+  # ─── User ─────────────────────────────────────────────────────────────────
+
+  /api/user/theme:
+    get:
+      summary: Get theme (premium)
+      tags: [User]
+      responses:
+        '200':
+          description: Current theme
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  theme:
+                    type: string
+        '402':
+          description: Premium required
+    put:
+      summary: Set theme (premium)
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [theme]
+              properties:
+                theme:
+                  type: string
+                  enum: [default, dark, cream, midnight, ocean, retro]
+      responses:
+        '200':
+          description: Updated theme
+        '400':
+          description: Invalid theme
+        '402':
+          description: Premium required
+
+  /api/user/export:
+    get:
+      summary: Export user data (GDPR)
+      tags: [User]
+      responses:
+        '200':
+          description: JSON data export
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/user/timezone:
+    put:
+      summary: Update timezone
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [timezone]
+              properties:
+                timezone:
+                  type: string
+                  example: America/New_York
+      responses:
+        '200':
+          description: Updated timezone
+        '400':
+          description: Invalid IANA timezone
+
+  /api/user/account:
+    delete:
+      summary: Delete account (soft delete)
+      tags: [User]
+      responses:
+        '200':
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/user/badges:
+    get:
+      summary: Get user badges
+      tags: [User]
+      responses:
+        '200':
+          description: List of badges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Badge'
+
+  # ─── Groups ───────────────────────────────────────────────────────────────
+
+  /api/groups:
+    get:
+      summary: List user's groups
+      tags: [Groups]
+      responses:
+        '200':
+          description: Groups the user belongs to
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+    post:
+      summary: Create group
+      description: Free users limited to 3 groups.
+      tags: [Groups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Created group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+        '402':
+          description: Free user group limit reached
+
+  /api/groups/{groupId}:
+    get:
+      summary: Get group details
+      tags: [Groups]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Group details with members and entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group:
+                    $ref: '#/components/schemas/Group'
+                  members:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GroupMember'
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeuceEntry'
+        '403':
+          description: Not a group member
+        '404':
+          description: Group not found
+
+  /api/groups/{groupId}/members/{userId}:
+    delete:
+      summary: Remove group member
+      description: Users can remove themselves. Admins can remove others.
+      tags: [Groups]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        '403':
+          description: Not an admin
+
+  # ─── Invites ──────────────────────────────────────────────────────────────
+
+  /api/groups/{groupId}/invite:
+    post:
+      summary: Create invite link (premium)
+      description: Creates a 7-day invite link for the group.
+      tags: [Invites]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invite link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inviteLink:
+                    type: string
+                    format: uri
+                  id:
+                    type: string
+                    format: uuid
+        '402':
+          description: Premium required
+
+  /api/join/{inviteId}:
+    post:
+      summary: Join group via invite
+      tags: [Invites]
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Joined group (or already a member)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group:
+                    $ref: '#/components/schemas/Group'
+                  message:
+                    type: string
+                    description: Only present if already a member
+        '400':
+          description: Invalid or expired invite
+        '403':
+          description: Premium required to join multi-member squads
+
+  /api/groups/preview/{inviteCode}:
+    get:
+      summary: Public group preview
+      description: Returns slim public group data for invite landing page. No auth required.
+      security: []
+      tags: [Invites]
+      parameters:
+        - name: inviteCode
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Group preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  memberCount:
+                    type: integer
+                  deuceCount:
+                    type: integer
+                  currentStreak:
+                    type: integer
+                  longestStreak:
+                    type: integer
+                  members:
+                    type: array
+                    items:
+                      type: object
+                  recentActivity:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Invite not found or expired
+
+  /api/groups/invite-preview/{inviteCode}:
+    get:
+      summary: Rich invite preview (OG)
+      security: []
+      tags: [Invites]
+      parameters:
+        - name: inviteCode
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Rich preview object
+        '404':
+          description: Invite not found
+
+  # ─── Locations ────────────────────────────────────────────────────────────
+
+  /api/locations:
+    get:
+      summary: List saved locations
+      tags: [Locations]
+      responses:
+        '200':
+          description: User's saved locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    isDefault:
+                      type: boolean
+    post:
+      summary: Create location
+      tags: [Locations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        '200':
+          description: Created location
+        '400':
+          description: Location name required or already exists
+
+  # ─── Deuce Entries ────────────────────────────────────────────────────────
+
+  /api/deuces:
+    get:
+      summary: Get activity feed
+      tags: [Deuces]
+      parameters:
+        - name: groupId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Feed entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeuceEntry'
+    post:
+      summary: Log a deuce
+      description: Rate limited to 10 per user per UTC day. Supports multi-group logging.
+      tags: [Deuces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                thoughts:
+                  type: string
+                  maxLength: 500
+                groupIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                groupId:
+                  type: string
+                  format: uuid
+                  description: Legacy single-group field
+                loggedAt:
+                  type: string
+                  format: date-time
+                  description: Cannot be in the future (1 min tolerance)
+                ghost:
+                  type: boolean
+                  description: Ghost logs are hidden from group feed and WebSocket
+                latitude:
+                  type: number
+                  minimum: -90
+                  maximum: 90
+                longitude:
+                  type: number
+                  minimum: -180
+                  maximum: 180
+      responses:
+        '200':
+          description: Logged entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeuceEntry'
+                  count:
+                    type: integer
+        '400':
+          description: Validation error
+        '403':
+          description: Not a member of specified group
+        '429':
+          description: Daily rate limit reached
+
+  /api/deuces/bulk:
+    post:
+      summary: Bulk log to multiple groups (atomic)
+      description: Same as POST /api/deuces but requires 2+ groups and uses a DB transaction.
+      tags: [Deuces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Logged entries
+        '400':
+          description: Requires 2+ groups or validation error
+        '429':
+          description: Daily rate limit reached
+
+  /api/deuces/sync:
+    post:
+      summary: Sync offline entries
+      description: Accepts up to 50 queued offline entries and processes them in order.
+      tags: [Deuces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entries]
+              properties:
+                entries:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [id, location, groupIds]
+                    properties:
+                      id:
+                        type: string
+                        description: Client-local ID for result mapping
+                      location:
+                        type: string
+                      thoughts:
+                        type: string
+                      groupIds:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
+                      loggedAt:
+                        type: string
+                        format: date-time
+      responses:
+        '200':
+          description: Sync results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        status:
+                          type: string
+                          enum: [ok, error]
+                        reason:
+                          type: string
+                  synced:
+                    type: integer
+
+  # ─── Reactions ────────────────────────────────────────────────────────────
+
+  /api/entries/{entryId}/reactions:
+    get:
+      summary: Get reactions for entry
+      tags: [Reactions]
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Entry reactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reaction'
+    post:
+      summary: Add reaction
+      tags: [Reactions]
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emoji]
+              properties:
+                emoji:
+                  type: string
+                  minLength: 1
+                  maxLength: 10
+      responses:
+        '200':
+          description: Created reaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reaction'
+        '400':
+          description: Already reacted with this emoji
+        '403':
+          description: Not in entry's group
+    delete:
+      summary: Remove reaction
+      tags: [Reactions]
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emoji]
+              properties:
+                emoji:
+                  type: string
+      responses:
+        '200':
+          description: Reaction removed
+
+  # ─── Streaks ──────────────────────────────────────────────────────────────
+
+  /api/groups/{groupId}/streak:
+    get:
+      summary: Get group streak
+      tags: [Streaks]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Streak status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakStatus'
+
+  /api/groups/{groupId}/streak/check:
+    post:
+      summary: Check streak risk
+      description: Returns which members haven't logged today.
+      tags: [Streaks]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Streak risk status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  atRisk:
+                    type: boolean
+                  missingMembers:
+                    type: array
+                    items:
+                      type: string
+
+  # ─── Leaderboard & Analytics ──────────────────────────────────────────────
+
+  /api/groups/{groupId}/leaderboard:
+    get:
+      summary: Group leaderboard
+      tags: [Analytics]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Leaderboard data
+
+  /api/groups/{groupId}/spy:
+    get:
+      summary: Squad Spy Mode — typical log hours (premium)
+      tags: [Analytics]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Typical log hour per member
+        '402':
+          description: Premium required
+
+  /api/groups/{groupId}/weekly-report:
+    get:
+      summary: Weekly Throne Report (premium)
+      tags: [Analytics]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Weekly report
+        '402':
+          description: Premium required
+
+  /api/groups/{groupId}/weekly-report/pdf:
+    get:
+      summary: Download weekly report as PDF (premium)
+      tags: [Analytics]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '402':
+          description: Premium required
+
+  /api/analytics/me:
+    get:
+      summary: Personal premium analytics (premium)
+      tags: [Analytics]
+      responses:
+        '200':
+          description: Analytics data
+        '402':
+          description: Premium required
+
+  /api/analytics/most-deuces:
+    get:
+      summary: Best log day (premium)
+      tags: [Analytics]
+      responses:
+        '200':
+          description: Top day
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    example: "2026-03-01"
+                  count:
+                    type: integer
+
+  /api/users/{userId}/weekly-report:
+    get:
+      summary: Personal weekly report (premium, own data only)
+      tags: [Analytics]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: User ID or "me"
+      responses:
+        '200':
+          description: Weekly report
+        '403':
+          description: Cannot access another user's report
+
+  # ─── Referrals ────────────────────────────────────────────────────────────
+
+  /api/referral:
+    get:
+      summary: Get referral info
+      tags: [Referrals]
+      responses:
+        '200':
+          description: Referral code and count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  referralCount:
+                    type: integer
+                  referralLink:
+                    type: string
+                    format: uri
+
+  /api/referral/apply:
+    post:
+      summary: Apply a referral code
+      tags: [Referrals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+      responses:
+        '200':
+          description: Referral applied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  referrerUsername:
+                    type: string
+        '400':
+          description: Invalid code, self-referral, or already used
+
+  /api/referral/stats:
+    get:
+      summary: Detailed referral stats (premium)
+      tags: [Referrals]
+      responses:
+        '200':
+          description: Referral stats
+        '402':
+          description: Premium required
+
+  /api/referrals/stats:
+    get:
+      summary: Referral dashboard stats
+      tags: [Referrals]
+      responses:
+        '200':
+          description: Dashboard stats
+
+  /api/referrals/leaderboard:
+    get:
+      summary: Referral leaderboard
+      tags: [Referrals]
+      responses:
+        '200':
+          description: Top referrers
+
+  # ─── Subscriptions ────────────────────────────────────────────────────────
+
+  /api/subscription:
+    get:
+      summary: Get subscription status
+      tags: [Subscription]
+      responses:
+        '200':
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tier:
+                    type: string
+                    enum: [free, premium]
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  features:
+                    type: array
+                    items:
+                      type: string
+
+  /api/subscription/streak-insurance:
+    post:
+      summary: Use streak insurance (premium)
+      description: Preserves at-risk streaks. One use per month.
+      tags: [Subscription]
+      responses:
+        '200':
+          description: Insurance result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  used:
+                    type: boolean
+                  extended:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Already used this month
+        '402':
+          description: Premium required
+
+  /api/subscription/upgrade:
+    post:
+      summary: Upgrade subscription (dev mode only)
+      description: Not available in production — real payments go through RevenueCat.
+      tags: [Subscription]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan]
+              properties:
+                plan:
+                  type: string
+                  enum: [monthly, annual]
+      responses:
+        '200':
+          description: Updated user
+        '403':
+          description: Not available in production
+
+  # ─── Push Notifications ───────────────────────────────────────────────────
+
+  /api/notifications/register:
+    post:
+      summary: Register push token
+      description: Registers an Expo push token. Max 10 tokens per user.
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, platform]
+              properties:
+                token:
+                  type: string
+                  description: Valid Expo push token
+                platform:
+                  type: string
+                  enum: [ios, android]
+      responses:
+        '200':
+          description: Token registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        '400':
+          description: Invalid token format or device limit reached
+
+  /api/push/unregister:
+    delete:
+      summary: Unregister push token
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Token removed
+
+  /api/notifications/reminder:
+    put:
+      summary: Set daily reminder time (premium)
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hour, minute]
+              properties:
+                hour:
+                  type: integer
+                  minimum: 0
+                  maximum: 23
+                minute:
+                  type: integer
+                  minimum: 0
+                  maximum: 59
+      responses:
+        '200':
+          description: Reminder set
+        '402':
+          description: Premium required
+
+  /api/squads/{id}/broadcast:
+    post:
+      summary: Throne Broadcast (premium)
+      description: Sends a milestone message to all group members.
+      tags: [Notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [milestone]
+              properties:
+                milestone:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+      responses:
+        '200':
+          description: Broadcast created
+        '402':
+          description: Premium required
+
+  # ─── Challenges & Bingo ───────────────────────────────────────────────────
+
+  /api/challenges/today:
+    get:
+      summary: Get today's challenge (premium)
+      tags: [Challenges]
+      responses:
+        '200':
+          description: Today's challenge and completion status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge:
+                    type: object
+                  date:
+                    type: string
+                  completed:
+                    type: boolean
+        '402':
+          description: Premium required
+
+  /api/challenges/complete:
+    post:
+      summary: Complete today's challenge (premium)
+      tags: [Challenges]
+      responses:
+        '200':
+          description: Completion recorded
+        '400':
+          description: Already completed today
+        '402':
+          description: Premium required
+
+  /api/bingo/current:
+    get:
+      summary: Get current month's bingo card (premium)
+      tags: [Challenges]
+      responses:
+        '200':
+          description: Bingo card with 25 squares
+        '402':
+          description: Premium required
+
+  # ─── Deuce King ───────────────────────────────────────────────────────────
+
+  /api/groups/{groupId}/king:
+    get:
+      summary: Get current Deuce King and challenge
+      tags: [DeuceKing]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: King, challenge, and available templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  king:
+                    $ref: '#/components/schemas/DeuceKing'
+                  challenge:
+                    type: object
+                    nullable: true
+                  templates:
+                    type: array
+
+  /api/groups/{groupId}/challenge/history:
+    get:
+      summary: Challenge history (last 10 periods)
+      tags: [DeuceKing]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Challenge history
+
+  /api/groups/{groupId}/challenge:
+    get:
+      summary: Get active challenge
+      tags: [DeuceKing]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Active challenge
+    post:
+      summary: Set challenge (Deuce King only)
+      tags: [DeuceKing]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 140
+                templateKey:
+                  type: string
+      responses:
+        '200':
+          description: Challenge set
+        '403':
+          description: Not the current Deuce King
+
+  /api/groups/{groupId}/challenge/complete:
+    post:
+      summary: Complete current challenge
+      tags: [DeuceKing]
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Completion recorded
+
+  # ─── Passport ─────────────────────────────────────────────────────────────
+
+  /api/passport:
+    get:
+      summary: Get passport stamps (premium)
+      tags: [Passport]
+      responses:
+        '200':
+          description: Stamps and stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stamps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PassportStamp'
+                  stats:
+                    type: object
+        '402':
+          description: Premium required
+    delete:
+      summary: Delete all passport data
+      tags: [Passport]
+      responses:
+        '200':
+          description: Data deleted
+
+  /api/passport/{userId}:
+    get:
+      summary: Public passport share view
+      security: []
+      tags: [Passport]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Public passport data
+        '404':
+          description: User not found
+
+  # ─── Social Sharing ───────────────────────────────────────────────────────
+
+  /api/share/streak/{userId}:
+    get:
+      summary: Get share card data
+      security: []
+      tags: [Sharing]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Share card data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  currentStreak:
+                    type: integer
+                  longestStreak:
+                    type: integer
+                  totalLogs:
+                    type: integer
+                  squadCount:
+                    type: integer
+                  memberSince:
+                    type: string
+                    format: date-time
+        '404':
+          description: User not found
+
+  /api/og/streak/{userId}:
+    get:
+      summary: Streak OG share page (HTML)
+      security: []
+      tags: [Sharing]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HTML page with OG meta tags
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/og/invite/{inviteCode}:
+    get:
+      summary: Invite OG page (HTML)
+      security: []
+      tags: [Sharing]
+      parameters:
+        - name: inviteCode
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: HTML invite card with OG meta tags
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: Invite not found
+
+  /api/users/{username}/legacy:
+    get:
+      summary: Legacy wall stats
+      security: []
+      tags: [Sharing]
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Legacy stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalLogs:
+                    type: integer
+                  longestStreak:
+                    type: integer
+                  bestDay:
+                    type: object
+                    nullable: true
+                  memberSince:
+                    type: string
+                    format: date-time
+                  title:
+                    type: string
+
+  # ─── Admin Endpoints ──────────────────────────────────────────────────────
+
+  /api/admin/stats:
+    get:
+      summary: Platform stats
+      description: Requires X-Admin-Key header.
+      security:
+        - AdminKey: []
+      tags: [Admin]
+      responses:
+        '200':
+          description: Platform stats
+        '401':
+          description: Missing or invalid admin key
+
+  # ─── Internal Endpoints ───────────────────────────────────────────────────
+
+  /api/internal/streak-check:
+    post:
+      summary: Run streak notifications
+      description: Trigger streak notifications for all groups. Called by cron.
+      security:
+        - InternalKey: []
+      tags: [Internal]
+      responses:
+        '200':
+          description: Summary of notifications sent
+        '401':
+          description: Missing or invalid internal key
+
+  /api/internal/crown-transfer:
+    post:
+      summary: Weekly crown transfer
+      description: Calculates Deuce Kings for all groups and creates challenge records. Called weekly by cron.
+      security:
+        - InternalKey: []
+      tags: [Internal]
+      responses:
+        '200':
+          description: Transfer results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        groupId:
+                          type: string
+                        winner:
+                          type: string
+                          nullable: true
+                        error:
+                          type: string
+        '401':
+          description: Missing or invalid internal key
+
+  /api/internal/errors:
+    get:
+      summary: Recent server errors
+      security:
+        - InternalKey: []
+      tags: [Internal]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: Recent errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                  count:
+                    type: integer
+        '401':
+          description: Missing or invalid internal key
+
+  /api/internal/health/detailed:
+    get:
+      summary: Detailed health (DB pool, memory)
+      security:
+        - InternalKey: []
+      tags: [Internal]
+      responses:
+        '200':
+          description: Detailed health data
+        '503':
+          description: Service degraded
+        '401':
+          description: Missing or invalid internal key
+
+tags:
+  - name: Config
+    description: Runtime configuration and health checks
+  - name: Auth
+    description: Authentication and session management
+  - name: User
+    description: User profile and preferences
+  - name: Groups
+    description: Squad/group management
+  - name: Invites
+    description: Group invite links
+  - name: Locations
+    description: Saved locations
+  - name: Deuces
+    description: Deuce entry logging and feed
+  - name: Reactions
+    description: Emoji reactions on entries
+  - name: Streaks
+    description: Group streak tracking
+  - name: Analytics
+    description: Leaderboards, reports, and analytics
+  - name: Referrals
+    description: Referral program
+  - name: Subscription
+    description: Premium subscription management
+  - name: Notifications
+    description: Push notifications and reminders
+  - name: Challenges
+    description: Daily challenges and bingo
+  - name: DeuceKing
+    description: Weekly Deuce King competition
+  - name: Passport
+    description: Location history and passport stamps
+  - name: Sharing
+    description: Social sharing and OG cards
+  - name: Admin
+    description: Admin-only endpoints (X-Admin-Key)
+  - name: Internal
+    description: Internal cron/service endpoints (X-Internal-Key)
