@@ -2508,6 +2508,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (ws as any).missedPongs = 0;
     });
 
+    // Track ALL group subscriptions for this socket so every group is cleaned up on close
+    (ws as any).subscribedGroups = new Set<string>();
+
     ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
@@ -2533,8 +2536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           groupConnections.get(groupId)?.add(ws);
 
-          // Store groupId on the WebSocket for cleanup
-          (ws as any).groupId = groupId;
+          // Track all subscribed groups so close handler can clean all of them up
+          (ws as any).subscribedGroups.add(groupId);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -2543,12 +2546,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', () => {
       incWsCounter('gracefulDisconnects');
-      // Clean up connection
-      const groupId = (ws as any).groupId;
-      if (groupId && groupConnections.has(groupId)) {
-        groupConnections.get(groupId)?.delete(ws);
-        if (groupConnections.get(groupId)?.size === 0) {
-          groupConnections.delete(groupId);
+      // Clean up this socket from every group it subscribed to
+      const subscribed: Set<string> = (ws as any).subscribedGroups;
+      for (const groupId of subscribed) {
+        const conns = groupConnections.get(groupId);
+        if (conns) {
+          conns.delete(ws);
+          if (conns.size === 0) groupConnections.delete(groupId);
         }
       }
     });
