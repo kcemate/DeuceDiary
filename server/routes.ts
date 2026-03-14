@@ -495,6 +495,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/groups/preview/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return Errors.notFound(res, "Invite");
+      }
       const invite = await storage.getInviteById(inviteCode);
       if (!invite || invite.expiresAt < new Date()) {
         return Errors.notFound(res, "Invite");
@@ -1269,6 +1272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/groups/invite-preview/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return Errors.notFound(res, "Invite");
+      }
       const preview = await storage.getGroupInvitePreview(inviteCode);
       if (!preview) {
         return Errors.notFound(res, "Invite");
@@ -1284,6 +1290,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/og/invite/:inviteCode', async (req, res) => {
     try {
       const { inviteCode } = req.params;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+        return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
+      }
       const preview = await storage.getGroupInvitePreview(inviteCode);
 
       if (!preview) {
