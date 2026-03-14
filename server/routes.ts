@@ -284,13 +284,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Returns 200 when healthy, 503 when DB is unreachable (load balancers use this)
   app.get('/api/health', async (_req, res) => {
     const base = { timestamp: new Date().toISOString(), uptime: process.uptime() };
+    const ws = getWsMetrics();
     try {
       const start = Date.now();
       await pool.query('SELECT 1');
       const dbLatencyMs = Date.now() - start;
-      res.json({ status: 'ok', db: 'connected', dbLatencyMs, ...base });
+      res.json({ status: 'ok', db: 'connected', dbLatencyMs, ws, ...base });
     } catch (err) {
-      res.status(503).json({ status: 'degraded', db: 'unreachable', ...base });
+      res.status(503).json({ status: 'degraded', db: 'unreachable', ws, ...base });
     }
   });
 
