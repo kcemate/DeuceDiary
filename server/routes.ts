@@ -1379,6 +1379,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const { groupId } = req.query;
 
+      if (groupId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(groupId as string)) {
+        return Errors.badRequest(res, "Invalid groupId format");
+      }
+
       let groupIds: string[];
 
       if (groupId) {
