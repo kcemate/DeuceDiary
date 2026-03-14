@@ -98,7 +98,9 @@ export const reactionSchema = z.object({
 });
 
 export const referralApplySchema = z.object({
-  code: z.string().min(1).max(20),
+  // Codes are 8 uppercase alphanumeric chars (base-36 toUpperCase).
+  // Accept 4–20 to allow future code format changes, but reject obvious garbage.
+  code: z.string().min(4).max(20).regex(/^[A-Z0-9]+$/i, 'Invalid referral code format'),
 });
 
 export const subscriptionUpgradeSchema = z.object({
