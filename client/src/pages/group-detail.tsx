@@ -90,7 +90,7 @@ export default function GroupDetail() {
   const [showChallengeHistory, setShowChallengeHistory] = useState(false);
   const [challengeInput, setChallengeInput] = useState({ templateKey: "", customTitle: "" });
 
-  const { data: groupDetail, isLoading } = useQuery<GroupDetail>({
+  const { data: groupDetail, isLoading, isError: groupError } = useQuery<GroupDetail>({
     queryKey: ["/api/groups", groupId],
     enabled: !!groupId,
   });
@@ -290,6 +290,19 @@ export default function GroupDetail() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (groupError) {
+    return (
+      <div className="pt-6 pb-24">
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3 text-center px-6">
+          <span className="text-4xl">⚠️</span>
+          <h2 className="text-lg font-bold text-foreground">Couldn't load this squad</h2>
+          <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+          <Button variant="outline" onClick={() => window.history.back()}>Go back</Button>
         </div>
       </div>
     );
