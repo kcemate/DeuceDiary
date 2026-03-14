@@ -12,6 +12,7 @@ import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
 import { runStartupDiagnostics } from "./lib/startupDiagnostics";
+import { closeWss } from "./lib/wsMetrics";
 import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
@@ -277,6 +278,14 @@ app.use((req, res, next) => {
       if (err) {
         console.error("[SHUTDOWN] Error closing HTTP server:", err);
         process.exit(1);
+      }
+
+      // Drain WebSocket connections before closing the DB pool
+      try {
+        await closeWss();
+        log("[SHUTDOWN] WebSocket server closed");
+      } catch (wsErr) {
+        console.error("[SHUTDOWN] Error closing WebSocket server:", wsErr);
       }
 
       try {
