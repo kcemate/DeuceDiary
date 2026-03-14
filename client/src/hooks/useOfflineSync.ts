@@ -4,6 +4,7 @@ import {
   getPendingQueue,
   removeFromQueue,
   updateQueueItem,
+  MAX_SYNC_RETRIES,
 } from '@/lib/offlineQueue';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -22,6 +23,17 @@ export function useOfflineSync() {
 
       let synced = 0;
       for (const item of pending) {
+        // If this item has already exhausted retries, permanently mark it failed
+        // rather than attempting again indefinitely.
+        const attempts = item.retryCount ?? 0;
+        if (attempts >= MAX_SYNC_RETRIES) {
+          await updateQueueItem(item.id, {
+            status: 'failed',
+            error: `Gave up after ${MAX_SYNC_RETRIES} attempts`,
+          });
+          continue;
+        }
+
         await updateQueueItem(item.id, { status: 'syncing' });
         try {
           await apiRequest('/api/deuces', {
@@ -43,9 +55,11 @@ export function useOfflineSync() {
             message.startsWith('401') ||
             message.startsWith('403') ||
             message.startsWith('429');
+          const nextRetryCount = attempts + 1;
           await updateQueueItem(item.id, {
-            status: isClientError ? 'failed' : 'pending',
+            status: isClientError || nextRetryCount >= MAX_SYNC_RETRIES ? 'failed' : 'pending',
             error: message,
+            retryCount: nextRetryCount,
           });
         }
       }

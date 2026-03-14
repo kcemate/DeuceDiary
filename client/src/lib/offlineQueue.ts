@@ -4,6 +4,8 @@ const DB_NAME = 'DeuceDiaryOffline';
 const DB_VERSION = 1;
 const STORE_NAME = 'pendingDeuces';
 
+export const MAX_SYNC_RETRIES = 5;
+
 export interface PendingDeuce {
   id: string;           // local UUID (client-generated)
   location: string;
@@ -13,6 +15,8 @@ export interface PendingDeuce {
   createdAt: number;    // epoch ms for ordering
   status: 'pending' | 'syncing' | 'failed';
   error?: string;
+  /** Number of sync attempts; items exceeding MAX_SYNC_RETRIES are marked failed. */
+  retryCount?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {

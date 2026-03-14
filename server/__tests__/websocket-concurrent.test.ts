@@ -273,6 +273,28 @@ describe("WebSocket broadcast — deuce log triggers", () => {
     expect(res.status).toBe(200);
     expect(res.body.entries).toHaveLength(2);
   });
+
+  it("multi-group log creates an entry per group and server stays healthy", async () => {
+    // Verifies the fix for multi-group subscription cleanup: a user who belongs
+    // to N groups can log to all N and the server remains healthy.
+    const alice = await loginAs("alice");
+    const aliceId = "dev-alice";
+    const group1 = await getSoloGroupId("alice");
+    const g2Res = await alice.post("/api/groups").send({ name: "Third Squad" });
+    expect(g2Res.status).toBe(200);
+    const group2 = g2Res.body.id;
+    await memStore.addGroupMember({ groupId: group2, userId: aliceId, role: "admin" });
+
+    const res = await alice.post("/api/deuces").send({ groupIds: [group1, group2], location: "Everywhere" });
+    expect(res.status).toBe(200);
+    expect(res.body.entries).toHaveLength(2);
+    // Confirm entries are for distinct groups
+    const groupIds = res.body.entries.map((e: any) => e.groupId);
+    expect(new Set(groupIds).size).toBe(2);
+
+    const health = await supertest(app).get("/api/health");
+    expect(health.status).toBe(200);
+  });
 });
 
 /* ================================================================
