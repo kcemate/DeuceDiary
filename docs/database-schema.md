@@ -438,13 +438,17 @@ Records which users completed which challenges.
 | Table | Gap | Severity | Status |
 |-------|-----|----------|--------|
 | `users` | `updated_at` not auto-updated by trigger | Low | Documented |
-| `group_members` | No unique constraint on `(user_id, group_id)` | High | Documented |
-| `locations` | `is_default` missing `.notNull()` | Medium | Documented |
-| `streak_alerts` | `triggered_at`, `notified` missing NOT NULL | Low | Documented |
-| `push_tokens` | No unique constraint on `token` | Medium | Documented |
-| `daily_challenge_completions` | No unique on `(user_id, challenge_date)` | Medium | Documented |
-| `bingo_cards` | No unique on `(user_id, month)` | Medium | Documented |
-| `analytics_events` | `properties` is `text` not `jsonb` | Low | Design choice |
+| `group_members` | No unique constraint on `(user_id, group_id)` | High | **Fixed** (click 5) |
+| `locations` | `is_default` missing `.notNull()` | Medium | **Fixed** (click 3) |
+| `streak_alerts` | `triggered_at`, `notified` missing NOT NULL | Low | **Fixed** (click 4) |
+| `push_tokens` | No unique constraint on `token` | Medium | **Fixed** (click 6) |
+| `groups` | `created_at`, `updated_at` missing NOT NULL | Low | **Fixed** (click 7) |
+| `group_members` | `joined_at` missing NOT NULL | Low | **Fixed** (click 7) |
+| `deuce_entries` | `created_at` missing NOT NULL | Low | **Fixed** (click 7) |
+| `invites` | `created_at` missing NOT NULL | Low | **Fixed** (click 7) |
+| `daily_challenge_completions` | No unique on `(user_id, challenge_date)` | Medium | Documented — needs migration |
+| `bingo_cards` | No unique on `(user_id, month)` | Medium | Documented — needs migration |
+| `analytics_events` | `properties` is `text` not `jsonb` | Low | Design choice (intentional) |
 | `referrals` | FKs missing `onDelete` (RESTRICT by default) | Low | Documented |
 | `deuce_kings` / `challenges` | FKs missing `onDelete` (RESTRICT by default) | Low | Documented |
 
