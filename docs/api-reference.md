@@ -1066,6 +1066,55 @@ Gets or creates the current month's bingo card for the authenticated user.
 
 The 25 bingo squares are randomly shuffled each month. Cards containing deprecated Bristol/photo squares are automatically regenerated.
 
+The response also includes: `completedCount`, `totalCount` (always 25), `percentComplete`, `hasBlackout` (all 25 completed), `hasBingo` (any row/col/diagonal complete).
+
+---
+
+### POST /api/bingo/check 🔑 👑
+
+Re-evaluates bingo progress against actual DB data and updates the card. Call this to sync after logging activity.
+
+**Response:**
+```json
+{
+  "completedSquares": [0, 4, 12],
+  "completedCount": 3,
+  "totalCount": 25,
+  "percentComplete": 12,
+  "hasBlackout": false,
+  "hasBingo": false,
+  "newlyCompleted": 1
+}
+```
+
+`newlyCompleted` is the number of squares newly completed since last check.
+
+**Errors:**
+- `404` — No bingo card for this month (call `GET /api/bingo/current` first)
+
+---
+
+### GET /api/bingo/leaderboard 🔑 👑
+
+Returns bingo progress for all members across the user's groups, for the current month.
+
+**Response:**
+```json
+{
+  "month": "2026-03",
+  "leaderboard": [
+    {
+      "userId": "user_abc123",
+      "username": "jordan",
+      "profileImageUrl": "https://...",
+      "completedCount": 12,
+      "hasBlackout": false,
+      "hasBingo": true
+    }
+  ]
+}
+```
+
 ---
 
 ## Deuce King
