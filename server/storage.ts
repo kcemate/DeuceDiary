@@ -196,6 +196,7 @@ export interface IStorage {
   addGroupMember(member: InsertGroupMember): Promise<GroupMember>;
   getGroupMembers(groupId: string): Promise<(GroupMember & { user: User & { personalRecord?: { date: string; count: number } } })[]>;
   isUserInGroup(userId: string, groupId: string): Promise<boolean>;
+  isUserInGroups(userId: string, groupIds: string[]): Promise<Set<string>>;
   removeGroupMember(userId: string, groupId: string): Promise<void>;
   
   // Deuce entry operations
@@ -556,25 +557,22 @@ export class DatabaseStorage implements IStorage {
 
     if (rows.length === 0) return [];
 
-    // Batch personal records for all member userIds in one query
+    // Batch personal records — DISTINCT ON returns only the best day per user,
+    // avoiding a full-scan result set that the app then has to filter down
     const userIds = rows.map((r) => r.member.userId);
-    const records = await db
-      .select({
-        userId: deuceEntries.userId,
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(inArray(deuceEntries.userId, userIds))
-      .groupBy(deuceEntries.userId, sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(deuceEntries.userId, desc(sql<number>`COUNT(*)::int`));
-
-    // Keep only the top record per user (first occurrence due to ORDER BY)
+    const prRows = await db.execute<{ userId: string; date: string; count: number }>(sql`
+      SELECT DISTINCT ON (user_id)
+        user_id   AS "userId",
+        DATE(logged_at AT TIME ZONE 'UTC') AS date,
+        COUNT(*)::int AS count
+      FROM deuce_entries
+      WHERE user_id = ANY(${userIds})
+      GROUP BY user_id, DATE(logged_at AT TIME ZONE 'UTC')
+      ORDER BY user_id, count DESC
+    `);
     const personalRecordMap = new Map<string, { date: string; count: number }>();
-    for (const r of records) {
-      if (!personalRecordMap.has(r.userId)) {
-        personalRecordMap.set(r.userId, { date: r.date, count: r.count });
-      }
+    for (const r of prRows.rows) {
+      personalRecordMap.set(r.userId, { date: r.date, count: r.count });
     }
 
     return rows.map((row) => ({
@@ -592,6 +590,15 @@ export class DatabaseStorage implements IStorage {
       .from(groupMembers)
       .where(and(eq(groupMembers.userId, userId), eq(groupMembers.groupId, groupId)));
     return !!member;
+  }
+
+  async isUserInGroups(userId: string, groupIds: string[]): Promise<Set<string>> {
+    if (groupIds.length === 0) return new Set();
+    const rows = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.userId, userId), inArray(groupMembers.groupId, groupIds)));
+    return new Set(rows.map(r => r.groupId));
   }
 
   async removeGroupMember(userId: string, groupId: string): Promise<void> {
@@ -1076,107 +1083,90 @@ export class DatabaseStorage implements IStorage {
     avgBristolScore: number | null;
     mostUsedLocation: string | null;
   }> {
-    // Total deuces (all time, deduplicated — count distinct loggedAt timestamps)
-    const [totalResult] = await db
-      .select({ total: sql<number>`COUNT(*)::int` })
-      .from(deuceEntries)
-      .where(eq(deuceEntries.userId, userId));
-    const totalDeuces = totalResult?.total ?? 0;
+    // Parallelize all independent queries — reduces latency from sum-of-all to max-of-all
+    const [
+      [totalResult],
+      [firstEntry],
+      userGroupIds,
+      bestDayRows,
+      [bristolResult],
+      locationRows,
+    ] = await Promise.all([
+      db.select({ total: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries).where(eq(deuceEntries.userId, userId)),
+      db.select({ earliest: sql<Date>`MIN(${deuceEntries.loggedAt})` })
+        .from(deuceEntries).where(eq(deuceEntries.userId, userId)),
+      db.select({ groupId: groupMembers.groupId })
+        .from(groupMembers).where(eq(groupMembers.userId, userId)),
+      db.select({
+          dow: sql<number>`EXTRACT(DOW FROM ${deuceEntries.loggedAt})::int`,
+          cnt: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries).where(eq(deuceEntries.userId, userId))
+        .groupBy(sql`EXTRACT(DOW FROM ${deuceEntries.loggedAt})`)
+        .orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+      db.select({ avg: sql<number>`ROUND(AVG(${deuceEntries.bristolScore})::numeric, 1)::float` })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), sql`${deuceEntries.bristolScore} IS NOT NULL`)),
+      db.select({ location: deuceEntries.location, cnt: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries).where(eq(deuceEntries.userId, userId))
+        .groupBy(deuceEntries.location).orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+    ]);
 
-    // Avg per week: total / weeks since first entry (min 1 week)
-    // Use loggedAt for consistency with other analytics queries
-    const [firstEntry] = await db
-      .select({ earliest: sql<Date>`MIN(${deuceEntries.loggedAt})` })
-      .from(deuceEntries)
-      .where(eq(deuceEntries.userId, userId));
+    const totalDeuces = totalResult?.total ?? 0;
     const weeks = firstEntry?.earliest
       ? Math.max(1, (Date.now() - new Date(firstEntry.earliest).getTime()) / (7 * 24 * 60 * 60 * 1000))
       : 1;
     const avgPerWeek = Math.round((totalDeuces / weeks) * 10) / 10;
 
-    // Longest streak & current streak across user's groups
-    const userGroupIds = await db
-      .select({ groupId: groupMembers.groupId })
-      .from(groupMembers)
-      .where(eq(groupMembers.userId, userId));
-    let longestStreak = 0;
-    let currentStreak = 0;
-    if (userGroupIds.length > 0) {
-      const gids = userGroupIds.map(g => g.groupId);
-      const [streakResult] = await db
-        .select({
-          maxLongest: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int`,
-          maxCurrent: sql<number>`COALESCE(MAX(${groups.currentStreak}), 0)::int`,
-        })
-        .from(groups)
-        .where(inArray(groups.id, gids));
-      longestStreak = streakResult?.maxLongest ?? 0;
-      currentStreak = streakResult?.maxCurrent ?? 0;
-    }
-
-    // Best day of the week (0=Sunday … 6=Saturday)
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const bestDayRows = await db
-      .select({
-        dow: sql<number>`EXTRACT(DOW FROM ${deuceEntries.loggedAt})::int`,
-        cnt: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(eq(deuceEntries.userId, userId))
-      .groupBy(sql`EXTRACT(DOW FROM ${deuceEntries.loggedAt})`)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
     const bestDay = bestDayRows.length > 0
       ? { day: dayNames[bestDayRows[0].dow] ?? "Unknown", count: bestDayRows[0].cnt }
       : { day: "N/A", count: 0 };
+    const avgBristolScore = bristolResult?.avg ?? null;
+    const mostUsedLocation = locationRows.length > 0 ? locationRows[0].location : null;
 
-    // Group rankings — user's rank in each group by deuce count (single query)
+    // Streak + group rankings depend on userGroupIds — run in parallel after first batch
+    let longestStreak = 0;
+    let currentStreak = 0;
     const groupRankings: { groupId: string; groupName: string; rank: number; total: number }[] = [];
     if (userGroupIds.length > 0) {
       const gids = userGroupIds.map(g => g.groupId);
-      const rankingRows = await db.execute(sql`
-        WITH member_counts AS (
+      const [[streakResult], rankingRows] = await Promise.all([
+        db.select({
+            maxLongest: sql<number>`COALESCE(MAX(${groups.longestStreak}), 0)::int`,
+            maxCurrent: sql<number>`COALESCE(MAX(${groups.currentStreak}), 0)::int`,
+          })
+          .from(groups).where(inArray(groups.id, gids)),
+        db.execute(sql`
+          WITH member_counts AS (
+            SELECT
+              gm.group_id,
+              gm.user_id,
+              COUNT(de.id)::int AS cnt,
+              RANK() OVER (PARTITION BY gm.group_id ORDER BY COUNT(de.id) DESC) AS rnk,
+              COUNT(*) OVER (PARTITION BY gm.group_id) AS total_members
+            FROM group_members gm
+            LEFT JOIN deuce_entries de ON de.user_id = gm.user_id AND de.group_id = gm.group_id
+            WHERE gm.group_id = ANY(${gids})
+            GROUP BY gm.group_id, gm.user_id
+          )
           SELECT
-            gm.group_id,
-            gm.user_id,
-            COUNT(de.id)::int AS cnt,
-            RANK() OVER (PARTITION BY gm.group_id ORDER BY COUNT(de.id) DESC) AS rnk,
-            COUNT(*) OVER (PARTITION BY gm.group_id) AS total_members
-          FROM group_members gm
-          LEFT JOIN deuce_entries de ON de.user_id = gm.user_id AND de.group_id = gm.group_id
-          WHERE gm.group_id = ANY(${gids})
-          GROUP BY gm.group_id, gm.user_id
-        )
-        SELECT
-          mc.group_id AS "groupId",
-          g.name AS "groupName",
-          mc.rnk::int AS rank,
-          mc.total_members::int AS total
-        FROM member_counts mc
-        INNER JOIN groups g ON g.id = mc.group_id
-        WHERE mc.user_id = ${userId}
-      `);
+            mc.group_id AS "groupId",
+            g.name AS "groupName",
+            mc.rnk::int AS rank,
+            mc.total_members::int AS total
+          FROM member_counts mc
+          INNER JOIN groups g ON g.id = mc.group_id
+          WHERE mc.user_id = ${userId}
+        `),
+      ]);
+      longestStreak = streakResult?.maxLongest ?? 0;
+      currentStreak = streakResult?.maxCurrent ?? 0;
       for (const row of rankingRows.rows as { groupId: string; groupName: string; rank: number; total: number }[]) {
         groupRankings.push(row);
       }
     }
-
-    // Avg Bristol score (all time, exclude nulls)
-    const [bristolResult] = await db
-      .select({ avg: sql<number>`ROUND(AVG(${deuceEntries.bristolScore})::numeric, 1)::float` })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), sql`${deuceEntries.bristolScore} IS NOT NULL`));
-    const avgBristolScore = bristolResult?.avg ?? null;
-
-    // Most used location
-    const locationRows = await db
-      .select({ location: deuceEntries.location, cnt: sql<number>`COUNT(*)::int` })
-      .from(deuceEntries)
-      .where(eq(deuceEntries.userId, userId))
-      .groupBy(deuceEntries.location)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
-    const mostUsedLocation = locationRows.length > 0 ? locationRows[0].location : null;
 
     return { totalDeuces, avgPerWeek, longestStreak, currentStreak, bestDay, groupRankings, avgBristolScore, mostUsedLocation };
   }
@@ -1196,49 +1186,77 @@ export class DatabaseStorage implements IStorage {
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
     const weekOf = sevenDaysAgo.toISOString().slice(0, 10);
 
-    // 1. Total deuces in last 7 days (use loggedAt — the user-provided timestamp)
-    const [totalResult] = await db
-      .select({ total: sql<number>`COUNT(*)::int` })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
-    const totalDeuces = totalResult?.total ?? 0;
+    // Parallelize all 7 independent queries — runs in one round-trip instead of 7
+    const [
+      [totalResult],
+      peakDayRows,
+      squadRows,
+      userGroupIds,
+      funnyRows,
+      [reactionsResult],
+      dailyRows,
+    ] = await Promise.all([
+      // 1. Total deuces
+      db.select({ total: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo))),
+      // 2. Peak day
+      db.select({
+          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+        .orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+      // 3. Most active squad
+      db.select({ name: groups.name, count: sql<number>`COUNT(*)::int` })
+        .from(deuceEntries)
+        .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(groups.name).orderBy(desc(sql<number>`COUNT(*)::int`)).limit(1),
+      // 4. User group IDs (for streak lookup)
+      db.select({ groupId: groupMembers.groupId })
+        .from(groupMembers).where(eq(groupMembers.userId, userId)),
+      // 5. Funniest entry
+      db.select({
+          thought: deuceEntries.thoughts,
+          reactionCount: sql<number>`COUNT(${reactions.id})::int`,
+        })
+        .from(deuceEntries)
+        .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(deuceEntries.id, deuceEntries.thoughts)
+        .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`)).limit(1),
+      // 6. Total reactions received
+      db.select({ total: sql<number>`COUNT(*)::int` })
+        .from(reactions)
+        .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo))),
+      // 7. Daily counts
+      db.select({
+          date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(deuceEntries)
+        .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
+        .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
+        .orderBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`),
+    ]);
 
-    // 2. Peak day (day with most deuces)
-    const peakDayRows = await db
-      .select({
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
+    const totalDeuces = totalResult?.total ?? 0;
     const peakDay = peakDayRows.length > 0
       ? { date: peakDayRows[0].date, count: peakDayRows[0].count }
       : { date: weekOf, count: 0 };
-
-    // 3. Most active squad (group with most deuces this week)
-    const squadRows = await db
-      .select({
-        name: groups.name,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .innerJoin(groups, eq(deuceEntries.groupId, groups.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(groups.name)
-      .orderBy(desc(sql<number>`COUNT(*)::int`))
-      .limit(1);
     const mostActiveSquad = squadRows.length > 0
       ? { name: squadRows[0].name, count: squadRows[0].count }
       : { name: "None", count: 0 };
+    const funniestEntry = funnyRows.length > 0
+      ? { thought: funnyRows[0].thought, reactions: funnyRows[0].reactionCount }
+      : null;
+    const totalReactionsReceived = reactionsResult?.total ?? 0;
 
-    // 4. Longest streak across user's groups
-    const userGroupIds = await db
-      .select({ groupId: groupMembers.groupId })
-      .from(groupMembers)
-      .where(eq(groupMembers.userId, userId));
+    // Streak lookup depends on userGroupIds — one extra query if user has groups
     let longestStreak = 0;
     if (userGroupIds.length > 0) {
       const [streakResult] = await db
@@ -1247,41 +1265,6 @@ export class DatabaseStorage implements IStorage {
         .where(inArray(groups.id, userGroupIds.map(g => g.groupId)));
       longestStreak = streakResult?.maxStreak ?? 0;
     }
-
-    // 5. Funniest entry (most reacted entry this week)
-    const funnyRows = await db
-      .select({
-        thought: deuceEntries.thoughts,
-        reactionCount: sql<number>`COUNT(${reactions.id})::int`,
-      })
-      .from(deuceEntries)
-      .innerJoin(reactions, eq(deuceEntries.id, reactions.entryId))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(deuceEntries.id, deuceEntries.thoughts)
-      .orderBy(desc(sql<number>`COUNT(${reactions.id})::int`))
-      .limit(1);
-    const funniestEntry = funnyRows.length > 0
-      ? { thought: funnyRows[0].thought, reactions: funnyRows[0].reactionCount }
-      : null;
-
-    // 6. Total reactions received this week
-    const [reactionsResult] = await db
-      .select({ total: sql<number>`COUNT(*)::int` })
-      .from(reactions)
-      .innerJoin(deuceEntries, eq(reactions.entryId, deuceEntries.id))
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)));
-    const totalReactionsReceived = reactionsResult?.total ?? 0;
-
-    // 7. Daily counts for the past 7 days (for bar chart)
-    const dailyRows = await db
-      .select({
-        date: sql<string>`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(deuceEntries)
-      .where(and(eq(deuceEntries.userId, userId), gte(deuceEntries.loggedAt, sevenDaysAgo)))
-      .groupBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`)
-      .orderBy(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC')`);
 
     // Build a full 7-day array (fill zeros for missing days)
     const dailyMap = new Map(dailyRows.map(r => [r.date, r.count]));

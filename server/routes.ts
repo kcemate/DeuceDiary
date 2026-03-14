@@ -603,13 +603,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Auth sync: created Solo Deuces for user ${userId}`);
       }
 
-      // Fetch streak data from user's groups
-      const streaks = await Promise.all(
-        groups.map(async (g) => {
-          const streak = await storage.getGroupStreak(g.id);
-          return { groupId: g.id, groupName: g.name, ...streak };
-        }),
-      );
+      // Fetch streak data from user's groups — single batch query instead of N queries
+      const streakMap = await storage.getGroupStreaksBatch(groups.map(g => g.id));
+      const streaks = groups.map(g => ({
+        groupId: g.id,
+        groupName: g.name,
+        ...(streakMap.get(g.id) ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null }),
+      }));
 
       res.json({
         ...user,
