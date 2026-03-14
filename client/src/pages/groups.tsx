@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -70,22 +71,22 @@ export default function Groups() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" role="status" aria-label="Loading squads">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse bg-card border border-border rounded-2xl p-4">
+            <div key={i} className="bg-card border border-border rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="h-5 bg-muted rounded w-1/3"></div>
-                <div className="h-6 bg-muted rounded-full w-16"></div>
+                <Skeleton className="h-5 w-1/3 rounded" />
+                <Skeleton className="h-6 w-16 rounded-full" />
               </div>
               <div className="flex items-center mb-3">
                 <div className="flex -space-x-2">
                   {[1, 2, 3].map((j) => (
-                    <div key={j} className="w-8 h-8 bg-muted rounded-full border-2 border-background"></div>
+                    <Skeleton key={j} className="w-8 h-8 rounded-full border-2 border-background" />
                   ))}
                 </div>
-                <div className="h-3 bg-muted rounded w-16 ml-3"></div>
+                <Skeleton className="h-3 w-16 rounded ml-3" />
               </div>
-              <div className="h-4 bg-muted rounded w-full"></div>
+              <Skeleton className="h-4 w-full rounded" />
             </div>
           ))}
         </div>
