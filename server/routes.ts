@@ -29,6 +29,7 @@ import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
 import { apiError, Errors } from "./lib/apiError";
+import { registerWss, incWsCounter, getWsMetrics } from "./lib/wsMetrics";
 import { reverseGeocode } from "./lib/geocode";
 import {
   isPremiumUser,
@@ -2383,6 +2384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket server — authenticated connections only
   const wss = new WebSocketServer({ noServer: true });
+  registerWss(wss);
   const groupConnections = new Map<string, Set<WebSocket>>();
 
   // Authenticate WebSocket upgrade requests
@@ -2401,6 +2403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Clerk mode: token passed as query param (browsers can't set WS headers)
         const token = url.searchParams.get('token');
         if (!token) {
+          incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
@@ -2409,12 +2412,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const payload = await clerk!.verifyToken(token);
           const user = await storage.getUser(payload.sub);
           if (!user) {
+            incWsCounter('failedAuthentications');
             socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
             socket.destroy();
             return;
           }
           userId = user.id;
         } catch {
+          incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
@@ -2427,12 +2432,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         userId = (req as any).session?.userId || null;
         if (!userId) {
+          incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
         }
         const user = await storage.getUser(userId);
         if (!user) {
+          incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
           return;
@@ -2458,6 +2465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     wss.clients.forEach((ws) => {
       const client = ws as any;
       if (client.missedPongs >= MAX_MISSED_PONGS) {
+        incWsCounter('forcedDisconnects');
         console.log(`WebSocket terminating dead connection (user ${client.userId}, missed ${client.missedPongs} pongs)`);
         ws.terminate();
         return;
@@ -2490,6 +2498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   wss.on('connection', (ws: WebSocket, req) => {
     const userId = (ws as any).userId as string;
+    incWsCounter('totalConnections');
     console.log(`WebSocket connection authenticated for user ${userId}`);
 
     // Heartbeat tracking
@@ -2532,6 +2541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on('close', () => {
+      incWsCounter('gracefulDisconnects');
       // Clean up connection
       const groupId = (ws as any).groupId;
       if (groupId && groupConnections.has(groupId)) {
