@@ -24,6 +24,8 @@ export function useWebSocket() {
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Guard to prevent stale closures from triggering reconnects after logout
   const shouldReconnectRef = useRef(false);
+  // Exponential backoff: tracks how many consecutive failures have occurred
+  const reconnectAttemptRef = useRef(0);
 
   const connect = async () => {
     // Don't open a second connection if one is already open or connecting
@@ -51,6 +53,7 @@ export function useWebSocket() {
       ws.onopen = () => {
         console.log("WebSocket connected");
         setIsConnected(true);
+        reconnectAttemptRef.current = 0; // reset backoff on successful connect
       };
 
       ws.onmessage = (event) => {
@@ -69,11 +72,15 @@ export function useWebSocket() {
         // Only reconnect if the ref says we should — avoids stale-closure
         // scheduling a reconnect after logout clears the flag.
         if (shouldReconnectRef.current) {
+          const attempt = reconnectAttemptRef.current;
+          // Exponential backoff: 2s, 4s, 8s, 16s, capped at 30s
+          const delay = Math.min(2000 * 2 ** attempt, 30000);
+          reconnectAttemptRef.current = attempt + 1;
           reconnectTimeoutRef.current = setTimeout(() => {
             if (shouldReconnectRef.current) {
               connect();
             }
-          }, 3000);
+          }, delay);
         }
       };
 
@@ -89,6 +96,7 @@ export function useWebSocket() {
   const disconnect = () => {
     // Stop any pending reconnect first
     shouldReconnectRef.current = false;
+    reconnectAttemptRef.current = 0;
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
