@@ -193,6 +193,19 @@ function Router() {
     }
   }, [lastMessage, user]);
 
+  // Show toast when offline-queued deuces successfully sync
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { synced } = (e as CustomEvent<{ synced: number }>).detail;
+      toast({
+        title: "Synced!",
+        description: `${synced} queued ${synced === 1 ? "deuce" : "deuces"} uploaded successfully.`,
+      });
+    };
+    window.addEventListener('offline-sync-complete', handler);
+    return () => window.removeEventListener('offline-sync-complete', handler);
+  }, [toast]);
+
   // Handle invite links from URL params
   useEffect(() => {
     // Clerk sign-in redirects to /app — never redirect authenticated users away from /app

@@ -55,6 +55,8 @@ export function useOfflineSync() {
         queryClient.invalidateQueries({ queryKey: ['/api/deuces'] });
         queryClient.invalidateQueries({ queryKey: ['/api/analytics/most-deuces'] });
         queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+        // Notify the UI so a toast can be shown
+        window.dispatchEvent(new CustomEvent('offline-sync-complete', { detail: { synced } }));
       }
     } finally {
       isSyncing.current = false;
