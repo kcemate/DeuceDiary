@@ -236,6 +236,7 @@ const memStore = vi.hoisted(() => {
     async getGroupDeuceCount() { return 0; },
     async getInviteById() { return null; },
     async cleanupExpiredInvites() {},
+    async deleteExpiredGroupInvites() {},
     async getAdminStats() { return {}; },
     async getPremiumAnalytics() { return {}; },
     async getWeeklyReport() { return {}; },

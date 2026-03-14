@@ -118,6 +118,9 @@ export function createGroupsRouter(): Router {
       const userId = req.user.id;
       const groupId = req.groupId;
 
+      // Purge expired invites for this group before creating a new one to prevent accumulation
+      await storage.deleteExpiredGroupInvites(groupId);
+
       const inviteId = uuidv4();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 

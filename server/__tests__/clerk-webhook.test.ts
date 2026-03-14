@@ -271,6 +271,7 @@ const memStore = vi.hoisted(() => {
     async getInviteById(inviteId: string) { return _invites.get(inviteId); },
     async deleteInvite(inviteId: string) { _invites.delete(inviteId); },
     async cleanupExpiredInvites() {},
+    async deleteExpiredGroupInvites() {},
 
     /* ---- Location ops ---- */
     async getLocations() { return [..._locations]; },

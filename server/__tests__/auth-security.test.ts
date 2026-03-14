@@ -265,6 +265,7 @@ const memStore = vi.hoisted(() => {
     async deleteInvite(inviteId: string) {
       _invites.delete(inviteId);
     },
+    async deleteExpiredGroupInvites() {},
     async cleanupExpiredInvites() {
       const now = new Date();
       for (const [id, inv] of _invites) {

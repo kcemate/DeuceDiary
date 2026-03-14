@@ -211,6 +211,7 @@ export interface IStorage {
   getInviteById(inviteId: string): Promise<Invite | undefined>;
   deleteInvite(inviteId: string): Promise<void>;
   cleanupExpiredInvites(): Promise<void>;
+  deleteExpiredGroupInvites(groupId: string): Promise<void>;
   
   // Location operations
   getLocations(): Promise<Location[]>;
@@ -674,6 +675,13 @@ export class DatabaseStorage implements IStorage {
 
   async cleanupExpiredInvites(): Promise<void> {
     await db.delete(invites).where(sql`${invites.expiresAt} < NOW()`);
+  }
+
+  async deleteExpiredGroupInvites(groupId: string): Promise<void> {
+    // Purge expired invites for this group so they don't accumulate indefinitely
+    await db
+      .delete(invites)
+      .where(and(eq(invites.groupId, groupId), sql`${invites.expiresAt} < NOW()`));
   }
 
   // Group preview helpers

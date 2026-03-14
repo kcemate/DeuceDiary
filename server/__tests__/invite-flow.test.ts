@@ -188,6 +188,7 @@ const memStore = vi.hoisted(() => {
     },
     async getInviteById(inviteId: string) { return _invites.get(inviteId); },
     async deleteInvite(inviteId: string) { _invites.delete(inviteId); },
+    async deleteExpiredGroupInvites() {},
     async cleanupExpiredInvites() { const now = new Date(); for (const [id, inv] of _invites) { if (inv.expiresAt < now) _invites.delete(id); } },
 
     async getLocations() { return [..._locations].sort((a, b) => a.isDefault !== b.isDefault ? (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0) : (a.name ?? "").localeCompare(b.name ?? "")); },
