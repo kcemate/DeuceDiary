@@ -178,6 +178,29 @@ function Router() {
     },
   });
 
+  // Show a toast when a background query fails with a server/network error
+  // so the user knows something went wrong rather than seeing stale data silently.
+  useEffect(() => {
+    return queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === "updated" && event.action.type === "error") {
+        const err = event.action.error;
+        if (err instanceof Error) {
+          const match = err.message.match(/^(\d{3}):/);
+          const status = match ? parseInt(match[1], 10) : null;
+          // Only surface server errors (5xx) or network failures (no status)
+          const isTransient = status === null || status >= 500;
+          if (isTransient) {
+            toast({
+              title: "Connection issue",
+              description: "Couldn't reach the server. Pull down to refresh.",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Handle WebSocket notifications
   useEffect(() => {
     if (lastMessage && lastMessage.type === "deuce_logged") {
