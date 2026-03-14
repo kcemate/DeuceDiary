@@ -2161,6 +2161,35 @@ export class DatabaseStorage implements IStorage {
     // Cascade: remove group memberships, push tokens, reactions, and anonymize entries for GDPR
     // Wrapped in a transaction to ensure all-or-nothing consistency
     await db.transaction(async (tx) => {
+      // Group ownership: for each group this user created, transfer ownership to the
+      // oldest remaining member. If the user is the sole member, delete the group outright
+      // (cascade will remove groupMembers/entries/invites for that group automatically).
+      const ownedGroups = await tx
+        .select({ id: groups.id })
+        .from(groups)
+        .where(eq(groups.createdBy, userId));
+
+      for (const group of ownedGroups) {
+        // Find oldest remaining member who is NOT the user being deleted
+        const [nextOwner] = await tx
+          .select({ userId: groupMembers.userId })
+          .from(groupMembers)
+          .where(and(eq(groupMembers.groupId, group.id), sql`${groupMembers.userId} != ${userId}`))
+          .orderBy(groupMembers.joinedAt)
+          .limit(1);
+
+        if (nextOwner) {
+          // Transfer ownership to next oldest member
+          await tx
+            .update(groups)
+            .set({ createdBy: nextOwner.userId, updatedAt: new Date() })
+            .where(eq(groups.id, group.id));
+        } else {
+          // No other members — delete the orphaned group (cascade handles members/entries/invites)
+          await tx.delete(groups).where(eq(groups.id, group.id));
+        }
+      }
+
       await tx
         .delete(groupMembers)
         .where(eq(groupMembers.userId, userId));
