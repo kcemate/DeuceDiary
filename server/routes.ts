@@ -2142,10 +2142,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const USER_ID_RE = /^[\w.\-]{1,128}$/;
+
   // --- Share Card Data (public) ---
   app.get('/api/share/streak/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
+      if (!USER_ID_RE.test(userId)) {
+        return Errors.notFound(res, "User");
+      }
       const data = await storage.getShareCardData(userId);
       res.json(data);
     } catch (error) {
@@ -2173,6 +2178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/og/streak/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
+      if (!USER_ID_RE.test(userId)) {
+        return res.status(404).send('<html><body><h1>User not found</h1></body></html>');
+      }
       const data = await storage.getShareCardData(userId);
 
       const displayName = escapeHtml(data.username || 'Anonymous');
