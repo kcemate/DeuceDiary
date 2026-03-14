@@ -136,6 +136,33 @@ export function useWebSocket() {
     };
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Eagerly reconnect when the user returns to the tab — cancels any pending
+  // backoff timer and retries immediately so the connection is ready faster.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && shouldReconnectRef.current) {
+        // Cancel any pending delayed reconnect
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+        // If not already open/connecting, reconnect now
+        const state = wsRef.current?.readyState;
+        if (state !== WebSocket.OPEN && state !== WebSocket.CONNECTING) {
+          reconnectAttemptRef.current = 0; // reset backoff so next failure starts fresh
+          connect();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return {
     isConnected,
     lastMessage,
