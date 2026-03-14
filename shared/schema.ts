@@ -97,6 +97,7 @@ export const deuceEntries = pgTable("deuce_entries", {
   index("idx_deuce_entries_logged_at").on(table.loggedAt),
   index("idx_deuce_entries_created_at").on(table.createdAt),
   index("idx_deuce_entries_user_created").on(table.userId, table.createdAt),
+  index("idx_deuce_entries_group_logged").on(table.groupId, table.loggedAt),
 ]);
 
 export const invites = pgTable("invites", {
