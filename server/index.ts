@@ -12,6 +12,7 @@ import { runMigrations } from "./migrate";
 import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
 import { structuredRequestLogger } from "./lib/structuredLogger";
+import { metricsMiddleware } from "./lib/metrics";
 import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
@@ -163,6 +164,9 @@ app.use(responseTimeMiddleware);
 
 // --- Structured JSON request logger (machine-parseable, before morgan) ---
 app.use(structuredRequestLogger);
+
+// --- API metrics (request counts, error rate, p95 latency) ---
+app.use(metricsMiddleware);
 
 // --- Request Logging (morgan) ---
 app.use(morgan("short"));

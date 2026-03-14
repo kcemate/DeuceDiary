@@ -27,6 +27,7 @@ import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
+import { getMetricsSnapshot } from "./lib/metrics";
 import { apiError, Errors } from "./lib/apiError";
 import { reverseGeocode } from "./lib/geocode";
 import {
@@ -433,6 +434,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const errors = getRecentErrors(limit);
     res.json({ errors, count: errors.length });
+  });
+
+  // --- API metrics endpoint (internal) ---
+  app.get('/api/internal/metrics', (req, res) => {
+    const key = req.headers['x-internal-key'];
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+      return Errors.unauthorized(res);
+    }
+    res.json(getMetricsSnapshot());
   });
 
   // --- Detailed health endpoint (internal) ---
