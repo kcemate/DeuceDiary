@@ -38,6 +38,47 @@ function getStreakTierLabel(streak: number): string {
   return "\uD83D\uDD25 Starter Streak";
 }
 
+function buildOgHtml(params: {
+  title: string;
+  ogTitle: string;
+  ogDescription: string;
+  twitterTitle: string;
+  twitterDescription: string;
+  cardStyles: string;
+  cardBody: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${params.title}</title>
+  <meta property="og:title" content="${params.ogTitle}" />
+  <meta property="og:description" content="${params.ogDescription}" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="${params.twitterTitle}" />
+  <meta name="twitter:description" content="${params.twitterDescription}" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(38, 40%, 96%);
+      color: hsl(25, 30%, 8%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+${params.cardStyles}
+  </style>
+</head>
+<body>
+${params.cardBody}
+</body>
+</html>`;
+}
+
 export function createPublicRouter(): Router {
   const router = Router();
 
@@ -74,30 +115,13 @@ export function createPublicRouter(): Router {
       const rankTitle = getThroneRankTitle(data.totalLogs);
       const tierLabel = getStreakTierLabel(data.currentStreak);
 
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${displayName} on Deuce Diary</title>
-  <meta property="og:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta property="og:description" content="${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''}" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta name="twitter:description" content="${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs on Deuce Diary" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: hsl(38, 40%, 96%);
-      color: hsl(25, 30%, 8%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
+      const html = buildOgHtml({
+        title: `${displayName} on Deuce Diary`,
+        ogTitle: `${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25`,
+        ogDescription: `${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''}`,
+        twitterTitle: `${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25`,
+        twitterDescription: `${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs on Deuce Diary`,
+        cardStyles: `    .card {
       background: linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%);
       border: 1.5px solid hsl(45, 55%, 72%);
       border-radius: 24px;
@@ -198,11 +222,8 @@ export function createPublicRouter(): Router {
     }
     .divider { border: none; border-top: 1px solid hsl(38, 18%, 84%); margin: 0 0 12px; }
     .brand-name { font-size: 13px; font-weight: 700; color: hsl(25, 30%, 28%); }
-    .brand-tagline { font-size: 10px; color: hsl(25, 12%, 52%); margin-top: 2px; }
-  </style>
-</head>
-<body>
-  <div class="card">
+    .brand-tagline { font-size: 10px; color: hsl(25, 12%, 52%); margin-top: 2px; }`,
+        cardBody: `  <div class="card">
     <div class="accent-bar"></div>
     <div class="card-inner">
       <div><span class="tier-badge">${tierLabel}</span></div>
@@ -233,9 +254,8 @@ export function createPublicRouter(): Router {
       <div class="brand-name">\uD83D\uDEBD Deuce Diary</div>
       <div class="brand-tagline">Drop a log. Leave a mark.${memberSince ? ` \u00B7 Member since ${memberSince}` : ''}</div>
     </div>
-  </div>
-</body>
-</html>`;
+  </div>`,
+      });
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
@@ -280,30 +300,13 @@ export function createPublicRouter(): Router {
         ? escapeHtml(report.funnyStats.funniestEntry.thought).slice(0, 60)
         : null;
 
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(report.groupName)} - Weekly Throne Report</title>
-  <meta property="og:title" content="${escapeHtml(report.groupName)} - Weekly Throne Report" />
-  <meta property="og:description" content="${report.groupStats.totalDeucesThisWeek} deuces \u00B7 ${report.groupStats.currentStreak}-day streak \u00B7 MVP: ${escapeHtml(mvpName)} (${mvpCount})" />
-  <meta property="og:type" content="website" />
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="${escapeHtml(report.groupName)} - Weekly Throne Report" />
-  <meta name="twitter:description" content="${report.groupStats.totalDeucesThisWeek} deuces this week \u00B7 ${report.members.length} members" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: hsl(38, 40%, 96%);
-      color: hsl(25, 30%, 8%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .card {
+      const html = buildOgHtml({
+        title: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
+        ogTitle: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
+        ogDescription: `${report.groupStats.totalDeucesThisWeek} deuces \u00B7 ${report.groupStats.currentStreak}-day streak \u00B7 MVP: ${escapeHtml(mvpName)} (${mvpCount})`,
+        twitterTitle: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
+        twitterDescription: `${report.groupStats.totalDeucesThisWeek} deuces this week \u00B7 ${report.members.length} members`,
+        cardStyles: `    .card {
       background: hsl(38, 30%, 94%);
       border: 1px solid hsl(38, 18%, 83%);
       border-radius: 24px;
@@ -322,11 +325,8 @@ export function createPublicRouter(): Router {
     .mvp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: hsl(25, 12%, 42%); }
     .mvp-name { font-size: 16px; font-weight: 800; margin-top: 4px; }
     .thought { font-style: italic; font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 16px; }
-    .brand { font-size: 11px; color: hsl(25, 12%, 42%); margin-top: 12px; }
-  </style>
-</head>
-<body>
-  <div class="card">
+    .brand { font-size: 11px; color: hsl(25, 12%, 42%); margin-top: 12px; }`,
+        cardBody: `  <div class="card">
     <div class="emoji">\uD83D\uDEBD</div>
     <div class="title">${escapeHtml(report.groupName)}</div>
     <div class="subtitle">Weekly Throne Report \u00B7 ${escapeHtml(weekRange)}</div>
@@ -350,9 +350,8 @@ export function createPublicRouter(): Router {
     </div>
     ${funniestThought ? `<div class="thought">"${funniestThought}"</div>` : ''}
     <div class="brand">Deuce Diary \u00B7 Drop a thought. Leave a mark.</div>
-  </div>
-</body>
-</html>`;
+  </div>`,
+      });
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
