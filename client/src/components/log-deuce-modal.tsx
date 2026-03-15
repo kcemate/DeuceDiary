@@ -130,7 +130,9 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
             const ids = JSON.parse(saved) as string[];
             const valid = ids.filter((id) => groups.some((g) => g.id === id));
             if (valid.length > 0) setSelectedGroupIds(valid);
-          } catch {}
+          } catch {
+            // corrupted localStorage value — use defaults
+          }
         }
       }
     }

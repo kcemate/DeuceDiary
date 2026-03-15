@@ -1623,7 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
 
           for (const groupId of validGroups) {
-            try { await recalculateStreak(groupId); } catch (_) {}
+            try { await recalculateStreak(groupId); } catch (err) { console.error('[sync] recalculateStreak failed for group', groupId, err); }
           }
 
           results.push({ id: entry.id, status: 'ok' });

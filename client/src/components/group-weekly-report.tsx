@@ -191,11 +191,15 @@ export function GroupWeeklyReport({ groupId }: { groupId: string }) {
                 ].filter(Boolean).join("\n");
 
                 if (navigator.share) {
-                  try { await navigator.share({ title: "Weekly Throne Report", text }); } catch {}
+                  try { await navigator.share({ title: "Weekly Throne Report", text }); } catch {
+                    // user cancelled or share not supported — no action needed
+                  }
                 } else {
                   try {
                     await navigator.clipboard.writeText(text);
-                  } catch {}
+                  } catch (err) {
+                    console.warn("[share] clipboard write failed", err);
+                  }
                 }
               }}
             >
