@@ -15,6 +15,17 @@ import {
   escapeHtml,
 } from "./helpers";
 
+async function checkSquadLimit(req: any, res: any): Promise<boolean> {
+  if (!isPremiumUser(req.user)) {
+    const userGroups = await storage.getUserGroups(req.user.id);
+    if (userGroups.length >= 3) {
+      res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createGroupsRouter(): Router {
   const router = Router();
 
@@ -45,12 +56,7 @@ export function createGroupsRouter(): Router {
       const userId = req.user.id;
 
       // Free users limited to 3 squads
-      if (!isPremiumUser(req.user)) {
-        const userGroups = await storage.getUserGroups(userId);
-        if (userGroups.length >= 3) {
-          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
-        }
-      }
+      if (await checkSquadLimit(req, res)) return;
 
       const parsed = createGroupSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -158,12 +164,7 @@ export function createGroupsRouter(): Router {
       }
 
       // Free users limited to 3 squads
-      if (!isPremiumUser(req.user)) {
-        const userGroups = await storage.getUserGroups(userId);
-        if (userGroups.length >= 3) {
-          return res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
-        }
-      }
+      if (await checkSquadLimit(req, res)) return;
 
       await storage.addGroupMember({
         groupId: invite.groupId,
