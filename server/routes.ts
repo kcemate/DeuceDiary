@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { z, ZodError } from "zod";
@@ -41,6 +41,8 @@ import {
   MAX_LOGS_PER_DAY,
   sanitizeUserForResponse,
 } from "./routes/helpers";
+
+type AuthReq = Request & { user: { id: string } };
 
 // --- Zod Validation Schemas ---
 const loginSchema = z.object({
@@ -164,7 +166,7 @@ function hashCode(s: string): number {
  */
 async function recalculateStreak(groupId: string): Promise<void> {
   // Production path: serialized transaction with advisory lock and group timezone
-  if (typeof (db as any).transaction === 'function') {
+  if ('transaction' in db) {
     await db.transaction(async (tx) => {
       const lockKey = Math.abs(hashCode(groupId));
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
@@ -558,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(createAuthRouter(uploadsDir));
 
   // Data export (GDPR right to data portability)
-  app.get('/api/user/export', isAuthenticated, async (req: any, res) => {
+  app.get('/api/user/export', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
@@ -599,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Timezone preference
-  app.put('/api/user/timezone', isAuthenticated, async (req: any, res) => {
+  app.put('/api/user/timezone', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const { timezone } = req.body;
       if (!timezone || typeof timezone !== 'string') {
@@ -628,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Account deletion (soft-delete with GDPR-compliant data removal)
-  app.delete('/api/user/account', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/user/account', isAuthenticated, async (req: AuthReq, res) => {
     try {
       await storage.softDeleteUser(req.user.id);
       res.json({ success: true });
@@ -639,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Group routes (free — squad limit for free users)
-  app.post('/api/groups', isAuthenticated, async (req: any, res) => {
+  app.post('/api/groups', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const userId = req.user.id;
 
@@ -674,7 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/groups', isAuthenticated, async (req: any, res) => {
+  app.get('/api/groups', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const userId = req.user.id;
       const groups = await storage.getUserGroups(userId);
@@ -685,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), async (req: AuthReq, res) => {
     try {
       const groupId = req.groupId;
       
@@ -2385,7 +2387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  function broadcastToGroup(groupId: string, message: any) {
+  function broadcastToGroup(groupId: string, message: Record<string, unknown>) {
     const connections = groupConnections.get(groupId);
     if (connections) {
       // Stamp every broadcast with a unique msgId so clients can deduplicate.
