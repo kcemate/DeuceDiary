@@ -4,6 +4,12 @@ import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
 import { track, Events } from "../lib/analytics";
 
+async function downgradeToFree(userId: string, eventType: string, status?: string): Promise<void> {
+  await storage.updateUserSubscription(userId, "free", new Date());
+  const statusPart = status ? ` (status: ${status})` : "";
+  console.log(`Clerk webhook: ${eventType} — user ${userId} → free${statusPart}`);
+}
+
 /**
  * Register Clerk webhook route.
  * Must be called BEFORE session middleware (raw body required for signature verification).
@@ -110,13 +116,11 @@ export function registerClerkWebhook(app: Express): void {
               await storage.updateUserSubscription(userId, "premium", periodEnd);
               await storage.resetStreakInsurance(userId);
               console.log(`Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`);
-              track("subscription_change", userId, { type: event.type, status });
             } else {
               // Canceled / past_due / unpaid → downgrade
-              await storage.updateUserSubscription(userId, "free", new Date());
-              console.log(`Clerk webhook: ${event.type} — user ${userId} → free (status: ${status})`);
-              track("subscription_change", userId, { type: event.type, status });
+              await downgradeToFree(userId, event.type, status);
             }
+            track("subscription_change", userId, { type: event.type, status });
             break;
           }
 
@@ -124,8 +128,7 @@ export function registerClerkWebhook(app: Express): void {
             const sub = event.data;
             const userId = sub?.user_id ?? sub?.subscriber_id;
             if (!userId) break;
-            await storage.updateUserSubscription(userId, "free", new Date());
-            console.log(`Clerk webhook: subscription.deleted — user ${userId} → free`);
+            await downgradeToFree(userId, event.type);
             track("subscription_change", userId, { type: event.type });
             break;
           }
