@@ -18,6 +18,21 @@ import { triggerPassportStamp } from "../lib/geocode";
 
 type BroadcastFn = (groupId: string, message: any) => void;
 
+/** Fetch an entry and verify the user belongs to its group. Returns the entry or sends an error response. */
+async function getAuthorizedEntry(entryId: string, userId: string, res: any) {
+  const entry = await storage.getEntryById(entryId);
+  if (!entry) {
+    res.status(404).json({ message: "Entry not found" });
+    return null;
+  }
+  const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
+  if (!isInGroup) {
+    res.status(403).json({ message: "Not authorized to access this entry" });
+    return null;
+  }
+  return entry;
+}
+
 export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   const router = Router();
 
@@ -75,16 +90,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
       const { emoji } = parsed.data;
 
-      // Check if entry exists and user can access it
-      const entry = await storage.getEntryById(entryId);
-      if (!entry) {
-        return res.status(404).json({ message: "Entry not found" });
-      }
-
-      const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized to react to this entry" });
-      }
+      const entry = await getAuthorizedEntry(entryId, userId, res);
+      if (!entry) return;
 
       const reaction = await storage.addReaction({
         entryId,
@@ -125,15 +132,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const userId = req.user.id;
       const { entryId } = req.params;
 
-      // Verify the entry exists and the user can access it
-      const entry = await storage.getEntryById(entryId);
-      if (!entry) {
-        return res.status(404).json({ message: "Entry not found" });
-      }
-      const isInGroup = await storage.isUserInGroup(userId, entry.groupId);
-      if (!isInGroup) {
-        return res.status(403).json({ message: "Not authorized to view reactions for this entry" });
-      }
+      const entry = await getAuthorizedEntry(entryId, userId, res);
+      if (!entry) return;
 
       const reactions = await storage.getEntryReactions(entryId);
       res.json(reactions);
