@@ -373,12 +373,11 @@ describe("GET /api/user/theme", () => {
     expect(res.body.theme).toBe("default");
   });
 
-  it("returns 403 for non-premium user", async () => {
+  it("returns default theme for non-premium user", async () => {
     const agent = await loginAs("freeuser");
     const res = await agent.get("/api/user/theme");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-    expect(res.body.feature).toBe("custom_themes");
+    expect(res.status).toBe(200);
+    expect(res.body.theme).toBe("default");
   });
 
   it("requires authentication", async () => {

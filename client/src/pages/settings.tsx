@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { useTheme, type ThemeName } from "@/hooks/useTheme";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, usePremium } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { BackHeader } from "@/components/back-header";
 import { Switch } from "@/components/ui/switch";
@@ -117,7 +117,7 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
   const userTimezone = user?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const isPremium = user?.subscription === "premium";
+  const isPremium = usePremium();
 
   async function handleTimezoneChange(tz: string) {
     try {

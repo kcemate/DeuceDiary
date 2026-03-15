@@ -742,11 +742,11 @@ describe("Premium gating", () => {
     expect(res.body.feature).toBe("analytics");
   });
 
-  it("free user cannot access themes", async () => {
+  it("free user can read their theme (GET is not premium-gated)", async () => {
     const agent = await loginAs("freebie");
     const res = await agent.get("/api/user/theme");
-    expect(res.status).toBe(403);
-    expect(res.body.feature).toBe("custom_themes");
+    expect(res.status).toBe(200);
+    expect(res.body.theme).toBe("default");
   });
 
   it("free user CAN access POST /api/subscription/upgrade", async () => {

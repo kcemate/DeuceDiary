@@ -61,8 +61,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     apiRequest("/api/user/theme", {
       method: "PUT",
       body: JSON.stringify({ theme: newTheme }),
-    }).catch(() => {
-      // Optimistic — local state already updated
+    }).catch((err) => {
+      // Revert on failure — server didn't save
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const fallback = (stored && VALID_THEMES.includes(stored as ThemeName))
+        ? stored as ThemeName
+        : "default";
+      setThemeState(fallback);
+      console.warn("[Theme] Failed to save theme:", err);
     });
   }, []);
 

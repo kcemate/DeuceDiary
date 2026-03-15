@@ -170,7 +170,7 @@ export function createAuthRouter(uploadsDir: string): Router {
   });
 
   // Theme routes
-  router.get('/api/user/theme', isAuthenticated, requiresPremiumFor('custom_themes'), async (req: any, res) => {
+  router.get('/api/user/theme', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       res.json({ theme: user?.theme ?? 'default' });

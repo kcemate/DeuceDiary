@@ -889,11 +889,10 @@ describe("Session invalidation", () => {
  *  5. PREMIUM GATING COMPLETENESS  (all premium endpoints block free users)
  * ================================================================ */
 describe("Premium gating — free users get 403", () => {
-  it("GET /api/user/theme", async () => {
+  it("GET /api/user/theme — no longer premium-gated", async () => {
     const agent = await loginAs("alice");
     const res = await agent.get("/api/user/theme");
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
   });
 
   it("PUT /api/user/theme", async () => {
