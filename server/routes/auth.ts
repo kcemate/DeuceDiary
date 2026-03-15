@@ -68,7 +68,7 @@ export function createAuthRouter(uploadsDir: string): Router {
 
       // In Clerk mode, identity fields (email, name) come from the verified JWT,
       // not the request body, to prevent spoofing. Only username is user-supplied.
-      const jwtClaims = req.clerkAuth as any;
+      const jwtClaims = req.clerkAuth as { email?: string | null; first_name?: string | null; last_name?: string | null; image_url?: string | null } | undefined;
       const upsertData = clerkEnabled
         ? {
             id: userId,

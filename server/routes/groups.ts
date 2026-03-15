@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { storage } from "../storage";
 import { insertGroupSchema } from "@shared/schema";
 import { isAuthenticated } from "../replitAuth";
@@ -15,7 +15,7 @@ import {
   escapeHtml,
 } from "./helpers";
 
-async function fetchWeeklyReport(groupId: string, res: any) {
+async function fetchWeeklyReport(groupId: string, res: Response) {
   try {
     return await storage.getGroupWeeklyReport(groupId);
   } catch (err) {

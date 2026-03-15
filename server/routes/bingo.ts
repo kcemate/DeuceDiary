@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
@@ -56,10 +56,10 @@ function generateSquares(): BingoSquare[] {
   }));
 }
 
-type BingoRouteHandler = (userId: string, month: string, req: any, res: any) => Promise<void>;
+type BingoRouteHandler = (userId: string, month: string, req: Request & { user: { id: string } }, res: Response) => Promise<void>;
 
 function bingoHandler(label: string, handler: BingoRouteHandler) {
-  return async (req: any, res: any) => {
+  return async (req: Request & { user: { id: string } }, res: Response) => {
     try {
       await handler(req.user.id, getCurrentMonth(), req, res);
     } catch (error) {
@@ -79,8 +79,8 @@ export function createBingoRouter(): Router {
 
       // Regenerate cards that contain deprecated Bristol/photo squares
       if (card) {
-        const squares = card.squares as any[];
-        const hasDeprecated = squares.some((sq: any) =>
+        const squares = card.squares as BingoSquare[];
+        const hasDeprecated = squares.some((sq: BingoSquare) =>
           sq.condition_type === 'photo_count' ||
           sq.condition_type === 'bristol_score' ||
           /bristol/i.test(sq.title || '') ||

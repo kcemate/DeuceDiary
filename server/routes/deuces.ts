@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { WebSocket } from "ws";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
@@ -16,10 +16,10 @@ import {
 } from "./helpers";
 import { triggerPassportStamp } from "../lib/geocode";
 
-type BroadcastFn = (groupId: string, message: any) => void;
+type BroadcastFn = (groupId: string, message: unknown) => void;
 
 /** Fetch an entry and verify the user belongs to its group. Returns the entry or sends an error response. */
-async function getAuthorizedEntry(entryId: string, userId: string, res: any) {
+async function getAuthorizedEntry(entryId: string, userId: string, res: Response) {
   const entry = await storage.getEntryById(entryId);
   if (!entry) {
     res.status(404).json({ message: "Entry not found" });

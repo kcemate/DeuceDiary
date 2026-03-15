@@ -132,7 +132,7 @@ export async function setupAuth(app: Express) {
         }
 
         req.session.userId = userId;
-        req.session.save((err: any) => {
+        req.session.save((err: Error | null) => {
           if (err) {
             console.error("Session save error:", err);
             return res.status(500).json({ message: "Failed to save session" });
@@ -179,7 +179,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const token = authHeader.split(" ")[1];
-    let payload: any;
+    let payload: { sub: string; email?: string | null; first_name?: string | null; last_name?: string | null; image_url?: string | null };
     try {
       payload = await clerk!.verifyToken(token);
     } catch (err) {
@@ -193,10 +193,10 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
         // Auto-create user on first Clerk login
         user = await storage.upsertUser({
           id: payload.sub,
-          email: (payload as any).email ?? null,
-          firstName: (payload as any).first_name ?? null,
-          lastName: (payload as any).last_name ?? null,
-          profileImageUrl: (payload as any).image_url ?? null,
+          email: payload.email ?? null,
+          firstName: payload.first_name ?? null,
+          lastName: payload.last_name ?? null,
+          profileImageUrl: payload.image_url ?? null,
         });
         console.log(`[AUTH] auto-created user: ${payload.sub}`);
 
@@ -229,7 +229,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   }
 
   // --- Dev mode: session-based auth ---
-  const userId = (req.session as any)?.userId;
+  const userId = (req.session as { userId?: string })?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
