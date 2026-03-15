@@ -14,7 +14,7 @@ import { getThroneRank, getStreakTier } from "@/lib/gamification";
 // Subtle dot-grid pattern as an inline SVG data URL
 const DOT_GRID_BG = `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='hsl(45%2C55%25%2C72%25)' fill-opacity='0.35'/%3E%3C/svg%3E")`;
 
-function getStreakTagline(streak: number): string {
+export function getStreakTagline(streak: number): string {
   if (streak === 0) return "Ready to start the streak";
   if (streak === 1) return "Day one. The throne awaits.";
   if (streak < 3) return "Just getting warmed up";

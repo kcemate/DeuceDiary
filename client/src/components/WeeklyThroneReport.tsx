@@ -15,7 +15,7 @@ interface WeeklyReport {
   dailyCounts: { date: string; count: number }[];
 }
 
-function formatWeekRange(weekOf: string): string {
+export function formatWeekRange(weekOf: string): string {
   const start = new Date(weekOf + "T00:00:00Z");
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 6);
@@ -24,16 +24,16 @@ function formatWeekRange(weekOf: string): string {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-function formatDayName(dateStr: string): string {
+export function formatDayName(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00Z");
   return d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
 }
 
-function truncate(str: string, max: number): string {
+export function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max) + "..." : str;
 }
 
-function getWeeklyHeadline(report: WeeklyReport): string {
+export function getWeeklyHeadline(report: WeeklyReport): string {
   const { totalDeuces, longestStreak, totalReactionsReceived } = report;
   if (totalDeuces === 0) return "A quiet week on the throne 🤫";
   if (totalDeuces >= 14) return "Absolutely relentless. Respect. 👑";

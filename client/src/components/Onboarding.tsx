@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 
-const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
 const STEP_LABELS = ["Your Name", "Your Base", "First Log"];
 
