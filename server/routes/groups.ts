@@ -55,17 +55,11 @@ export function createGroupsRouter(): Router {
   // Group preview for invite landing page (public, no auth)
   router.get('/api/groups/preview/:inviteCode', asyncRoute("Failed to fetch group preview", async (req, res) => {
     const { inviteCode } = req.params;
-    const invite = await storage.getInviteById(inviteCode);
-    if (!invite || invite.expiresAt < new Date()) {
+    const preview = await storage.getGroupInvitePreview(inviteCode);
+    if (!preview) {
       return res.status(404).json({ message: "Invite not found or expired" });
     }
-    const group = await storage.getGroupById(invite.groupId);
-    if (!group) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-    const memberCount = await storage.getGroupMemberCount(invite.groupId);
-    const deuceCount = await storage.getGroupDeuceCount(invite.groupId);
-    res.json({ name: group.name, memberCount, deuceCount });
+    res.json({ name: preview.name, memberCount: preview.memberCount, deuceCount: preview.deuceCount });
   }));
 
   // Group routes (free — squad limit for free users)
