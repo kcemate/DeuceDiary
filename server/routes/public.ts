@@ -1,6 +1,20 @@
-import { Router } from "express";
+import { Router, Response } from "express";
 import { storage } from "../storage";
 import { getTitle, escapeHtml, userIdParamSchema, groupIdParamSchema, usernameParamSchema } from "./helpers";
+
+function sendOgHtml(res: Response, html: string): void {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+}
+
+function handleRouteError(res: Response, error: unknown, notFoundMsg: string | null, logMsg: string, failMsg: string): void {
+  if (notFoundMsg && error instanceof Error && error.message === notFoundMsg) {
+    res.status(404).json({ message: notFoundMsg });
+    return;
+  }
+  console.error(logMsg, error);
+  res.status(500).json({ message: failMsg });
+}
 
 function getStreakTagline(streak: number): string {
   if (streak === 0) return "Ready to start the streak";
@@ -91,11 +105,7 @@ export function createPublicRouter(): Router {
       const data = await storage.getShareCardData(userId);
       res.json(data);
     } catch (error) {
-      if (error instanceof Error && error.message === "User not found") {
-        return res.status(404).json({ message: "User not found" });
-      }
-      console.error('Error fetching share card data:', error);
-      res.status(500).json({ message: 'Failed to fetch share card data' });
+      handleRouteError(res, error, "User not found", 'Error fetching share card data:', 'Failed to fetch share card data');
     }
   });
 
@@ -257,14 +267,9 @@ export function createPublicRouter(): Router {
   </div>`,
       });
 
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
+      sendOgHtml(res, html);
     } catch (error) {
-      if (error instanceof Error && error.message === "User not found") {
-        return res.status(404).json({ message: "User not found" });
-      }
-      console.error('Error rendering OG share card:', error);
-      res.status(500).json({ message: 'Failed to render share card' });
+      handleRouteError(res, error, "User not found", 'Error rendering OG share card:', 'Failed to render share card');
     }
   });
 
@@ -277,11 +282,7 @@ export function createPublicRouter(): Router {
       const report = await storage.getGroupWeeklyReport(groupId);
       res.json(report);
     } catch (error) {
-      if (error instanceof Error && error.message === "Group not found") {
-        return res.status(404).json({ message: "Group not found" });
-      }
-      console.error("Error fetching shareable group report:", error);
-      res.status(500).json({ message: "Failed to fetch group report" });
+      handleRouteError(res, error, "Group not found", "Error fetching shareable group report:", "Failed to fetch group report");
     }
   });
 
@@ -353,14 +354,9 @@ export function createPublicRouter(): Router {
   </div>`,
       });
 
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
+      sendOgHtml(res, html);
     } catch (error) {
-      if (error instanceof Error && error.message === "Group not found") {
-        return res.status(404).json({ message: "Group not found" });
-      }
-      console.error("Error rendering group report OG card:", error);
-      res.status(500).json({ message: "Failed to render group report card" });
+      handleRouteError(res, error, "Group not found", "Error rendering group report OG card:", "Failed to render group report card");
     }
   });
 
@@ -387,8 +383,7 @@ export function createPublicRouter(): Router {
         title: getTitle(totalLogs),
       });
     } catch (error) {
-      console.error('Error fetching legacy wall:', error);
-      res.status(500).json({ message: 'Failed to fetch legacy wall' });
+      handleRouteError(res, error, null, 'Error fetching legacy wall:', 'Failed to fetch legacy wall');
     }
   });
 
