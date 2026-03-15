@@ -283,16 +283,17 @@ export function createGroupsRouter(): Router {
         doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
         doc.moveDown(0.5);
       };
+      const bodyFont = () => bodyFont();
 
       // Header
       doc.fontSize(24).font('Helvetica-Bold').text('Weekly Throne Report', { align: 'center' });
-      doc.fontSize(12).font('Helvetica').fillColor('#666')
+      bodyFont().fillColor('#666')
         .text(`${report.groupName}  |  Week of ${report.weekOf} to ${report.weekEnding}`, { align: 'center' });
       doc.moveDown(1.5);
 
       // Group stats
       pdfSection('Squad Stats');
-      doc.fontSize(12).font('Helvetica')
+      bodyFont()
         .text(`Total Deuces This Week: ${report.groupStats.totalDeucesThisWeek}`)
         .text(`Current Streak: ${report.groupStats.currentStreak} days`)
         .text(`Longest Streak: ${report.groupStats.longestStreak} days`);
@@ -301,7 +302,7 @@ export function createGroupsRouter(): Router {
       // MVP
       if (report.mvp) {
         pdfSection('MVP of the Week');
-        doc.fontSize(12).font('Helvetica')
+        bodyFont()
           .text(`${report.mvp.username ?? 'Anonymous'} -- ${report.mvp.deuceCount} deuces`);
         doc.moveDown(1);
       }
@@ -310,7 +311,7 @@ export function createGroupsRouter(): Router {
       pdfSection('Member Breakdown');
       for (const m of report.members) {
         const statusLabel = m.streakStatus === 'active' ? '[Active]' : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
-        doc.fontSize(12).font('Helvetica')
+        bodyFont()
           .text(`${statusLabel} ${m.username ?? 'Unknown'}: ${m.deucesThisWeek} deuces`);
       }
       doc.moveDown(1);
@@ -318,15 +319,15 @@ export function createGroupsRouter(): Router {
       // Funny stats
       pdfSection('Fun Facts');
       if (report.funnyStats.longestGap) {
-        doc.fontSize(12).font('Helvetica')
+        bodyFont()
           .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} -- ${report.funnyStats.longestGap.gapDays} days since last log`);
       }
       if (report.funnyStats.mostReactionsReceived) {
-        doc.fontSize(12).font('Helvetica')
+        bodyFont()
           .text(`Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} -- ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`);
       }
       if (report.funnyStats.funniestEntry) {
-        doc.fontSize(12).font('Helvetica')
+        bodyFont()
           .text(`Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`);
       }
 
