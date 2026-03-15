@@ -1,4 +1,5 @@
 import { log } from "../utils";
+import { startTimer } from "./perfBaseline";
 
 const SLOW_QUERY_THRESHOLD_MS = 100;
 
@@ -10,10 +11,9 @@ export function instrumentPool(pool: any): void {
   const original = pool.query.bind(pool);
 
   pool.query = function (...args: any[]): any {
-    const start = process.hrtime.bigint();
+    const elapsed = startTimer();
 
-    const onFinish = (durationNs: bigint, isError: boolean) => {
-      const ms = Number(durationNs) / 1e6;
+    const onFinish = (ms: number, isError: boolean) => {
       if (ms > SLOW_QUERY_THRESHOLD_MS) {
         const queryText =
           typeof args[0] === "string"
@@ -32,18 +32,18 @@ export function instrumentPool(pool: any): void {
     if (result && typeof result.then === "function") {
       return result.then(
         (res: any) => {
-          onFinish(process.hrtime.bigint() - start, false);
+          onFinish(elapsed(), false);
           return res;
         },
         (err: any) => {
-          onFinish(process.hrtime.bigint() - start, true);
+          onFinish(elapsed(), true);
           throw err;
         },
       );
     }
 
     // pg Pool.query always returns a Promise, but handle sync case defensively
-    onFinish(process.hrtime.bigint() - start, false);
+    onFinish(elapsed(), false);
     return result;
   };
 }

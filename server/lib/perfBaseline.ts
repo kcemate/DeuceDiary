@@ -32,11 +32,10 @@ export function responseTimeMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  const start = process.hrtime.bigint();
+  const elapsed = startTimer();
 
   res.on("finish", () => {
-    const durationNs = Number(process.hrtime.bigint() - start);
-    const durationMs = durationNs / 1e6;
+    const durationMs = elapsed();
 
     // Only track API routes
     if (req.path.startsWith("/api")) {
@@ -52,6 +51,15 @@ export function responseTimeMiddleware(
   });
 
   next();
+}
+
+/**
+ * Start a high-resolution timer. Returns a function that, when called,
+ * returns the elapsed time in milliseconds.
+ */
+export function startTimer(): () => number {
+  const start = process.hrtime.bigint();
+  return () => Number(process.hrtime.bigint() - start) / 1e6;
 }
 
 /** Format bytes into a human-readable string. */
