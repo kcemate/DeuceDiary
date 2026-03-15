@@ -283,7 +283,7 @@ export function createGroupsRouter(): Router {
         doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
         doc.moveDown(0.5);
       };
-      const bodyFont = () => bodyFont();
+      const bodyFont = () => doc.fontSize(12).font('Helvetica').fillColor('#000');
 
       // Header
       doc.fontSize(24).font('Helvetica-Bold').text('Weekly Throne Report', { align: 'center' });
