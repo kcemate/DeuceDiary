@@ -15,6 +15,15 @@ import {
   escapeHtml,
 } from "./helpers";
 
+async function fetchWeeklyReport(groupId: string, res: any) {
+  try {
+    return await storage.getGroupWeeklyReport(groupId);
+  } catch (err) {
+    if (err instanceof Error && err.message === "Group not found") { res.status(404).json({ message: "Group not found" }); return null; }
+    throw err;
+  }
+}
+
 async function checkSquadLimit(req: any, res: any): Promise<boolean> {
   if (!isPremiumUser(req.user)) {
     const userGroups = await storage.getUserGroups(req.user.id);
@@ -243,15 +252,8 @@ export function createGroupsRouter(): Router {
   // Weekly Throne Report — group-level shareable summary card
   router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group weekly report", async (req: any, res) => {
     const groupId = req.groupId;
-    let report;
-    try {
-      report = await storage.getGroupWeeklyReport(groupId);
-    } catch (err) {
-      if (err instanceof Error && err.message === "Group not found") {
-        return res.status(404).json({ message: "Group not found" });
-      }
-      throw err;
-    }
+    const report = await fetchWeeklyReport(groupId, res);
+    if (!report) return;
     res.json(report);
   }));
 
@@ -265,15 +267,8 @@ export function createGroupsRouter(): Router {
   // Export Weekly Throne Report as PDF (premium)
   router.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), asyncRoute("Failed to generate PDF report", async (req: any, res) => {
       const groupId = req.groupId;
-      let report;
-      try {
-        report = await storage.getGroupWeeklyReport(groupId);
-      } catch (err) {
-        if (err instanceof Error && err.message === 'Group not found') {
-          return res.status(404).json({ message: 'Group not found' });
-        }
-        throw err;
-      }
+      const report = await fetchWeeklyReport(groupId, res);
+      if (!report) return;
 
       // Lazy import pdfkit to avoid startup cost
       const PDFDocument = (await import('pdfkit')).default;
