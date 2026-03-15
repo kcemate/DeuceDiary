@@ -100,17 +100,11 @@ export function createBingoRouter(): Router {
       }
 
       const completedSquares = (card.completedSquares as number[]) || [];
-      const total = 25;
-      const completed = completedSquares.length;
 
       res.json({
         card,
         month,
-        completedCount: completed,
-        totalCount: total,
-        percentComplete: Math.round((completed / total) * 100),
-        hasBlackout: completed === total,
-        hasBingo: checkHasBingo(completedSquares),
+        ...buildBingoStats(completedSquares),
       });
     } catch (error) {
       console.error('Error fetching bingo card:', error);
@@ -133,11 +127,7 @@ export function createBingoRouter(): Router {
 
       res.json({
         completedSquares,
-        completedCount: completedSquares.length,
-        totalCount: 25,
-        percentComplete: Math.round((completedSquares.length / 25) * 100),
-        hasBlackout,
-        hasBingo: checkHasBingo(completedSquares),
+        ...buildBingoStats(completedSquares),
         newlyCompleted: completedSquares.length - ((card.completedSquares as number[])?.length ?? 0),
       });
     } catch (error) {
@@ -165,6 +155,19 @@ export function createBingoRouter(): Router {
   });
 
   return router;
+}
+
+const BINGO_TOTAL = 25;
+
+function buildBingoStats(completedSquares: number[]) {
+  const completed = completedSquares.length;
+  return {
+    completedCount: completed,
+    totalCount: BINGO_TOTAL,
+    percentComplete: Math.round((completed / BINGO_TOTAL) * 100),
+    hasBlackout: completed === BINGO_TOTAL,
+    hasBingo: checkHasBingo(completedSquares),
+  };
 }
 
 /** Returns true if completed squares form any bingo line (row, col, or diagonal) */
