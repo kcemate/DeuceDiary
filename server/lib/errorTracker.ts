@@ -86,7 +86,7 @@ export function getRecentErrors(limit = 50): ErrorEntry[] {
  * Must be registered with 4 parameters so Express treats it as an error handler.
  */
 export function errorTrackingMiddleware(
-  err: any,
+  err: Error & { status?: number; statusCode?: number },
   req: Request,
   res: Response,
   next: NextFunction,
@@ -100,7 +100,7 @@ export function errorTrackingMiddleware(
     statusCode: status,
     message: err.message || "Unknown error",
     stack: status >= 500 ? (err.stack ?? null) : null,
-    userId: (req as any).user?.id ?? null,
+    userId: (req as Request & { user?: { id?: string } }).user?.id ?? null,
     userAgent: (req.headers["user-agent"] as string | undefined) ?? null,
     requestId: (req.headers["x-request-id"] as string | undefined) ?? null,
   };

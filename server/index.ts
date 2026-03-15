@@ -169,8 +169,8 @@ app.use((req, res, next) => {
 // Individual route handlers don't need to thread req through every catch block.
 app.use((req, res, next) => {
   const originalJson = res.json.bind(res);
-  res.json = (body: any) => {
-    if (res.statusCode >= 400 && body && typeof body === 'object' && !body.requestId) {
+  res.json = (body: unknown) => {
+    if (res.statusCode >= 400 && body && typeof body === 'object' && !(body as Record<string, unknown>).requestId) {
       const rid = req.headers['x-request-id'] as string | undefined;
       if (rid) (body as Record<string, unknown>).requestId = rid;
     }
@@ -195,7 +195,7 @@ app.use(morgan("short"));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -207,7 +207,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       const rid = req.headers['x-request-id'] as string | undefined;
-      const userId = (req as any).user?.id as string | undefined;
+      const userId = (req as Request & { user?: { id?: string } }).user?.id;
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (rid) logLine += ` [${rid.slice(0, 8)}]`;
       if (userId) logLine += ` uid=${userId.slice(0, 12)}`;
@@ -244,7 +244,7 @@ app.use((req, res, next) => {
   app.use(errorTrackingMiddleware);
 
   // --- Global Error Handler ---
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error & { status?: number; statusCode?: number }, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = status === 500 ? "Internal Server Error" : err.message || "Internal Server Error";
     const requestId = req.headers['x-request-id'] as string | undefined;

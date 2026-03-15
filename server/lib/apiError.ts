@@ -1,3 +1,5 @@
+import { type Response } from "express";
+
 /**
  * Standardized API error response shape.
  */
@@ -12,7 +14,7 @@ export interface ApiError {
  * All API errors must go through this function to ensure consistent shape.
  */
 export function apiError(
-  res: any,
+  res: Response,
   status: number,
   code: string,
   error: string
@@ -22,20 +24,20 @@ export function apiError(
 
 // Common error factories
 export const Errors = {
-  unauthorized: (res: any, msg = "Unauthorized") =>
+  unauthorized: (res: Response, msg = "Unauthorized") =>
     apiError(res, 401, "UNAUTHORIZED", msg),
-  forbidden: (res: any, msg = "Forbidden") =>
+  forbidden: (res: Response, msg = "Forbidden") =>
     apiError(res, 403, "FORBIDDEN", msg),
-  notFound: (res: any, resource = "Resource") =>
+  notFound: (res: Response, resource = "Resource") =>
     apiError(res, 404, "NOT_FOUND", `${resource} not found`),
-  badRequest: (res: any, msg: string, code = "BAD_REQUEST") =>
+  badRequest: (res: Response, msg: string, code = "BAD_REQUEST") =>
     apiError(res, 400, code, msg),
-  conflict: (res: any, msg: string, code = "CONFLICT") =>
+  conflict: (res: Response, msg: string, code = "CONFLICT") =>
     apiError(res, 409, code, msg),
-  tooManyRequests: (res: any, msg: string) =>
+  tooManyRequests: (res: Response, msg: string) =>
     apiError(res, 429, "RATE_LIMIT_EXCEEDED", msg),
-  internal: (res: any, msg = "Internal server error") =>
+  internal: (res: Response, msg = "Internal server error") =>
     apiError(res, 500, "INTERNAL_ERROR", msg),
-  upgradRequired: (res: any, feature: string) =>
+  upgradRequired: (res: Response, feature: string) =>
     res.status(403).json({ feature, message: "Premium required", upgrade: true }),
 };

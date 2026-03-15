@@ -1,4 +1,4 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import { storage } from "./storage";
 
 /**
@@ -11,7 +11,7 @@ import { storage } from "./storage";
  * @param paramName - route param to read the group ID from (default "groupId")
  */
 export function requireGroupMember(paramName = "groupId"): RequestHandler {
-  return async (req: any, res, next) => {
+  return async (req: Request & { user?: { id: string }; groupId?: string }, res, next) => {
     const groupId: string | undefined = req.params[paramName];
 
     if (!groupId || typeof groupId !== "string") {
