@@ -568,7 +568,7 @@ export class DatabaseStorage implements IStorage {
         DATE(logged_at AT TIME ZONE 'UTC') AS date,
         COUNT(*)::int AS count
       FROM deuce_entries
-      WHERE user_id = ANY(${userIds})
+      WHERE user_id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})
       GROUP BY user_id, DATE(logged_at AT TIME ZONE 'UTC')
       ORDER BY user_id, count DESC
     `);
@@ -1165,7 +1165,7 @@ export class DatabaseStorage implements IStorage {
               COUNT(*) OVER (PARTITION BY gm.group_id) AS total_members
             FROM group_members gm
             LEFT JOIN deuce_entries de ON de.user_id = gm.user_id AND de.group_id = gm.group_id
-            WHERE gm.group_id = ANY(${gids})
+            WHERE gm.group_id IN (${sql.join(gids.map(id => sql`${id}`), sql`, `)})
             GROUP BY gm.group_id, gm.user_id
           )
           SELECT
@@ -1965,7 +1965,7 @@ export class DatabaseStorage implements IStorage {
             DATE(logged_at AT TIME ZONE 'UTC') AS log_date
           FROM deuce_entries
           WHERE group_id = ${groupId}
-            AND user_id = ANY(${userIds})
+            AND user_id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})
           GROUP BY user_id, DATE(logged_at AT TIME ZONE 'UTC')
         ),
         numbered AS (
