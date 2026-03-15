@@ -58,15 +58,17 @@ export function stripControlChars(s: string): string {
   return s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 }
 
-/** Trim whitespace then strip control chars — for single-line fields */
+/** Trim whitespace then strip control chars */
 function sanitizeLine(s: string): string {
   return stripControlChars(s.trim());
 }
 
-/** Trim whitespace then strip control chars — for multi-line fields (thoughts) */
-function sanitizeText(s: string): string {
-  return stripControlChars(s.trim());
-}
+const sanitizeText = sanitizeLine;
+
+// --- Constants ---
+export const MAX_LOGS_PER_DAY = 10;
+export const VALID_THEMES = ['default', 'dark', 'cream', 'midnight', 'ocean', 'retro'] as const;
+export const MAX_PUSH_TOKENS_PER_USER = 10;
 
 // --- Zod Validation Schemas ---
 export const loginSchema = z.object({
@@ -144,7 +146,7 @@ export const reminderSchema = z.object({
 });
 
 export const themeSchema = z.object({
-  theme: z.enum(["default", "dark", "cream", "midnight", "ocean", "retro"]),
+  theme: z.enum(VALID_THEMES),
 });
 
 export const broadcastSchema = z.object({
@@ -174,11 +176,6 @@ export const groupIdParamSchema = z.object({
 export const usernameParamSchema = z.object({
   username: z.string().min(1).max(50).regex(/^[\w\-]+$/, 'Invalid username'),
 });
-
-// --- Constants ---
-export const MAX_LOGS_PER_DAY = 10;
-export const VALID_THEMES = ['default', 'dark', 'cream', 'midnight', 'ocean', 'retro'] as const;
-export const MAX_PUSH_TOKENS_PER_USER = 10;
 
 // --- Utility Functions ---
 
