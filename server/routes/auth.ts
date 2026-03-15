@@ -1,13 +1,23 @@
 import { Router } from "express";
+import { z, ZodError } from "zod";
 import { storage } from "../storage";
 import { updateUserSchema } from "@shared/schema";
-import { isAuthenticated } from "../replitAuth";
+import { isAuthenticated, clerkEnabled } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { track } from "../lib/analytics";
+import { Errors } from "../lib/apiError";
 import { getTitle, themeSchema, VALID_THEMES } from "./helpers";
 import multer from "multer";
 import sharp from "sharp";
 import path from "path";
+
+const syncBodySchema = z.object({
+  email: z.string().max(254).nullish(),
+  firstName: z.string().max(100).nullish(),
+  lastName: z.string().max(100).nullish(),
+  username: z.string().max(50).nullish(),
+  imageUrl: z.string().max(2048).nullish(),
+});
 
 export function createAuthRouter(uploadsDir: string): Router {
   const router = Router();
@@ -33,42 +43,73 @@ export function createAuthRouter(uploadsDir: string): Router {
       const userId = req.user.id;
       track("user_login", userId);
       const user = await storage.getUser(userId);
+      if (!user) {
+        return Errors.notFound(res, "User");
+      }
       res.json({
         ...user,
-        title: getTitle(user?.deuceCount ?? 0),
-        subscription: user?.subscription ?? 'free',
-        subscriptionExpiresAt: user?.subscriptionExpiresAt ?? null,
-        streakInsuranceUsed: user?.streakInsuranceUsed ?? false,
+        title: getTitle(user.deuceCount ?? 0),
+        subscription: user.subscription ?? 'free',
+        subscriptionExpiresAt: user.subscriptionExpiresAt ?? null,
+        streakInsuranceUsed: user.streakInsuranceUsed ?? false,
       });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      Errors.internal(res, "Failed to fetch user");
     }
   });
 
   // Clerk frontend sync — called after Clerk login to upsert user + return profile
   router.post('/api/auth/sync', isAuthenticated, async (req: any, res) => {
     try {
-      const clerkData = req.body;
+      const bodyParsed = syncBodySchema.safeParse(req.body);
+      const clerkData = bodyParsed.success ? bodyParsed.data : {};
       const userId = req.user.id;
 
-      const user = await storage.upsertUser({
-        id: userId,
-        email: clerkData.email ?? req.user.email ?? null,
-        firstName: clerkData.firstName ?? req.user.firstName ?? null,
-        lastName: clerkData.lastName ?? req.user.lastName ?? null,
-        username: clerkData.username ?? undefined,
-        profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
-      });
+      // In Clerk mode, identity fields (email, name) come from the verified JWT,
+      // not the request body, to prevent spoofing. Only username is user-supplied.
+      const jwtClaims = req.clerkAuth as any;
+      const upsertData = clerkEnabled
+        ? {
+            id: userId,
+            email: jwtClaims?.email ?? req.user.email ?? null,
+            firstName: jwtClaims?.first_name ?? req.user.firstName ?? null,
+            lastName: jwtClaims?.last_name ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: jwtClaims?.image_url ?? req.user.profileImageUrl ?? null,
+          }
+        : {
+            id: userId,
+            email: clerkData.email ?? req.user.email ?? null,
+            firstName: clerkData.firstName ?? req.user.firstName ?? null,
+            lastName: clerkData.lastName ?? req.user.lastName ?? null,
+            username: clerkData.username ?? undefined,
+            profileImageUrl: clerkData.imageUrl ?? req.user.profileImageUrl ?? null,
+          };
 
-      // Fetch streak data from user's groups (batch)
-      const groups = await storage.getUserGroups(userId);
-      const groupIds = groups.map(g => g.id);
-      const streaksMap = await storage.getGroupStreaksBatch(groupIds);
-      const streaks = groups.map(g => {
-        const streak = streaksMap.get(g.id) ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
-        return { groupId: g.id, groupName: g.name, ...streak };
-      });
+      const user = await storage.upsertUser(upsertData);
+
+      // Auto-create "Solo Deuces" if user has no groups
+      let groups = await storage.getUserGroups(userId);
+      if (groups.length === 0) {
+        const { v4: uuidv4 } = await import("uuid");
+        await storage.createGroup({
+          id: uuidv4(),
+          name: "Solo Deuces",
+          description: "Your personal throne log",
+          createdBy: userId,
+        });
+        groups = await storage.getUserGroups(userId);
+        console.log(`Auth sync: created Solo Deuces for user ${userId}`);
+      }
+
+      // Fetch streak data from user's groups — single batch query instead of N queries
+      const streakMap = await storage.getGroupStreaksBatch(groups.map(g => g.id));
+      const streaks = groups.map(g => ({
+        groupId: g.id,
+        groupName: g.name,
+        ...(streakMap.get(g.id) ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null }),
+      }));
 
       res.json({
         ...user,
@@ -77,26 +118,25 @@ export function createAuthRouter(uploadsDir: string): Router {
       });
     } catch (error) {
       console.error("Error syncing user:", error);
-      res.status(500).json({ message: "Failed to sync user" });
+      Errors.internal(res, "Failed to sync user");
     }
   });
 
   router.put('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const parsed = updateUserSchema.safeParse(req.body);
-      if (!parsed.success) {
-        const msg = parsed.error.issues[0]?.message || "Invalid user data";
-        return res.status(400).json({ message: msg });
-      }
-      const updatedUser = await storage.updateUserUsername(userId, parsed.data.username);
+      const userData = updateUserSchema.parse(req.body);
+      const updatedUser = await storage.updateUserUsername(userId, userData.username);
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error updating user:", error);
-      if (error instanceof Error && error.message.includes('duplicate key value')) {
-        return res.status(400).json({ message: "Username already taken" });
+      if (error instanceof ZodError) {
+        return Errors.badRequest(res, error.errors[0]?.message ?? "Invalid input");
       }
-      res.status(500).json({ message: "Failed to update user" });
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
+        return Errors.badRequest(res, "Username already taken");
+      }
+      console.error("Error updating user:", error);
+      Errors.internal(res, "Failed to update user");
     }
   });
 
@@ -106,7 +146,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       const userId = req.user.id;
 
       if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
+        return Errors.badRequest(res, "No file uploaded");
       }
 
       // Process the image with sharp
@@ -125,7 +165,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       res.json(updatedUser);
     } catch (error) {
       console.error("Error uploading profile picture:", error);
-      res.status(500).json({ message: "Failed to upload profile picture" });
+      Errors.internal(res, "Failed to upload profile picture");
     }
   });
 
@@ -136,7 +176,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       res.json({ theme: user?.theme ?? 'default' });
     } catch (error) {
       console.error("Error fetching theme:", error);
-      res.status(500).json({ message: "Failed to fetch theme" });
+      Errors.internal(res, "Failed to fetch theme");
     }
   });
 
@@ -144,13 +184,13 @@ export function createAuthRouter(uploadsDir: string): Router {
     try {
       const parsed = themeSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` });
+        return Errors.badRequest(res, `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}`);
       }
       const user = await storage.updateUserTheme(req.user.id, parsed.data.theme);
       res.json({ theme: user.theme });
     } catch (error) {
       console.error("Error updating theme:", error);
-      res.status(500).json({ message: "Failed to update theme" });
+      Errors.internal(res, "Failed to update theme");
     }
   });
 
