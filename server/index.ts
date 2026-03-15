@@ -45,6 +45,8 @@ app.use(
 
 // --- CORS ---
 const ALLOWED_ORIGINS = [
+  "https://deucediary.com",
+  "https://www.deucediary.com",
   "https://deuce-diary-web-production.up.railway.app",
   "http://localhost:5000",
   "http://localhost:5001",
