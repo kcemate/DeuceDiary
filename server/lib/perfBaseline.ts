@@ -68,6 +68,25 @@ function formatBytes(bytes: number): string {
 }
 
 /**
+ * Build the degraded health payload returned when the DB is unreachable.
+ */
+export function buildDegradedHealth(): Record<string, unknown> {
+  return {
+    status: "degraded",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    db: { connected: false, poolTotal: 0, poolIdle: 0, poolWaiting: 0 },
+    memory: {
+      rss: "0 MB",
+      heapUsed: "0 MB",
+      heapTotal: "0 MB",
+      external: "0 MB",
+    },
+    avgResponseTimeMs: 0,
+  };
+}
+
+/**
  * Build the detailed health payload.
  * `pool` is the pg Pool instance passed at registration time.
  */

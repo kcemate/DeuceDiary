@@ -27,7 +27,7 @@ import { checkAllGroupStreaksAndNotify } from "./streakNotifications";
 import { getTodayChallenge, todayChallengeDate } from "./challenges";
 import { track } from "./lib/analytics";
 import { getRecentErrors } from "./lib/errorTracker";
-import { buildDetailedHealth } from "./lib/perfBaseline";
+import { buildDetailedHealth, buildDegradedHealth } from "./lib/perfBaseline";
 import { apiError, Errors } from "./lib/apiError";
 import { registerWss, incWsCounter, getWsMetrics } from "./lib/wsMetrics";
 import { triggerPassportStamp } from "./lib/geocode";
@@ -463,19 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await pool.query('SELECT 1');
       res.json(buildDetailedHealth(pool));
     } catch (err) {
-      res.status(503).json({
-        status: 'degraded',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        db: { connected: false, poolTotal: 0, poolIdle: 0, poolWaiting: 0 },
-        memory: {
-          rss: '0 MB',
-          heapUsed: '0 MB',
-          heapTotal: '0 MB',
-          external: '0 MB',
-        },
-        avgResponseTimeMs: 0,
-      });
+      res.status(503).json(buildDegradedHealth());
     }
   });
 
