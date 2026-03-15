@@ -13,6 +13,25 @@ export interface GeocodedLocation {
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org/reverse";
 
 /**
+ * Fire-and-forget: reverse geocode lat/lng and invoke onGeo if successful.
+ * Non-critical — failures are logged but never propagated.
+ */
+export function triggerPassportStamp(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+  onGeo: (geo: GeocodedLocation, lat: string, lon: string) => Promise<void>,
+): void {
+  if (latitude == null || longitude == null) return;
+  reverseGeocode(latitude, longitude)
+    .then(async (geo) => {
+      if (geo) await onGeo(geo, String(latitude), String(longitude));
+    })
+    .catch((err) => {
+      console.error("[passport] Failed to create stamp:", err);
+    });
+}
+
+/**
  * Reverse geocode lat/lng to city-level location.
  * Returns null if geocoding fails (non-critical — stamps just won't be created).
  */

@@ -14,7 +14,7 @@ import {
   recalculateStreak,
   sanitizeUserForResponse,
 } from "./helpers";
-import { reverseGeocode } from "../lib/geocode";
+import { triggerPassportStamp } from "../lib/geocode";
 
 type BroadcastFn = (groupId: string, message: any) => void;
 
@@ -327,25 +327,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
 
       // Async: reverse geocode and create passport stamp (fire-and-forget)
-      if (latitude != null && longitude != null) {
-        reverseGeocode(latitude, longitude)
-          .then(async (geo) => {
-            if (geo) {
-              await storage.upsertPassportStamp(
-                userId,
-                geo.city,
-                geo.country,
-                geo.region,
-                geo.countryCode,
-                String(latitude),
-                String(longitude),
-              );
-            }
-          })
-          .catch((err) => {
-            console.error("[passport] Failed to create stamp:", err);
-          });
-      }
+      triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
+        storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
 
       res.json({ entries, count: entries.length, streak: maxStreak });
     } catch (error) {

@@ -30,7 +30,7 @@ import { getRecentErrors } from "./lib/errorTracker";
 import { buildDetailedHealth } from "./lib/perfBaseline";
 import { apiError, Errors } from "./lib/apiError";
 import { registerWss, incWsCounter, getWsMetrics } from "./lib/wsMetrics";
-import { reverseGeocode } from "./lib/geocode";
+import { triggerPassportStamp } from "./lib/geocode";
 import {
   isPremiumUser,
   getTodayUTC,
@@ -1578,25 +1578,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Async: reverse geocode and create passport stamp (fire-and-forget)
-      if (latitude != null && longitude != null) {
-        reverseGeocode(latitude, longitude)
-          .then(async (geo) => {
-            if (geo) {
-              await storage.upsertPassportStamp(
-                userId,
-                geo.city,
-                geo.country,
-                geo.region,
-                geo.countryCode,
-                String(latitude),
-                String(longitude),
-              );
-            }
-          })
-          .catch((err) => {
-            console.error("[passport] Failed to create stamp:", err);
-          });
-      }
+      triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
+        storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
 
       res.json({ entries, count: entries.length });
     } catch (error) {
