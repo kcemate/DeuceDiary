@@ -1,4 +1,6 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
+
+type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
@@ -6,11 +8,11 @@ import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplyS
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
 /** Wraps an async route handler with standard 500 error handling. */
-function wrap(logMsg: string, resMsg: string, fn: (req: any, res: any) => Promise<void>) {
-  return async (req: any, res: any) => {
+function wrap(logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<void>) {
+  return async (req: AuthReq, res: Response) => {
     try {
       await fn(req, res);
-    } catch (error: any) {
+    } catch (error) {
       console.error(logMsg, error);
       res.status(500).json({ message: resMsg });
     }
@@ -33,7 +35,7 @@ export function createPremiumRouter(): Router {
     });
   }));
 
-  router.post('/api/referral/apply', isAuthenticated, async (req: any, res) => {
+  router.post('/api/referral/apply', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const userId = req.user.id;
       const parsed = referralApplySchema.safeParse(req.body);
@@ -61,9 +63,9 @@ export function createPremiumRouter(): Router {
       await storage.applyReferral(userId, referrer.id);
 
       res.json({ ok: true, referrerUsername: referrer.username });
-    } catch (error: any) {
+    } catch (error) {
       // DB unique constraint fired — concurrent duplicate application
-      if (error?.message === 'REFERRAL_ALREADY_APPLIED') {
+      if (error instanceof Error && error.message === 'REFERRAL_ALREADY_APPLIED') {
         return res.status(400).json({ message: 'You have already used a referral code' });
       }
       console.error('Error applying referral:', error);

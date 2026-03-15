@@ -1,4 +1,6 @@
-import { Router } from "express";
+import { Router, Request } from "express";
+
+type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
@@ -11,7 +13,7 @@ export function createPassportRouter(): Router {
     "/api/passport",
     isAuthenticated,
     requiresPremiumFor("passport"),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const userId = req.user.id;
         const [stamps, stats] = await Promise.all([
@@ -29,7 +31,7 @@ export function createPassportRouter(): Router {
   // Get passport stamps + stats for a specific user (public share view)
   router.get(
     "/api/passport/:userId",
-    async (req: any, res) => {
+    async (req: Request, res) => {
       try {
         const { userId } = req.params;
         const user = await storage.getUser(userId);
@@ -63,7 +65,7 @@ export function createPassportRouter(): Router {
   router.delete(
     "/api/passport",
     isAuthenticated,
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const userId = req.user.id;
         await storage.deletePassportStamps(userId);

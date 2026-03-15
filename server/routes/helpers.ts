@@ -1,5 +1,5 @@
 import { z, ZodSchema } from "zod";
-import { Response } from "express";
+import { Response, Request } from "express";
 import { db } from "../db";
 import { groups, groupMembers, deuceEntries } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -16,8 +16,8 @@ export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Respons
   return parsed.data;
 }
 
-export function asyncRoute(label: string, failMsg: string, handler: (req: any, res: Response) => Promise<void>) {
-  return async (req: any, res: Response) => {
+export function asyncRoute(label: string, failMsg: string, handler: (req: Request, res: Response) => Promise<void>) {
+  return async (req: Request, res: Response) => {
     try {
       await handler(req, res);
     } catch (error) {
@@ -34,7 +34,7 @@ export function asyncRoute(label: string, failMsg: string, handler: (req: any, r
  * API responses visible to other users (e.g. entries in a group feed).
  * Keeps only the fields needed for display purposes.
  */
-export function sanitizeUserForResponse(user: Record<string, any>) {
+export function sanitizeUserForResponse(user: Record<string, unknown>) {
   return {
     id: user.id,
     username: user.username ?? null,
@@ -180,7 +180,7 @@ export const usernameParamSchema = z.object({
 // --- Utility Functions ---
 
 /** Check if a user has an active premium subscription */
-export function isPremiumUser(user: any): boolean {
+export function isPremiumUser(user: { subscription?: string | null; subscriptionExpiresAt?: string | Date | null } | null | undefined): boolean {
   return (
     user?.subscription === "premium" &&
     user.subscriptionExpiresAt &&

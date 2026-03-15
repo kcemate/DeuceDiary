@@ -63,7 +63,8 @@ export function registerRevenueCatWebhook(app: Express): void {
       }
 
       // Parse body (raw buffer → JSON)
-      let payload: any;
+      type RevenueCatPayload = { event?: { type?: string; app_user_id?: string; expiration_at_ms?: number | null } };
+      let payload: RevenueCatPayload;
       try {
         const body = req.body instanceof Buffer ? req.body.toString("utf8") : JSON.stringify(req.body);
         payload = JSON.parse(body);

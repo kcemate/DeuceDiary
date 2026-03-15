@@ -1,4 +1,6 @@
-import { Router } from "express";
+import { Router, Request } from "express";
+
+type AuthReq = Request & { user: { id: string }; groupId: string };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requireGroupMember } from "../groupAuth";
@@ -21,7 +23,7 @@ export function createKingRouter(): Router {
     "/api/groups/:groupId/king",
     isAuthenticated,
     requireGroupMember(),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const groupId = req.groupId as string;
         const king = await storage.getCurrentKing(groupId);
@@ -65,7 +67,7 @@ export function createKingRouter(): Router {
     "/api/groups/:groupId/challenge/history",
     isAuthenticated,
     requireGroupMember(),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const groupId = req.groupId as string;
         const history = await storage.getChallengeHistory(groupId, 10);
@@ -104,7 +106,7 @@ export function createKingRouter(): Router {
     "/api/groups/:groupId/challenge",
     isAuthenticated,
     requireGroupMember(),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const groupId = req.groupId as string;
         const userId = req.user.id as string;
@@ -143,7 +145,7 @@ export function createKingRouter(): Router {
     "/api/groups/:groupId/challenge",
     isAuthenticated,
     requireGroupMember(),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const groupId = req.groupId as string;
         const userId = req.user.id as string;
@@ -224,7 +226,7 @@ export function createKingRouter(): Router {
     "/api/groups/:groupId/challenge/complete",
     isAuthenticated,
     requireGroupMember(),
-    async (req: any, res) => {
+    async (req: AuthReq, res) => {
       try {
         const groupId = req.groupId as string;
         const userId = req.user.id as string;

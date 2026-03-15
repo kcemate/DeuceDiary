@@ -33,7 +33,8 @@ export function registerClerkWebhook(app: Express): void {
         return res.status(400).json({ message: "Missing svix headers" });
       }
 
-      let event: any;
+      type ClerkEvent = { type: string; data: { id?: string; user_id?: string; subscriber_id?: string; email_addresses?: Array<{ email_address?: string }>; first_name?: string | null; last_name?: string | null; image_url?: string | null; username?: string | null; status?: string; current_period_end?: number } };
+      let event: ClerkEvent;
       try {
         const wh = new Webhook(WEBHOOK_SECRET);
         event = wh.verify(req.body, {
