@@ -22,6 +22,9 @@ if (process.env.SENTRY_DSN) {
 
 const app = express();
 
+// Railway runs behind a reverse proxy — trust it for correct IP detection
+app.set("trust proxy", 1);
+
 // --- Security Headers (helmet) ---
 const isDev = process.env.NODE_ENV !== "production";
 app.use(
