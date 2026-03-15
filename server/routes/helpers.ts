@@ -1,8 +1,31 @@
-import { z } from "zod";
+import { z, ZodSchema } from "zod";
+import { Response } from "express";
 import { db } from "../db";
 import { groups, groupMembers, deuceEntries } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
+
+// --- Route utilities ---
+
+export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Response, message: string): T | null {
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    res.status(400).json({ message });
+    return null;
+  }
+  return parsed.data;
+}
+
+export function asyncRoute(label: string, failMsg: string, handler: (req: any, res: Response) => Promise<void>) {
+  return async (req: any, res: Response) => {
+    try {
+      await handler(req, res);
+    } catch (error) {
+      console.error(`Error ${label}:`, error);
+      res.status(500).json({ message: failMsg });
+    }
+  };
+}
 
 // --- Public user projection ---
 

@@ -1,31 +1,10 @@
-import { Router, Request, Response } from "express";
-import { ZodSchema } from "zod";
+import { Router } from "express";
 import { Expo } from "expo-server-sdk";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { requireGroupMember } from "../groupAuth";
-import { pushTokenSchema, unregisterPushSchema, reminderSchema, broadcastSchema, MAX_PUSH_TOKENS_PER_USER } from "./helpers";
-
-function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Response, message: string): T | null {
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    res.status(400).json({ message });
-    return null;
-  }
-  return parsed.data;
-}
-
-function asyncRoute(label: string, failMsg: string, handler: (req: any, res: Response) => Promise<void>) {
-  return async (req: any, res: Response) => {
-    try {
-      await handler(req, res);
-    } catch (error) {
-      console.error(`Error ${label}:`, error);
-      res.status(500).json({ message: failMsg });
-    }
-  };
-}
+import { pushTokenSchema, unregisterPushSchema, reminderSchema, broadcastSchema, MAX_PUSH_TOKENS_PER_USER, parseOrFail, asyncRoute } from "./helpers";
 
 export function createNotificationsRouter(): Router {
   const router = Router();
