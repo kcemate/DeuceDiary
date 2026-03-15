@@ -77,7 +77,7 @@ function buildAddColumnSQL(
   let pgType: string;
   const ct = col.columnType;
   if (ct === "PgVarchar") {
-    const len = (col as any).length;
+    const len = (col as { length?: number }).length;
     pgType = len ? `varchar(${len})` : "varchar";
   } else if (ct === "PgText") {
     pgType = "text";
@@ -113,7 +113,7 @@ function buildAddColumnSQL(
   return parts.join(" ");
 }
 
-function extractDefault(col: any): string | null {
+function extractDefault(col: ReturnType<typeof getTableConfig>["columns"][number]): string | null {
   const d = col.default;
   if (d === undefined || d === null) return null;
   // drizzle stores defaults as SQL objects or raw values
@@ -121,7 +121,7 @@ function extractDefault(col: any): string | null {
     // Drizzle SQL object — try to get the raw string
     try {
       const chunks = d.queryChunks || d.chunks || [];
-      const raw = chunks.map((c: any) => (typeof c === "string" ? c : c?.value ?? "")).join("");
+      const raw = chunks.map((c: string | { value?: string }) => (typeof c === "string" ? c : c?.value ?? "")).join("");
       return raw || null;
     } catch {
       return null;
@@ -157,7 +157,7 @@ async function main() {
   for (const val of Object.values(schema)) {
     if (val && typeof val === "object" && !Array.isArray(val)) {
       try {
-        const cfg = getTableConfig(val as any);
+        const cfg = getTableConfig(val as Parameters<typeof getTableConfig>[0]);
         expectedTables.set(cfg.name, cfg);
       } catch {
         // not a table — skip
@@ -216,7 +216,7 @@ async function main() {
       }
 
       // Type comparison
-      const expected = normalizeDrizzleType(col as any);
+      const expected = normalizeDrizzleType(col as Parameters<typeof normalizeDrizzleType>[0]);
       if (
         liveCol.udt_name !== expected.udt_name &&
         liveCol.data_type !== expected.data_type
@@ -243,7 +243,7 @@ async function main() {
 
     // Check expected indexes
     for (const idx of cfg.indexes) {
-      const idxConfig = idx.config as any;
+      const idxConfig = idx.config as { name?: string };
       const idxName = idxConfig?.name;
       if (idxName && !liveIndexes.has(idxName)) {
         console.log(`❌ MISSING INDEX: "${idxName}" on "${tableName}"`);
@@ -270,8 +270,8 @@ async function main() {
         console.log(`   → ${sql}`);
         await pool.query(sql);
         console.log(`   ✅ OK`);
-      } catch (err: any) {
-        console.error(`   ❌ Failed: ${err.message}`);
+      } catch (err: unknown) {
+        console.error(`   ❌ Failed: ${(err as Error).message}`);
       }
     }
     console.log("\n💡 Re-run without --fix to verify remaining issues.");

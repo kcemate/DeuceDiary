@@ -17,7 +17,7 @@ export function StreakInsuranceButton() {
       apiRequest("/api/user/streak-insurance", {
         method: "PUT",
       }),
-    onSuccess: (data: any) => {
+    onSuccess: (data: { extended: boolean; message: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       toast({
@@ -25,7 +25,7 @@ export function StreakInsuranceButton() {
         description: data.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Insurance Failed",
         description: error.message || "Couldn't activate streak insurance.",

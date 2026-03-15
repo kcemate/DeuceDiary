@@ -107,7 +107,7 @@ export default function Profile() {
             currentStreak={maxStreak}
             className="ring-[3px] ring-primary ring-offset-2 ring-offset-background rounded-full"
           >
-            <ProfilePictureUpload user={user as any} size="lg" />
+            <ProfilePictureUpload user={user as { id: string; firstName?: string | null; lastName?: string | null; username?: string | null; profileImageUrl?: string | null }} size="lg" />
           </StreakFrame>
         </div>
         <h2 className="text-2xl font-extrabold text-foreground flex items-center justify-center gap-2">

@@ -5,7 +5,7 @@ import { z, ZodError } from "zod";
 import { timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import { db, pool } from "./db";
-import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema } from "@shared/schema";
+import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema, type DeuceEntry } from "@shared/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
@@ -430,14 +430,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           results.push({ groupId, winner: winner.userId });
-        } catch (groupErr: any) {
-          console.error(`[crown-transfer] group ${groupId} error:`, groupErr.message);
-          results.push({ groupId, winner: null, error: groupErr.message });
+        } catch (groupErr: unknown) {
+          const msg = groupErr instanceof Error ? groupErr.message : String(groupErr);
+          console.error(`[crown-transfer] group ${groupId} error:`, msg);
+          results.push({ groupId, winner: null, error: msg });
         }
       }
 
       res.json({ processed: groupIds.length, results });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[CROWN TRANSFER ERROR]', error);
       Errors.internal(res, 'Crown transfer failed');
     }
@@ -577,12 +578,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timezone: user?.timezone,
           createdAt: user?.createdAt,
         },
-        groups: groups.map((g: any) => ({
+        groups: groups.map((g) => ({
           name: g.name,
           memberCount: g.memberCount,
           joinedAt: g.joinedAt,
         })),
-        badges: badges.map((b: any) => ({
+        badges: badges.map((b) => ({
           name: b.name,
           unlocked: b.unlocked,
         })),
@@ -1330,7 +1331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const entries: any[] = [];
+      const entries: DeuceEntry[] = [];
       // Validate loggedAt if provided; reject clearly invalid date strings
       let loggedAt: Date;
       if (entryData.loggedAt) {
@@ -1455,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const entries: any[] = [];
+      const entries: DeuceEntry[] = [];
       // Validate loggedAt if provided; reject clearly invalid date strings
       let loggedAt: Date;
       if (entryData.loggedAt) {

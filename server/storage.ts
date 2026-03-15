@@ -1679,8 +1679,9 @@ export class DatabaseStorage implements IStorage {
           .returning();
         return referral;
       });
-    } catch (err: any) {
-      if (err?.code === '23505' && err?.constraint === 'uq_referrals_referee') {
+    } catch (err: unknown) {
+      const pgErr = err as { code?: string; constraint?: string };
+      if (pgErr?.code === '23505' && pgErr?.constraint === 'uq_referrals_referee') {
         throw new Error('REFERRAL_ALREADY_APPLIED');
       }
       throw err;

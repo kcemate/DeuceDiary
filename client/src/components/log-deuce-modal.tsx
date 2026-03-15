@@ -161,7 +161,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
       setShowCustomLocation(false);
       setCustomLocation("");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       // If location already exists, just select it and close the custom input
       const msg = error?.message || "";
       if (msg.toLowerCase().includes("already exists")) {
@@ -181,7 +181,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const logDeuceMutation = useMutation({
     mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string; latitude?: number; longitude?: number }) => {
       // Optimistically update the user's deuce count in the cache
-      queryClient.setQueryData(["/api/auth/user"], (old: any) => {
+      queryClient.setQueryData(["/api/auth/user"], (old: { deuceCount?: number } | undefined) => {
         if (!old) return old;
         return { ...old, deuceCount: (old.deuceCount ?? 0) + 1 };
       });
@@ -204,7 +204,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
           return { count: data.groupIds.length, queued: true };
         }
         // Roll back optimistic count update for non-network errors
-        queryClient.setQueryData(["/api/auth/user"], (old: any) => {
+        queryClient.setQueryData(["/api/auth/user"], (old: { deuceCount?: number } | undefined) => {
           if (!old) return old;
           return { ...old, deuceCount: Math.max(0, (old.deuceCount ?? 1) - 1) };
         });

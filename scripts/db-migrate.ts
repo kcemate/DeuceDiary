@@ -203,18 +203,19 @@ export async function runMigrations() {
       await pool.query(m.sql);
       console.log(`  ✅ ${m.name}`);
       passed++;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const pgErr = err as { code?: string; message?: string };
       // Some "errors" are fine (e.g. column/index already exists with same def)
       if (
-        err.code === "42701" || // column already exists
-        err.code === "42P07" || // relation already exists
-        err.code === "23505" || // unique violation on index create
-        err.code === "42703"    // column does not exist (e.g. rename source gone)
+        pgErr.code === "42701" || // column already exists
+        pgErr.code === "42P07" || // relation already exists
+        pgErr.code === "23505" || // unique violation on index create
+        pgErr.code === "42703"    // column does not exist (e.g. rename source gone)
       ) {
         console.log(`  ⏭️  ${m.name} (already exists)`);
         passed++;
       } else {
-        console.error(`  ❌ ${m.name}: ${err.message}`);
+        console.error(`  ❌ ${m.name}: ${pgErr.message}`);
         failed++;
       }
     }
