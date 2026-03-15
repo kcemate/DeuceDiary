@@ -318,18 +318,11 @@ export function createGroupsRouter(): Router {
 
       // Funny stats
       pdfSection('Fun Facts');
-      if (report.funnyStats.longestGap) {
-        bodyFont()
-          .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} -- ${report.funnyStats.longestGap.gapDays} days since last log`);
-      }
-      if (report.funnyStats.mostReactionsReceived) {
-        bodyFont()
-          .text(`Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} -- ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`);
-      }
-      if (report.funnyStats.funniestEntry) {
-        bodyFont()
-          .text(`Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`);
-      }
+      [
+        report.funnyStats.longestGap && `Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} -- ${report.funnyStats.longestGap.gapDays} days since last log`,
+        report.funnyStats.mostReactionsReceived && `Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} -- ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`,
+        report.funnyStats.funniestEntry && `Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`,
+      ].filter(Boolean).forEach(fact => bodyFont().text(fact as string));
 
       // Footer
       doc.moveDown(2);
