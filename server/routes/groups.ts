@@ -26,164 +26,148 @@ async function checkSquadLimit(req: any, res: any): Promise<boolean> {
   return false;
 }
 
+function asyncRoute(
+  errMsg: string,
+  handler: (req: any, res: any) => Promise<void>,
+): (req: any, res: any) => Promise<void> {
+  return async (req: any, res: any) => {
+    try {
+      await handler(req, res);
+    } catch (error) {
+      console.error(errMsg, error);
+      res.status(500).json({ message: errMsg });
+    }
+  };
+}
+
 export function createGroupsRouter(): Router {
   const router = Router();
 
   // Group preview for invite landing page (public, no auth)
-  router.get('/api/groups/preview/:inviteCode', async (req, res) => {
-    try {
-      const { inviteCode } = req.params;
-      const invite = await storage.getInviteById(inviteCode);
-      if (!invite || invite.expiresAt < new Date()) {
-        return res.status(404).json({ message: "Invite not found or expired" });
-      }
-      const group = await storage.getGroupById(invite.groupId);
-      if (!group) {
-        return res.status(404).json({ message: "Group not found" });
-      }
-      const memberCount = await storage.getGroupMemberCount(invite.groupId);
-      const deuceCount = await storage.getGroupDeuceCount(invite.groupId);
-      res.json({ name: group.name, memberCount, deuceCount });
-    } catch (error) {
-      console.error("Error fetching group preview:", error);
-      res.status(500).json({ message: "Failed to fetch group preview" });
+  router.get('/api/groups/preview/:inviteCode', asyncRoute("Failed to fetch group preview", async (req, res) => {
+    const { inviteCode } = req.params;
+    const invite = await storage.getInviteById(inviteCode);
+    if (!invite || invite.expiresAt < new Date()) {
+      return res.status(404).json({ message: "Invite not found or expired" });
     }
-  });
+    const group = await storage.getGroupById(invite.groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    const memberCount = await storage.getGroupMemberCount(invite.groupId);
+    const deuceCount = await storage.getGroupDeuceCount(invite.groupId);
+    res.json({ name: group.name, memberCount, deuceCount });
+  }));
 
   // Group routes (free — squad limit for free users)
-  router.post('/api/groups', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
+  router.post('/api/groups', isAuthenticated, asyncRoute("Failed to create group", async (req: any, res) => {
+    const userId = req.user.id;
 
-      // Free users limited to 3 squads
-      if (await checkSquadLimit(req, res)) return;
+    // Free users limited to 3 squads
+    if (await checkSquadLimit(req, res)) return;
 
-      const parsed = createGroupSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
-      }
-      const insertParsed = insertGroupSchema.safeParse({
-        ...parsed.data,
-        createdBy: userId,
-      });
-      if (!insertParsed.success) {
-        return res.status(400).json({ message: "Invalid group data" });
-      }
-      const groupData = insertParsed.data;
-
-      const group = await storage.createGroup({
-        ...groupData,
-        id: uuidv4(),
-      });
-
-      track("group_created", userId);
-
-      res.json(group);
-    } catch (error) {
-      console.error("Error creating group:", error);
-      res.status(500).json({ message: "Failed to create group" });
+    const parsed = createGroupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
     }
-  });
-
-  router.get('/api/groups', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const groups = await storage.getUserGroups(userId);
-      res.json(groups);
-    } catch (error) {
-      console.error("Error fetching groups:", error);
-      res.status(500).json({ message: "Failed to fetch groups" });
+    const insertParsed = insertGroupSchema.safeParse({
+      ...parsed.data,
+      createdBy: userId,
+    });
+    if (!insertParsed.success) {
+      return res.status(400).json({ message: "Invalid group data" });
     }
-  });
+    const groupData = insertParsed.data;
 
-  router.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
+    const group = await storage.createGroup({
+      ...groupData,
+      id: uuidv4(),
+    });
 
-      const group = await storage.getGroupById(groupId);
-      if (!group) {
-        return res.status(404).json({ message: "Group not found" });
-      }
+    track("group_created", userId);
 
-      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-      const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    res.json(group);
+  }));
 
-      const members = await storage.getGroupMembers(groupId);
-      const entries = await storage.getGroupEntries(groupId, limit, offset);
+  router.get('/api/groups', isAuthenticated, asyncRoute("Failed to fetch groups", async (req: any, res) => {
+    const userId = req.user.id;
+    const groups = await storage.getUserGroups(userId);
+    res.json(groups);
+  }));
 
-      res.json({ group, members, entries });
-    } catch (error) {
-      console.error("Error fetching group details:", error);
-      res.status(500).json({ message: "Failed to fetch group details" });
+  router.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group details", async (req: any, res) => {
+    const groupId = req.groupId;
+
+    const group = await storage.getGroupById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
     }
-  });
+
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
+    const members = await storage.getGroupMembers(groupId);
+    const entries = await storage.getGroupEntries(groupId, limit, offset);
+
+    res.json({ group, members, entries });
+  }));
 
   // Invite routes (free)
-  router.post('/api/groups/:groupId/invite', isAuthenticated, requireGroupMember(), async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const groupId = req.groupId;
+  router.post('/api/groups/:groupId/invite', isAuthenticated, requireGroupMember(), asyncRoute("Failed to create invite", async (req: any, res) => {
+    const userId = req.user.id;
+    const groupId = req.groupId;
 
-      // Purge expired invites for this group before creating a new one to prevent accumulation
-      await storage.deleteExpiredGroupInvites(groupId);
+    // Purge expired invites for this group before creating a new one to prevent accumulation
+    await storage.deleteExpiredGroupInvites(groupId);
 
-      const inviteId = uuidv4();
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const inviteId = uuidv4();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-      await storage.createInvite({
-        id: inviteId,
-        groupId,
-        createdBy: userId,
-        expiresAt,
-      });
+    await storage.createInvite({
+      id: inviteId,
+      groupId,
+      createdBy: userId,
+      expiresAt,
+    });
 
-      track("invite_sent", userId);
+    track("invite_sent", userId);
 
-      const inviteLink = `${req.protocol}://${req.get('host')}/join/${inviteId}`;
-      res.json({ inviteLink, id: inviteId });
-    } catch (error) {
-      console.error("Error creating invite:", error);
-      res.status(500).json({ message: "Failed to create invite" });
+    const inviteLink = `${req.protocol}://${req.get('host')}/join/${inviteId}`;
+    res.json({ inviteLink, id: inviteId });
+  }));
+
+  router.post('/api/join/:inviteId', isAuthenticated, asyncRoute("Failed to join group", async (req: any, res) => {
+    const userId = req.user.id;
+    const { inviteId } = req.params;
+
+    const invite = await storage.getInviteById(inviteId);
+    if (!invite || invite.expiresAt < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired invite" });
     }
-  });
 
-  router.post('/api/join/:inviteId', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { inviteId } = req.params;
-
-      const invite = await storage.getInviteById(inviteId);
-      if (!invite || invite.expiresAt < new Date()) {
-        return res.status(400).json({ message: "Invalid or expired invite" });
-      }
-
-      const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
-      if (isAlreadyMember) {
-        const group = await storage.getGroupById(invite.groupId);
-        return res.json({ group, message: "Already a member of this group" });
-      }
-
-      // Free users limited to 3 squads
-      if (await checkSquadLimit(req, res)) return;
-
-      await storage.addGroupMember({
-        groupId: invite.groupId,
-        userId,
-        role: "member",
-      });
-
-      // Don't delete the invite — it should be reusable by multiple people
-
-      track("group_joined", userId);
-      Events.groupJoined(userId, invite.groupId);
-
+    const isAlreadyMember = await storage.isUserInGroup(userId, invite.groupId);
+    if (isAlreadyMember) {
       const group = await storage.getGroupById(invite.groupId);
-      res.json({ group });
-    } catch (error) {
-      console.error("Error joining group:", error);
-      res.status(500).json({ message: "Failed to join group" });
+      return res.json({ group, message: "Already a member of this group" });
     }
-  });
+
+    // Free users limited to 3 squads
+    if (await checkSquadLimit(req, res)) return;
+
+    await storage.addGroupMember({
+      groupId: invite.groupId,
+      userId,
+      role: "member",
+    });
+
+    // Don't delete the invite — it should be reusable by multiple people
+
+    track("group_joined", userId);
+    Events.groupJoined(userId, invite.groupId);
+
+    const group = await storage.getGroupById(invite.groupId);
+    res.json({ group });
+  }));
 
   // Referral landing: /join?ref=CODE -> store code in session, redirect to /
   router.get('/join', (req: any, res) => {
@@ -201,76 +185,60 @@ export function createGroupsRouter(): Router {
   });
 
   // Streak routes (free — part of groups)
-  router.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
+  router.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch streak", async (req: any, res) => {
+    const groupId = req.groupId;
 
-      const today = getTodayUTC();
-      const yesterday = getYesterdayUTC();
-      const streak = await storage.getGroupStreak(groupId);
-      const logsToday = await storage.getMembersLogStatusToday(groupId, today);
+    const today = getTodayUTC();
+    const yesterday = getYesterdayUTC();
+    const streak = await storage.getGroupStreak(groupId);
+    const logsToday = await storage.getMembersLogStatusToday(groupId, today);
 
-      // If streak is stale (lastStreakDate is not today and not yesterday), reset it in the
-      // DB so subsequent reads are consistent — not just the response for this request.
-      let currentStreak = streak.currentStreak;
-      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-        currentStreak = 0;
-        // Fire-and-forget persistence: non-critical, safe to proceed even if it fails
-        storage.resetGroupStreak(groupId).catch(err =>
-          console.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
-        );
-      }
-
-      res.json({
-        currentStreak,
-        longestStreak: streak.longestStreak,
-        memberCount: logsToday.length,
-        logsToday: logsToday.map(m => ({
-          userId: m.userId,
-          username: m.username || m.firstName || (m.email ? m.email.split('@')[0] : 'Unknown'),
-          hasLogged: m.hasLogged,
-          profileImageUrl: m.profileImageUrl,
-        })),
-      });
-    } catch (error) {
-      console.error("Error fetching streak:", error);
-      res.status(500).json({ message: "Failed to fetch streak" });
+    // If streak is stale (lastStreakDate is not today and not yesterday), reset it in the
+    // DB so subsequent reads are consistent — not just the response for this request.
+    let currentStreak = streak.currentStreak;
+    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+      currentStreak = 0;
+      // Fire-and-forget persistence: non-critical, safe to proceed even if it fails
+      storage.resetGroupStreak(groupId).catch(err =>
+        console.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
+      );
     }
-  });
 
-  router.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
+    res.json({
+      currentStreak,
+      longestStreak: streak.longestStreak,
+      memberCount: logsToday.length,
+      logsToday: logsToday.map(m => ({
+        userId: m.userId,
+        username: m.username || m.firstName || (m.email ? m.email.split('@')[0] : 'Unknown'),
+        hasLogged: m.hasLogged,
+        profileImageUrl: m.profileImageUrl,
+      })),
+    });
+  }));
 
-      const result = await checkAndNotifyStreakRisk(groupId);
-      res.json(result);
-    } catch (error) {
-      console.error("Error checking streak risk:", error);
-      res.status(500).json({ message: "Failed to check streak risk" });
-    }
-  });
+  router.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), asyncRoute("Failed to check streak risk", async (req: any, res) => {
+    const groupId = req.groupId;
+    const result = await checkAndNotifyStreakRisk(groupId);
+    res.json(result);
+  }));
 
   // Group Leaderboard — member rankings by deuce count (free)
-  router.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
+  router.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch leaderboard", async (req: any, res) => {
+    const groupId = req.groupId;
 
-      const members = await storage.getGroupMembers(groupId);
-      const ranked = members
-        .map(m => ({
-          userId: m.userId,
-          username: m.user?.username ?? null,
-          profileImageUrl: m.user?.profileImageUrl ?? null,
-          deuceCount: m.user?.deuceCount ?? 0,
-        }))
-        .sort((a, b) => b.deuceCount - a.deuceCount);
+    const members = await storage.getGroupMembers(groupId);
+    const ranked = members
+      .map(m => ({
+        userId: m.userId,
+        username: m.user?.username ?? null,
+        profileImageUrl: m.user?.profileImageUrl ?? null,
+        deuceCount: m.user?.deuceCount ?? 0,
+      }))
+      .sort((a, b) => b.deuceCount - a.deuceCount);
 
-      res.json(ranked);
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
-      res.status(500).json({ message: "Failed to fetch leaderboard" });
-    }
-  });
+    res.json(ranked);
+  }));
 
   // Weekly Throne Report — group-level shareable summary card
   router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), async (req: any, res) => {
@@ -282,23 +250,17 @@ export function createGroupsRouter(): Router {
       if (error instanceof Error && error.message === "Group not found") {
         return res.status(404).json({ message: "Group not found" });
       }
-      console.error("Error fetching group weekly report:", error);
+      console.error("Failed to fetch group weekly report", error);
       res.status(500).json({ message: "Failed to fetch group weekly report" });
     }
   });
 
   // Squad Spy Mode — typical log hour per member (premium)
-  router.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), async (req: any, res) => {
-    try {
-      const groupId = req.groupId;
-
-      const typicalHours = await storage.getGroupMemberTypicalHours(groupId);
-      res.json(typicalHours);
-    } catch (error) {
-      console.error("Error fetching spy data:", error);
-      res.status(500).json({ message: "Failed to fetch spy data" });
-    }
-  });
+  router.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), asyncRoute("Failed to fetch spy data", async (req: any, res) => {
+    const groupId = req.groupId;
+    const typicalHours = await storage.getGroupMemberTypicalHours(groupId);
+    res.json(typicalHours);
+  }));
 
   // Export Weekly Throne Report as PDF (premium)
   router.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), async (req: any, res) => {
@@ -314,6 +276,12 @@ export function createGroupsRouter(): Router {
       res.setHeader('Content-Disposition', `attachment; filename="throne-report-${report.weekOf}.pdf"`);
       doc.pipe(res);
 
+      const pdfSection = (title: string) => {
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text(title);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
+        doc.moveDown(0.5);
+      };
+
       // Header
       doc.fontSize(24).font('Helvetica-Bold').text('Weekly Throne Report', { align: 'center' });
       doc.fontSize(12).font('Helvetica').fillColor('#666')
@@ -321,9 +289,7 @@ export function createGroupsRouter(): Router {
       doc.moveDown(1.5);
 
       // Group stats
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000').text('Squad Stats');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
-      doc.moveDown(0.5);
+      pdfSection('Squad Stats');
       doc.fontSize(12).font('Helvetica')
         .text(`Total Deuces This Week: ${report.groupStats.totalDeucesThisWeek}`)
         .text(`Current Streak: ${report.groupStats.currentStreak} days`)
@@ -332,18 +298,14 @@ export function createGroupsRouter(): Router {
 
       // MVP
       if (report.mvp) {
-        doc.fontSize(14).font('Helvetica-Bold').text('MVP of the Week');
-        doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
-        doc.moveDown(0.5);
+        pdfSection('MVP of the Week');
         doc.fontSize(12).font('Helvetica')
           .text(`${report.mvp.username ?? 'Anonymous'} -- ${report.mvp.deuceCount} deuces`);
         doc.moveDown(1);
       }
 
       // Member breakdown
-      doc.fontSize(14).font('Helvetica-Bold').text('Member Breakdown');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
-      doc.moveDown(0.5);
+      pdfSection('Member Breakdown');
       for (const m of report.members) {
         const statusLabel = m.streakStatus === 'active' ? '[Active]' : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
         doc.fontSize(12).font('Helvetica')
@@ -352,10 +314,7 @@ export function createGroupsRouter(): Router {
       doc.moveDown(1);
 
       // Funny stats
-      doc.fontSize(14).font('Helvetica-Bold').text('Fun Facts');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
-      doc.moveDown(0.5);
-
+      pdfSection('Fun Facts');
       if (report.funnyStats.longestGap) {
         doc.fontSize(12).font('Helvetica')
           .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} -- ${report.funnyStats.longestGap.gapDays} days since last log`);
@@ -382,30 +341,24 @@ export function createGroupsRouter(): Router {
   });
 
   // Rich invite preview (public -- no auth, enhanced for OG)
-  router.get('/api/groups/invite-preview/:inviteCode', async (req, res) => {
-    try {
-      const { inviteCode } = req.params;
-      const preview = await storage.getGroupInvitePreview(inviteCode);
-      if (!preview) {
-        return res.status(404).json({ message: "Invite not found or expired" });
-      }
-      res.json(preview);
-    } catch (error) {
-      console.error("Error fetching invite preview:", error);
-      res.status(500).json({ message: "Failed to fetch invite preview" });
+  router.get('/api/groups/invite-preview/:inviteCode', asyncRoute("Failed to fetch invite preview", async (req, res) => {
+    const { inviteCode } = req.params;
+    const preview = await storage.getGroupInvitePreview(inviteCode);
+    if (!preview) {
+      return res.status(404).json({ message: "Invite not found or expired" });
     }
-  });
+    res.json(preview);
+  }));
 
   // OG HTML page for invite links -- crawlers get rich meta tags (public)
   const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  router.get('/api/og/invite/:inviteCode', async (req, res) => {
-    try {
-      const { inviteCode } = req.params;
-      // Validate UUID format before using in HTML href to prevent injection
-      if (!INVITE_UUID_RE.test(inviteCode)) {
-        return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
-      }
-      const preview = await storage.getGroupInvitePreview(inviteCode);
+  router.get('/api/og/invite/:inviteCode', asyncRoute("Failed to render invite OG page", async (req, res) => {
+    const { inviteCode } = req.params;
+    // Validate UUID format before using in HTML href to prevent injection
+    if (!INVITE_UUID_RE.test(inviteCode)) {
+      return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
+    }
+    const preview = await storage.getGroupInvitePreview(inviteCode);
 
       if (!preview) {
         return res.status(404).send('<html><body><h1>Invite not found or expired</h1></body></html>');
@@ -497,11 +450,7 @@ export function createGroupsRouter(): Router {
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(html);
-    } catch (error) {
-      console.error("Error rendering invite OG page:", error);
-      res.status(500).send('<html><body><h1>Something went wrong</h1></body></html>');
-    }
-  });
+  }));
 
   return router;
 }
