@@ -56,15 +56,25 @@ function generateSquares(): BingoSquare[] {
   }));
 }
 
+type BingoRouteHandler = (userId: string, month: string, req: any, res: any) => Promise<void>;
+
+function bingoHandler(label: string, handler: BingoRouteHandler) {
+  return async (req: any, res: any) => {
+    try {
+      await handler(req.user.id, getCurrentMonth(), req, res);
+    } catch (error) {
+      console.error(`Error ${label}:`, error);
+      res.status(500).json({ message: `Failed to ${label}` });
+    }
+  };
+}
+
 export function createBingoRouter(): Router {
   const router = Router();
 
   // GET /api/bingo/current — get or create current month bingo card (premium only)
-  router.get('/api/bingo/current', isAuthenticated, requiresPremiumFor('bingo'), async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const month = getCurrentMonth();
-
+  router.get('/api/bingo/current', isAuthenticated, requiresPremiumFor('bingo'),
+    bingoHandler('fetch bingo card', async (userId, month, _req, res) => {
       let card = await storage.getBingoCard(userId, month);
 
       // Regenerate cards that contain deprecated Bristol/photo squares
@@ -85,7 +95,6 @@ export function createBingoRouter(): Router {
       }
 
       if (!card) {
-        // Create a new card for this month
         const userGroups = await storage.getUserGroups(userId);
         const primaryGroupId = userGroups.length > 0 ? userGroups[0].id : null;
 
@@ -100,59 +109,36 @@ export function createBingoRouter(): Router {
       }
 
       const completedSquares = (card.completedSquares as number[]) || [];
-
-      res.json({
-        card,
-        month,
-        ...buildBingoStats(completedSquares),
-      });
-    } catch (error) {
-      console.error('Error fetching bingo card:', error);
-      res.status(500).json({ message: 'Failed to fetch bingo card' });
-    }
-  });
+      res.json({ card, month, ...buildBingoStats(completedSquares) });
+    })
+  );
 
   // POST /api/bingo/check — re-evaluate progress against actual DB data (premium only)
-  router.post('/api/bingo/check', isAuthenticated, requiresPremiumFor('bingo'), async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const month = getCurrentMonth();
-
+  router.post('/api/bingo/check', isAuthenticated, requiresPremiumFor('bingo'),
+    bingoHandler('check bingo progress', async (userId, month, _req, res) => {
       const card = await storage.getBingoCard(userId, month);
       if (!card) {
         return res.status(404).json({ message: 'No bingo card found for this month. Visit /api/bingo/current first.' });
       }
 
-      const { completedSquares, hasBlackout } = await storage.checkAndUpdateBingoProgress(userId, month);
-
+      const { completedSquares } = await storage.checkAndUpdateBingoProgress(userId, month);
       res.json({
         completedSquares,
         ...buildBingoStats(completedSquares),
         newlyCompleted: completedSquares.length - ((card.completedSquares as number[])?.length ?? 0),
       });
-    } catch (error) {
-      console.error('Error checking bingo progress:', error);
-      res.status(500).json({ message: 'Failed to check bingo progress' });
-    }
-  });
+    })
+  );
 
   // GET /api/bingo/leaderboard — group bingo comparison (premium only)
-  router.get('/api/bingo/leaderboard', isAuthenticated, requiresPremiumFor('bingo'), async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const month = getCurrentMonth();
-
+  router.get('/api/bingo/leaderboard', isAuthenticated, requiresPremiumFor('bingo'),
+    bingoHandler('fetch bingo leaderboard', async (userId, month, _req, res) => {
       const userGroups = await storage.getUserGroups(userId);
       const groupIds = userGroups.map(g => g.id);
-
       const leaderboard = await storage.getBingoLeaderboard(groupIds, month);
-
       res.json({ month, leaderboard });
-    } catch (error) {
-      console.error('Error fetching bingo leaderboard:', error);
-      res.status(500).json({ message: 'Failed to fetch bingo leaderboard' });
-    }
-  });
+    })
+  );
 
   return router;
 }
