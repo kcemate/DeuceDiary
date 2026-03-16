@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+
+const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 interface GroupPreview {
   name: string;
@@ -495,7 +498,31 @@ export default function InviteLanding() {
                 Signed in as <strong>{user?.username}</strong>
               </p>
             </div>
+          ) : CLERK_ENABLED ? (
+            // ── Clerk mode: redirect to Clerk sign-in/sign-up, return to invite ──
+            <div className="space-y-3">
+              <SignUpButton
+                mode="redirect"
+                forceRedirectUrl={`/invite/${code}`}
+              >
+                <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20">
+                  🚽 Take a Seat — It's Free
+                </Button>
+              </SignUpButton>
+              <SignInButton
+                mode="redirect"
+                forceRedirectUrl={`/invite/${code}`}
+              >
+                <Button variant="outline" className="w-full border-[#E8DFD0] text-[#2C1A0E] font-bold py-4 text-base rounded-full">
+                  🔑 I Already Have an Account
+                </Button>
+              </SignInButton>
+              <p className="text-center text-[10px] text-[#A89070]">
+                No email. No password. Just vibes and bowel movements.
+              </p>
+            </div>
           ) : (
+            // ── Dev mode: username form ──
             <div className="space-y-3">
               {/* New vs Returning tab toggle */}
               <div className="flex rounded-xl bg-[#F5EDE0] p-1 gap-1" role="tablist" aria-label="Account type">
