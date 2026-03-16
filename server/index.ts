@@ -27,6 +27,7 @@ app.set("trust proxy", 1);
 
 // --- Security Headers (helmet) ---
 const isDev = process.env.NODE_ENV !== "production";
+const isTest = process.env.NODE_ENV === "test";
 app.use(
   helmet({
     contentSecurityPolicy: isDev
@@ -71,7 +72,7 @@ app.use(cors({
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 300,
+  max: isTest ? 10000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },
@@ -80,7 +81,7 @@ app.use("/api", globalLimiter);
 
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 30,
+  max: isTest ? 10000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many auth attempts, please try again later." },
@@ -91,7 +92,7 @@ app.post("/api/webhooks", authLimiter);
 
 const logLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 60,
+  max: isTest ? 10000 : 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many log requests, please try again later." },
@@ -100,7 +101,7 @@ app.post("/api/deuces", logLimiter);
 
 const pushLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  max: isTest ? 10000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many push token requests, please try again later." },
@@ -111,7 +112,7 @@ app.post("/api/push/unregister", pushLimiter);
 // Group creation — prevent spam squad creation (POST only, not reads)
 const groupCreateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  max: isTest ? 10000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many group creation requests, please try again later." },
@@ -121,7 +122,7 @@ app.post("/api/groups", groupCreateLimiter);
 // Reactions — prevent emoji spam
 const reactionLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 60,
+  max: isTest ? 10000 : 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many reaction requests, please try again later." },
@@ -131,7 +132,7 @@ app.post("/api/entries", reactionLimiter);
 // Subscription upgrade — prevent abuse of the dev-mode upgrade endpoint
 const subscriptionLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
-  max: process.env.NODE_ENV === "test" ? 10000 : 5,
+  max: isTest ? 10000 : 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many subscription requests, please try again later." },
@@ -141,7 +142,7 @@ app.post("/api/subscription/upgrade", subscriptionLimiter);
 // Referral apply — prevent brute-force code guessing
 const referralLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
-  max: process.env.NODE_ENV === "test" ? 10000 : 10,
+  max: isTest ? 10000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many referral attempts, please try again later." },
@@ -151,7 +152,7 @@ app.use("/api/referral/apply", referralLimiter);
 // Public profile/share endpoints — prevent user enumeration
 const publicProfileLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 30,
+  max: isTest ? 10000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },
