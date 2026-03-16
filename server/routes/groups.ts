@@ -277,10 +277,11 @@ export function createGroupsRouter(): Router {
 
       // Group stats
       pdfSection('Squad Stats');
+      const { totalDeucesThisWeek, currentStreak: groupCurrentStreak, longestStreak: groupLongestStreak } = report.groupStats;
       bodyFont()
-        .text(`Total Deuces This Week: ${report.groupStats.totalDeucesThisWeek}`)
-        .text(`Current Streak: ${report.groupStats.currentStreak} days`)
-        .text(`Longest Streak: ${report.groupStats.longestStreak} days`);
+        .text(`Total Deuces This Week: ${totalDeucesThisWeek}`)
+        .text(`Current Streak: ${groupCurrentStreak} days`)
+        .text(`Longest Streak: ${groupLongestStreak} days`);
       doc.moveDown(1);
 
       // MVP
@@ -302,10 +303,11 @@ export function createGroupsRouter(): Router {
 
       // Funny stats
       pdfSection('Fun Facts');
+      const { longestGap, mostReactionsReceived, funniestEntry } = report.funnyStats;
       [
-        report.funnyStats.longestGap && `Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} -- ${report.funnyStats.longestGap.gapDays} days since last log`,
-        report.funnyStats.mostReactionsReceived && `Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} -- ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`,
-        report.funnyStats.funniestEntry && `Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`,
+        longestGap && `Longest gap: ${longestGap.username ?? 'Unknown'} -- ${longestGap.gapDays} days since last log`,
+        mostReactionsReceived && `Most reactions: ${mostReactionsReceived.username ?? 'Unknown'} -- ${mostReactionsReceived.reactionCount} reactions`,
+        funniestEntry && `Funniest entry: "${funniestEntry.thought}" by ${funniestEntry.username ?? 'Unknown'} (${funniestEntry.reactions} reactions)`,
       ].filter(Boolean).forEach(fact => bodyFont().text(fact as string));
 
       // Footer
