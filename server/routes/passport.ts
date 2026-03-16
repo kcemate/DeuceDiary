@@ -1,4 +1,5 @@
 import { Router, Request } from "express";
+import logger from "../lib/logger";
 
 type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
@@ -22,7 +23,7 @@ export function createPassportRouter(): Router {
         ]);
         res.json({ stamps, stats });
       } catch (error) {
-        console.error("Error fetching passport:", error);
+        logger.error("Error fetching passport:", error);
         res.status(500).json({ message: "Failed to fetch passport data" });
       }
     },
@@ -55,7 +56,7 @@ export function createPassportRouter(): Router {
           },
         });
       } catch (error) {
-        console.error("Error fetching passport share data:", error);
+        logger.error("Error fetching passport share data:", error);
         res.status(500).json({ message: "Failed to fetch passport data" });
       }
     },
@@ -71,7 +72,7 @@ export function createPassportRouter(): Router {
         await storage.deletePassportStamps(userId);
         res.json({ message: "Passport data deleted" });
       } catch (error) {
-        console.error("Error deleting passport data:", error);
+        logger.error("Error deleting passport data:", error);
         res.status(500).json({ message: "Failed to delete passport data" });
       }
     },

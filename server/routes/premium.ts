@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import logger from "../lib/logger";
 
 type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
@@ -13,7 +14,7 @@ function wrap(logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) 
     try {
       await fn(req, res);
     } catch (error) {
-      console.error(logMsg, error);
+      logger.error(logMsg, error);
       res.status(500).json({ message: resMsg });
     }
   };
@@ -68,7 +69,7 @@ export function createPremiumRouter(): Router {
       if (error instanceof Error && error.message === 'REFERRAL_ALREADY_APPLIED') {
         return res.status(400).json({ message: 'You have already used a referral code' });
       }
-      console.error('Error applying referral:', error);
+      logger.error('Error applying referral:', error);
       res.status(500).json({ message: 'Failed to apply referral' });
     }
   });

@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import logger from "../lib/logger";
 import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
@@ -63,7 +64,7 @@ function bingoHandler(label: string, handler: BingoRouteHandler) {
     try {
       await handler(req.user.id, getCurrentMonth(), req, res);
     } catch (error) {
-      console.error(`Error ${label}:`, error);
+      logger.error(`Error ${label}:`, error);
       res.status(500).json({ message: `Failed to ${label}` });
     }
   };

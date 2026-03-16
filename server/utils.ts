@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import logger from "./lib/logger";
 import fs from "fs";
 import path from "path";
 
@@ -9,7 +10,7 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-  console.log(`${formattedTime} [${source}] ${message}`);
+  logger.info(`${formattedTime} [${source}] ${message}`);
 }
 
 export function serveStatic(app: Express) {

@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import logger from "../lib/logger";
 import { storage } from "../storage";
 import { insertGroupSchema } from "@shared/schema";
 import { isAuthenticated } from "../replitAuth";
@@ -183,7 +184,7 @@ export function createGroupsRouter(): Router {
       currentStreak = 0;
       // Fire-and-forget persistence: non-critical, safe to proceed even if it fails
       storage.resetGroupStreak(groupId).catch(err =>
-        console.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
+        logger.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
       );
     }
 

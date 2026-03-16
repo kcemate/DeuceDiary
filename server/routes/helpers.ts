@@ -1,4 +1,5 @@
 import { z, ZodSchema } from "zod";
+import logger from "../lib/logger";
 import { Response, Request } from "express";
 import { db } from "../db";
 import { groups, groupMembers, deuceEntries } from "@shared/schema";
@@ -21,7 +22,7 @@ export function asyncRoute(label: string, failMsg: string, handler: (req: Reques
     try {
       await handler(req, res);
     } catch (error) {
-      console.error(`Error ${label}:`, error);
+      logger.error(`Error ${label}:`, error);
       res.status(500).json({ message: failMsg });
     }
   };
@@ -315,7 +316,7 @@ export async function checkAndNotifyStreakRisk(groupId: string): Promise<{ atRis
 
   if (missing.length > 0) {
     const missingNames = missing.map(m => m.username || m.firstName || m.userId);
-    console.log(`[STREAK RISK] Group ${groupId}: ${missingNames.join(', ')} haven't logged today`);
+    logger.info(`[STREAK RISK] Group ${groupId}: ${missingNames.join(', ')} haven't logged today`);
     return { atRisk: true, missingMembers: missingNames };
   }
 

@@ -1,4 +1,5 @@
 import { Router, Response } from "express";
+import logger from "../lib/logger";
 import { storage } from "../storage";
 import { getTitle, escapeHtml, userIdParamSchema, groupIdParamSchema, usernameParamSchema } from "./helpers";
 
@@ -12,7 +13,7 @@ function handleRouteError(res: Response, error: unknown, notFoundMsg: string | n
     res.status(404).json({ message: notFoundMsg });
     return;
   }
-  console.error(logMsg, error);
+  logger.error(logMsg, error);
   res.status(500).json({ message: failMsg });
 }
 

@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response } from "express";
+import logger from "../lib/logger";
 import { Webhook } from "svix";
 import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
@@ -7,7 +8,7 @@ import { track, Events } from "../lib/analytics";
 async function downgradeToFree(userId: string, eventType: string, status?: string): Promise<void> {
   await storage.updateUserSubscription(userId, "free", new Date());
   const statusPart = status ? ` (status: ${status})` : "";
-  console.log(`Clerk webhook: ${eventType} — user ${userId} → free${statusPart}`);
+  logger.info(`Clerk webhook: ${eventType} — user ${userId} → free${statusPart}`);
 }
 
 /**
@@ -21,7 +22,7 @@ export function registerClerkWebhook(app: Express): void {
     async (req: Request, res: Response) => {
       const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
       if (!WEBHOOK_SECRET) {
-        console.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
+        logger.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
         return res.status(503).json({ message: "Service unavailable" });
       }
 
@@ -43,7 +44,7 @@ export function registerClerkWebhook(app: Express): void {
           "svix-signature": svixSignature,
         });
       } catch (err) {
-        console.error("Clerk webhook verification failed:", err);
+        logger.error("Clerk webhook verification failed:", err);
         return res.status(400).json({ message: "Invalid webhook signature" });
       }
 
@@ -63,7 +64,7 @@ export function registerClerkWebhook(app: Express): void {
               username: username ?? undefined,
               profileImageUrl: image_url ?? null,
             });
-            console.log(`Clerk webhook: synced user ${id} (${event.type})`);
+            logger.info(`Clerk webhook: synced user ${id} (${event.type})`);
             if (event.type === "user.created") {
               // Auto-create "Solo Deuces" default group for new users
               const userGroups = await storage.getUserGroups(id);
@@ -74,7 +75,7 @@ export function registerClerkWebhook(app: Express): void {
                   description: "Your personal throne log",
                   createdBy: id,
                 });
-                console.log(`Clerk webhook: created Solo Deuces for user ${id}`);
+                logger.info(`Clerk webhook: created Solo Deuces for user ${id}`);
               }
               track("user_registered", id);
               Events.userSignup(id);
@@ -86,7 +87,7 @@ export function registerClerkWebhook(app: Express): void {
             const { id } = event.data;
             if (id) {
               await storage.softDeleteUser(id);
-              console.log(`Clerk webhook: soft-deleted user ${id}`);
+              logger.info(`Clerk webhook: soft-deleted user ${id}`);
               track("user_deleted", id);
             }
             break;
@@ -116,7 +117,7 @@ export function registerClerkWebhook(app: Express): void {
                 : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
               await storage.updateUserSubscription(userId, "premium", periodEnd);
               await storage.resetStreakInsurance(userId);
-              console.log(`Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`);
+              logger.info(`Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`);
             } else {
               // Canceled / past_due / unpaid → downgrade
               await downgradeToFree(userId, event.type, status);
@@ -135,11 +136,11 @@ export function registerClerkWebhook(app: Express): void {
           }
 
           default:
-            console.log(`Clerk webhook: unhandled event type ${event.type}`);
+            logger.info(`Clerk webhook: unhandled event type ${event.type}`);
         }
       } catch (err) {
         // Already sent 200 — log but don't fail
-        console.error(`Clerk webhook: error processing ${event.type}:`, err);
+        logger.error(`Clerk webhook: error processing ${event.type}:`, err);
       }
     },
   );

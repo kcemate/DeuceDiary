@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import logger from "./lib/logger";
 import { sendGroupPushNotification } from "./notifications";
 import { getTodayUTC } from "./routes/helpers";
 
@@ -51,7 +52,7 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
       (m) => m.username || m.firstName || m.userId,
     );
 
-    console.log(
+    logger.info(
       `[STREAK ALERT] Group: ${group.name}, Streak: ${group.currentStreak} days, Missing: ${missingNames.join(", ")}`,
     );
 
@@ -62,7 +63,7 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
       body: `${group.name} \u2014 ${group.currentStreak}-day streak. ${firstMissing} hasn't logged yet.`,
     };
 
-    console.log(`[STREAK NOTIFICATION]`, payload);
+    logger.info(`[STREAK NOTIFICATION]`, payload);
 
     // Send push notification to all group members
     try {
@@ -72,9 +73,9 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
         payload.body,
         { type: "streak_at_risk", groupId: group.id },
       );
-      console.log(`[STREAK PUSH] Group ${group.name}: sent=${result.sent}, failed=${result.failed}`);
+      logger.info(`[STREAK PUSH] Group ${group.name}: sent=${result.sent}, failed=${result.failed}`);
     } catch (pushErr) {
-      console.error(`[STREAK PUSH] Failed for group ${group.name}:`, pushErr);
+      logger.error(`[STREAK PUSH] Failed for group ${group.name}:`, pushErr);
     }
 
     // Persist alert to DB
@@ -94,6 +95,6 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
     notificationsSent,
   };
 
-  console.log(`[STREAK CHECK COMPLETE]`, summary);
+  logger.info(`[STREAK CHECK COMPLETE]`, summary);
   return summary;
 }

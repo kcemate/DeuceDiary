@@ -1,4 +1,5 @@
 import { Router, Request } from "express";
+import logger from "../lib/logger";
 
 type AuthReq = Request & { user: { id: string }; groupId: string };
 import { storage } from "../storage";
@@ -56,7 +57,7 @@ export function createKingRouter(): Router {
           templates: CHALLENGE_TEMPLATES,
         });
       } catch (error) {
-        console.error("[king] GET /king error:", error);
+        logger.error("[king] GET /king error:", error);
         res.status(500).json({ message: "Failed to fetch Deuce King" });
       }
     },
@@ -95,7 +96,7 @@ export function createKingRouter(): Router {
           })),
         );
       } catch (error) {
-        console.error("[king] GET /challenge/history error:", error);
+        logger.error("[king] GET /challenge/history error:", error);
         res.status(500).json({ message: "Failed to fetch challenge history" });
       }
     },
@@ -134,7 +135,7 @@ export function createKingRouter(): Router {
           userCompleted,
         });
       } catch (error) {
-        console.error("[king] GET /challenge error:", error);
+        logger.error("[king] GET /challenge error:", error);
         res.status(500).json({ message: "Failed to fetch challenge" });
       }
     },
@@ -215,7 +216,7 @@ export function createKingRouter(): Router {
           periodEnd: challenge.periodEnd,
         });
       } catch (error) {
-        console.error("[king] POST /challenge error:", error);
+        logger.error("[king] POST /challenge error:", error);
         res.status(500).json({ message: "Failed to set challenge" });
       }
     },
@@ -245,7 +246,7 @@ export function createKingRouter(): Router {
 
         res.json({ ok: true, challengeId: challenge.id });
       } catch (error) {
-        console.error("[king] POST /challenge/complete error:", error);
+        logger.error("[king] POST /challenge/complete error:", error);
         res.status(500).json({ message: "Failed to mark challenge complete" });
       }
     },

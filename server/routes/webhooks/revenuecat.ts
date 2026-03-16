@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response } from "express";
+import logger from "../../lib/logger";
 import crypto from "crypto";
 import { storage } from "../../storage";
 import { track } from "../../lib/analytics";
@@ -52,13 +53,13 @@ export function registerRevenueCatWebhook(app: Express): void {
     async (req: Request, res: Response) => {
       const WEBHOOK_SECRET = process.env.REVENUECAT_WEBHOOK_SECRET;
       if (!WEBHOOK_SECRET) {
-        console.error("REVENUECAT_WEBHOOK_SECRET not set — rejecting webhook");
+        logger.error("REVENUECAT_WEBHOOK_SECRET not set — rejecting webhook");
         return res.status(503).json({ message: "Service unavailable" });
       }
 
       // Validate authorization
       if (!validateRevenueCatAuth(req, WEBHOOK_SECRET)) {
-        console.warn("RevenueCat webhook: invalid authorization header");
+        logger.warn("RevenueCat webhook: invalid authorization header");
         return res.status(401).json({ message: "Unauthorized" });
       }
 
@@ -69,7 +70,7 @@ export function registerRevenueCatWebhook(app: Express): void {
         const body = req.body instanceof Buffer ? req.body.toString("utf8") : JSON.stringify(req.body);
         payload = JSON.parse(body);
       } catch (err) {
-        console.error("RevenueCat webhook: failed to parse body:", err);
+        logger.error("RevenueCat webhook: failed to parse body:", err);
         return res.status(400).json({ message: "Invalid JSON body" });
       }
 
@@ -83,7 +84,7 @@ export function registerRevenueCatWebhook(app: Express): void {
       const expirationAtMs: number | null = event.expiration_at_ms ?? null;
 
       if (!appUserId) {
-        console.warn(`RevenueCat webhook: missing app_user_id for event ${eventType}`);
+        logger.warn(`RevenueCat webhook: missing app_user_id for event ${eventType}`);
         return res.status(400).json({ message: "Missing app_user_id" });
       }
 
@@ -107,7 +108,7 @@ export function registerRevenueCatWebhook(app: Express): void {
             await storage.resetStreakInsurance(userId);
           }
 
-          console.log(
+          logger.info(
             `RevenueCat webhook: ${eventType} — user ${userId} → premium until ${expiresAt.toISOString()}`,
           );
           track("subscription_change", userId, {
@@ -117,7 +118,7 @@ export function registerRevenueCatWebhook(app: Express): void {
           });
         } else if (SUBSCRIPTION_EXPIRED_EVENTS.has(eventType)) {
           await storage.updateUserSubscription(userId, "free", new Date());
-          console.log(
+          logger.info(
             `RevenueCat webhook: ${eventType} — user ${userId} → free`,
           );
           track("subscription_change", userId, {
@@ -126,11 +127,11 @@ export function registerRevenueCatWebhook(app: Express): void {
             source: "revenuecat",
           });
         } else {
-          console.log(`RevenueCat webhook: unhandled event type ${eventType} for user ${userId}`);
+          logger.info(`RevenueCat webhook: unhandled event type ${eventType} for user ${userId}`);
         }
       } catch (err) {
         // Already sent 200 — log but don't fail
-        console.error(`RevenueCat webhook: error processing ${eventType}:`, err);
+        logger.error(`RevenueCat webhook: error processing ${eventType}:`, err);
       }
     },
   );

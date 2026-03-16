@@ -1,4 +1,5 @@
 import { Router } from "express";
+import logger from "../lib/logger";
 import { z, ZodError } from "zod";
 import { storage } from "../storage";
 import { updateUserSchema } from "@shared/schema";
@@ -54,7 +55,7 @@ export function createAuthRouter(uploadsDir: string): Router {
         streakInsuranceUsed: user.streakInsuranceUsed ?? false,
       });
     } catch (error) {
-      console.error("Error fetching user:", error);
+      logger.error({ err: error }, "Error fetching user");
       Errors.internal(res, "Failed to fetch user");
     }
   });
@@ -100,7 +101,7 @@ export function createAuthRouter(uploadsDir: string): Router {
           createdBy: userId,
         });
         groups = await storage.getUserGroups(userId);
-        console.log(`Auth sync: created Solo Deuces for user ${userId}`);
+        logger.info(`Auth sync: created Solo Deuces for user ${userId}`);
       }
 
       // Fetch streak data from user's groups — single batch query instead of N queries
@@ -117,7 +118,7 @@ export function createAuthRouter(uploadsDir: string): Router {
         streaks,
       });
     } catch (error) {
-      console.error("Error syncing user:", error);
+      logger.error("Error syncing user:", error);
       Errors.internal(res, "Failed to sync user");
     }
   });
@@ -135,7 +136,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       if (error instanceof Error && error.message.includes('duplicate key value')) {
         return Errors.badRequest(res, "Username already taken");
       }
-      console.error("Error updating user:", error);
+      logger.error("Error updating user:", error);
       Errors.internal(res, "Failed to update user");
     }
   });
@@ -164,7 +165,7 @@ export function createAuthRouter(uploadsDir: string): Router {
 
       res.json(updatedUser);
     } catch (error) {
-      console.error("Error uploading profile picture:", error);
+      logger.error("Error uploading profile picture:", error);
       Errors.internal(res, "Failed to upload profile picture");
     }
   });
@@ -175,7 +176,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       const user = await storage.getUser(req.user.id);
       res.json({ theme: user?.theme ?? 'default' });
     } catch (error) {
-      console.error("Error fetching theme:", error);
+      logger.error("Error fetching theme:", error);
       Errors.internal(res, "Failed to fetch theme");
     }
   });
@@ -189,7 +190,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       const user = await storage.updateUserTheme(req.user.id, parsed.data.theme);
       res.json({ theme: user.theme });
     } catch (error) {
-      console.error("Error updating theme:", error);
+      logger.error("Error updating theme:", error);
       Errors.internal(res, "Failed to update theme");
     }
   });
