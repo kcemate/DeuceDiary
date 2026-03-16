@@ -62,7 +62,10 @@ function getTodayStorageUTC(): string {
 function evaluateBingoCondition(
   conditionType: string,
   conditionValue: number,
-  entries: { loggedAt: Date; bristolScore: number | null; thoughts: string; photoUrl: string | null; location: string }[],
+  entries: {
+    loggedAt: Date; bristolScore: number | null; thoughts: string;
+    photoUrl: string | null; location: string;
+  }[],
   groups: { id: string; currentStreak: number }[],
   user: { deuceCount?: number | null } | undefined,
   reactionCounts: Map<string, number>,
@@ -194,7 +197,9 @@ export interface IStorage {
   getUserGroups(userId: string): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]>;
   getGroupById(groupId: string): Promise<Group | undefined>;
   addGroupMember(member: InsertGroupMember): Promise<GroupMember>;
-  getGroupMembers(groupId: string): Promise<(GroupMember & { user: User & { personalRecord?: { date: string; count: number } } })[]>;
+  getGroupMembers(groupId: string): Promise<(GroupMember & {
+    user: User & { personalRecord?: { date: string; count: number } };
+  })[]>;
   isUserInGroup(userId: string, groupId: string): Promise<boolean>;
   isUserInGroups(userId: string, groupIds: string[]): Promise<Set<string>>;
   removeGroupMember(userId: string, groupId: string): Promise<void>;
@@ -228,14 +233,32 @@ export interface IStorage {
   getEntryReactions(entryId: string): Promise<(Reaction & { user: User })[]>;
 
   // Feed operations
-  getFeedEntries(groupIds: string[], limit: number, offset?: number): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]>;
+  getFeedEntries(
+    groupIds: string[],
+    limit: number,
+    offset?: number,
+  ): Promise<(DeuceEntry & {
+    user: Pick<User, 'id' | 'username' | 'profileImageUrl'>;
+    reactions: Reaction[];
+  })[]>;
 
   // Streak operations
-  getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }>;
-  getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>>;
-  updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void>;
+  getGroupStreak(groupId: string): Promise<{
+    currentStreak: number; longestStreak: number; lastStreakDate: string | null;
+  }>;
+  getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, {
+    currentStreak: number; longestStreak: number; lastStreakDate: string | null;
+  }>>;
+  updateGroupStreak(
+    groupId: string, currentStreak: number,
+    longestStreak: number, lastStreakDate: string,
+  ): Promise<void>;
   resetGroupStreak(groupId: string): Promise<void>;
-  getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; email: string | null; profileImageUrl: string | null; hasLogged: boolean }[]>;
+  getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{
+    userId: string; username: string | null; firstName: string | null;
+    email: string | null; profileImageUrl: string | null;
+    hasLogged: boolean;
+  }[]>;
 
   // Streak alert operations
   getAllGroupsWithActiveStreaks(minStreak: number): Promise<Group[]>;
@@ -251,7 +274,10 @@ export interface IStorage {
 
   // Subscription operations
   updateUserSubscription(userId: string, subscription: string, expiresAt: Date): Promise<User>;
-  getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }>;
+  getUserSubscription(userId: string): Promise<{
+    subscription: string; subscriptionExpiresAt: Date | null;
+    streakInsuranceUsed: boolean;
+  }>;
   useStreakInsurance(userId: string): Promise<void>;
   resetStreakInsurance(userId: string): Promise<void>;
   resetAllStreakInsurance(): Promise<number>;
@@ -361,11 +387,20 @@ export interface IStorage {
   // Referral operations
   getUserByReferralCode(code: string): Promise<User | undefined>;
   applyReferral(refereeId: string, referrerId: string): Promise<Referral>;
-  getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }>;
+  getReferralStats(userId: string): Promise<{
+    referralCount: number;
+    referrals: { username: string | null; joinedAt: Date | null }[];
+  }>;
 
   // Referral dashboard
-  getReferralDashboardStats(userId: string): Promise<{ totalReferrals: number; premiumConversions: number; pendingConversions: number }>;
-  getReferralLeaderboard(): Promise<{ username: string | null; profileImageUrl: string | null; referralCount: number; premiumConversionCount: number }[]>;
+  getReferralDashboardStats(userId: string): Promise<{
+    totalReferrals: number; premiumConversions: number;
+    pendingConversions: number;
+  }>;
+  getReferralLeaderboard(): Promise<{
+    username: string | null; profileImageUrl: string | null;
+    referralCount: number; premiumConversionCount: number;
+  }[]>;
 
   // User lifecycle
   softDeleteUser(userId: string): Promise<void>;
@@ -410,8 +445,15 @@ export interface IStorage {
   deleteBingoCard(cardId: string): Promise<void>;
   createBingoCard(data: InsertBingoCard): Promise<BingoCard>;
   updateBingoProgress(cardId: string, completedSquares: number[]): Promise<BingoCard>;
-  checkAndUpdateBingoProgress(userId: string, month: string): Promise<{ completedSquares: number[]; hasBlackout: boolean }>;
-  getBingoLeaderboard(groupIds: string[], month: string): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; completedCount: number }[]>;
+  checkAndUpdateBingoProgress(
+    userId: string, month: string,
+  ): Promise<{ completedSquares: number[]; hasBlackout: boolean }>;
+  getBingoLeaderboard(
+    groupIds: string[], month: string,
+  ): Promise<{
+    userId: string; username: string | null;
+    profileImageUrl: string | null; completedCount: number;
+  }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -499,7 +541,9 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async getUserGroups(userId: string): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]> {
+  async getUserGroups(
+    userId: string,
+  ): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]> {
     // Get all groups the user is a member of
     const userGroupMemberships = await db
       .select({ groupId: groupMembers.groupId })
@@ -545,7 +589,9 @@ export class DatabaseStorage implements IStorage {
     return newMember;
   }
 
-  async getGroupMembers(groupId: string): Promise<(GroupMember & { user: User & { personalRecord?: { date: string; count: number } } })[]> {
+  async getGroupMembers(groupId: string): Promise<(GroupMember & {
+    user: User & { personalRecord?: { date: string; count: number } };
+  })[]> {
     // Single JOIN query: group_members + users (filtered to non-deleted)
     const rows = await db
       .select({
@@ -701,7 +747,9 @@ export class DatabaseStorage implements IStorage {
     return Number(result?.count ?? 0);
   }
 
-  async getGroupPreview(groupId: string): Promise<{ name: string; memberCount: number; deuceCount: number } | undefined> {
+  async getGroupPreview(
+    groupId: string,
+  ): Promise<{ name: string; memberCount: number; deuceCount: number } | undefined> {
     const rows = await db.execute(sql`
       SELECT
         g.name,
@@ -789,7 +837,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Feed operations
-  async getFeedEntries(groupIds: string[], limit: number, offset = 0): Promise<(DeuceEntry & { user: Pick<User, 'id' | 'username' | 'profileImageUrl'>; reactions: Reaction[] })[]> {
+  async getFeedEntries(
+    groupIds: string[], limit: number, offset = 0,
+  ): Promise<(DeuceEntry & {
+    user: Pick<User, 'id' | 'username' | 'profileImageUrl'>;
+    reactions: Reaction[];
+  })[]> {
     if (groupIds.length === 0) return [];
 
     const entries = await db
@@ -829,7 +882,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Streak operations
-  async getGroupStreak(groupId: string): Promise<{ currentStreak: number; longestStreak: number; lastStreakDate: string | null }> {
+  async getGroupStreak(groupId: string): Promise<{
+    currentStreak: number; longestStreak: number;
+    lastStreakDate: string | null;
+  }> {
     const [group] = await db
       .select({
         currentStreak: groups.currentStreak,
@@ -841,7 +897,12 @@ export class DatabaseStorage implements IStorage {
     return group ?? { currentStreak: 0, longestStreak: 0, lastStreakDate: null };
   }
 
-  async getGroupStreaksBatch(groupIds: string[]): Promise<Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>> {
+  async getGroupStreaksBatch(
+    groupIds: string[],
+  ): Promise<Map<string, {
+    currentStreak: number; longestStreak: number;
+    lastStreakDate: string | null;
+  }>> {
     const result = new Map<string, { currentStreak: number; longestStreak: number; lastStreakDate: string | null }>();
     if (groupIds.length === 0) return result;
     const rows = await db
@@ -854,12 +915,19 @@ export class DatabaseStorage implements IStorage {
       .from(groups)
       .where(inArray(groups.id, groupIds));
     for (const row of rows) {
-      result.set(row.id, { currentStreak: row.currentStreak, longestStreak: row.longestStreak, lastStreakDate: row.lastStreakDate });
+      result.set(row.id, {
+        currentStreak: row.currentStreak,
+        longestStreak: row.longestStreak,
+        lastStreakDate: row.lastStreakDate,
+      });
     }
     return result;
   }
 
-  async updateGroupStreak(groupId: string, currentStreak: number, longestStreak: number, lastStreakDate: string): Promise<void> {
+  async updateGroupStreak(
+    groupId: string, currentStreak: number,
+    longestStreak: number, lastStreakDate: string,
+  ): Promise<void> {
     await db
       .update(groups)
       .set({ currentStreak, longestStreak, lastStreakDate, updatedAt: new Date() })
@@ -874,7 +942,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(groups.id, groupId));
   }
 
-  async getMembersLogStatusToday(groupId: string, todayUTC: string): Promise<{ userId: string; username: string | null; firstName: string | null; email: string | null; profileImageUrl: string | null; hasLogged: boolean }[]> {
+  async getMembersLogStatusToday(
+    groupId: string, todayUTC: string,
+  ): Promise<{
+    userId: string; username: string | null; firstName: string | null;
+    email: string | null; profileImageUrl: string | null;
+    hasLogged: boolean;
+  }[]> {
     // Get all members of the group
     const members = await db
       .select({
@@ -975,7 +1049,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Daily challenge operations
-  async getDailyChallengeCompletion(userId: string, challengeDate: string): Promise<DailyChallengeCompletion | undefined> {
+  async getDailyChallengeCompletion(
+    userId: string, challengeDate: string,
+  ): Promise<DailyChallengeCompletion | undefined> {
     const [completion] = await db
       .select()
       .from(dailyChallengeCompletions)
@@ -1054,7 +1130,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserSubscription(userId: string): Promise<{ subscription: string; subscriptionExpiresAt: Date | null; streakInsuranceUsed: boolean }> {
+  async getUserSubscription(userId: string): Promise<{
+    subscription: string; subscriptionExpiresAt: Date | null;
+    streakInsuranceUsed: boolean;
+  }> {
     const [user] = await db
       .select({
         subscription: users.subscription,
@@ -1185,7 +1264,10 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return { totalDeuces, avgPerWeek, longestStreak, currentStreak, bestDay, groupRankings, avgBristolScore, mostUsedLocation };
+    return {
+      totalDeuces, avgPerWeek, longestStreak, currentStreak,
+      bestDay, groupRankings, avgBristolScore, mostUsedLocation,
+    };
   }
 
   // Weekly report
@@ -1403,7 +1485,12 @@ export class DatabaseStorage implements IStorage {
     const sortedByCount = [...members].sort((a, b) => b.deucesThisWeek - a.deucesThisWeek);
     const mvpMember = sortedByCount[0] && sortedByCount[0].deucesThisWeek > 0 ? sortedByCount[0] : null;
     const mvp = mvpMember
-      ? { userId: mvpMember.userId, username: mvpMember.username, profileImageUrl: mvpMember.profileImageUrl, deuceCount: mvpMember.deucesThisWeek }
+      ? {
+          userId: mvpMember.userId,
+          username: mvpMember.username,
+          profileImageUrl: mvpMember.profileImageUrl,
+          deuceCount: mvpMember.deucesThisWeek,
+        }
       : null;
 
     // 8. Funny stats
@@ -1557,9 +1644,14 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return [];
 
-    const isPremium = user.subscription === 'premium' && user.subscriptionExpiresAt && new Date(user.subscriptionExpiresAt) > new Date();
+    const isPremium = user.subscription === 'premium'
+      && user.subscriptionExpiresAt
+      && new Date(user.subscriptionExpiresAt) > new Date();
     const totalLogs = user.deuceCount ?? 0;
-    const userGroupIds = await db.select({ groupId: groupMembers.groupId }).from(groupMembers).where(eq(groupMembers.userId, userId));
+    const userGroupIds = await db
+      .select({ groupId: groupMembers.groupId })
+      .from(groupMembers)
+      .where(eq(groupMembers.userId, userId));
     const squadCount = userGroupIds.length;
 
     let longestStreak = 0;
@@ -1576,17 +1668,57 @@ export class DatabaseStorage implements IStorage {
       tier: 'free' | 'premium'; condition: boolean; unlockedAt?: Date | null;
     }> = [
       // Free badges
-      { id: 'first_flush', name: 'First Flush', description: 'Logged your first deuce', emoji: '🚽', tier: 'free', condition: totalLogs >= 1 },
-      { id: 'ten_club', name: 'Ten Club', description: 'Logged 10 deuces', emoji: '🔟', tier: 'free', condition: totalLogs >= 10 },
-      { id: 'half_century', name: 'Half Century', description: 'Logged 50 deuces', emoji: '5️⃣0️⃣', tier: 'free', condition: totalLogs >= 50 },
-      { id: 'centurion', name: 'Centurion', description: 'Logged 100 deuces', emoji: '💯', tier: 'free', condition: totalLogs >= 100 },
-      { id: 'squad_up', name: 'Squad Up', description: 'Joined your first squad', emoji: '👥', tier: 'free', condition: squadCount >= 1 },
-      { id: 'social_butterfly', name: 'Social Butterfly', description: 'Member of 3+ squads', emoji: '🦋', tier: 'free', condition: squadCount >= 3 },
+      {
+        id: 'first_flush', name: 'First Flush',
+        description: 'Logged your first deuce', emoji: '🚽',
+        tier: 'free', condition: totalLogs >= 1,
+      },
+      {
+        id: 'ten_club', name: 'Ten Club',
+        description: 'Logged 10 deuces', emoji: '🔟',
+        tier: 'free', condition: totalLogs >= 10,
+      },
+      {
+        id: 'half_century', name: 'Half Century',
+        description: 'Logged 50 deuces', emoji: '5️⃣0️⃣',
+        tier: 'free', condition: totalLogs >= 50,
+      },
+      {
+        id: 'centurion', name: 'Centurion',
+        description: 'Logged 100 deuces', emoji: '💯',
+        tier: 'free', condition: totalLogs >= 100,
+      },
+      {
+        id: 'squad_up', name: 'Squad Up',
+        description: 'Joined your first squad', emoji: '👥',
+        tier: 'free', condition: squadCount >= 1,
+      },
+      {
+        id: 'social_butterfly', name: 'Social Butterfly',
+        description: 'Member of 3+ squads', emoji: '🦋',
+        tier: 'free', condition: squadCount >= 3,
+      },
       // Premium badges
-      { id: 'gold_throne', name: 'Gold Throne', description: 'Premium subscriber', emoji: '👑', tier: 'premium', condition: !!isPremium },
-      { id: 'streak_king', name: 'Streak King', description: 'Maintained a 7-day group streak', emoji: '🔥', tier: 'premium', condition: longestStreak >= 7 },
-      { id: 'streak_legend', name: 'Streak Legend', description: 'Maintained a 30-day group streak', emoji: '🏆', tier: 'premium', condition: longestStreak >= 30 },
-      { id: 'legend_tier', name: 'Legend', description: 'Logged 500 deuces', emoji: '🌟', tier: 'premium', condition: totalLogs >= 500 },
+      {
+        id: 'gold_throne', name: 'Gold Throne',
+        description: 'Premium subscriber', emoji: '👑',
+        tier: 'premium', condition: !!isPremium,
+      },
+      {
+        id: 'streak_king', name: 'Streak King',
+        description: 'Maintained a 7-day group streak', emoji: '🔥',
+        tier: 'premium', condition: longestStreak >= 7,
+      },
+      {
+        id: 'streak_legend', name: 'Streak Legend',
+        description: 'Maintained a 30-day group streak', emoji: '🏆',
+        tier: 'premium', condition: longestStreak >= 30,
+      },
+      {
+        id: 'legend_tier', name: 'Legend',
+        description: 'Logged 500 deuces', emoji: '🌟',
+        tier: 'premium', condition: totalLogs >= 500,
+      },
     ];
 
     return badgeCatalog.map(b => ({
@@ -1688,7 +1820,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getReferralStats(userId: string): Promise<{ referralCount: number; referrals: { username: string | null; joinedAt: Date | null }[] }> {
+  async getReferralStats(userId: string): Promise<{
+    referralCount: number;
+    referrals: { username: string | null; joinedAt: Date | null }[];
+  }> {
     const [user] = await db
       .select({ referralCount: users.referralCount })
       .from(users)
@@ -1711,7 +1846,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Referral dashboard
-  async getReferralDashboardStats(userId: string): Promise<{ totalReferrals: number; premiumConversions: number; pendingConversions: number }> {
+  async getReferralDashboardStats(userId: string): Promise<{
+    totalReferrals: number; premiumConversions: number;
+    pendingConversions: number;
+  }> {
     const [result] = await db
       .select({
         totalReferrals: sql<number>`COUNT(*)::int`,
@@ -1725,7 +1863,10 @@ export class DatabaseStorage implements IStorage {
     return { totalReferrals: total, premiumConversions: converted, pendingConversions: total - converted };
   }
 
-  async getReferralLeaderboard(): Promise<{ username: string | null; profileImageUrl: string | null; referralCount: number; premiumConversionCount: number }[]> {
+  async getReferralLeaderboard(): Promise<{
+    username: string | null; profileImageUrl: string | null;
+    referralCount: number; premiumConversionCount: number;
+  }[]> {
     const rows = await db
       .select({
         username: users.username,
@@ -1772,10 +1913,17 @@ export class DatabaseStorage implements IStorage {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
 
-    const [[totalUsersRow], [premiumUsersRow], [dauRow], [logsToday], [logsAll], [activeGroupsRow], [avgStreakRow]] = await Promise.all([
+    const [
+      [totalUsersRow], [premiumUsersRow], [dauRow],
+      [logsToday], [logsAll], [activeGroupsRow], [avgStreakRow],
+    ] = await Promise.all([
       db.select({ count: sql<number>`COUNT(*)::int` }).from(users).where(isNull(users.deletedAt)),
       db.select({ count: sql<number>`COUNT(*)::int` }).from(users)
-        .where(and(eq(users.subscription, 'premium'), sql`${users.subscriptionExpiresAt} > NOW()`, isNull(users.deletedAt))),
+        .where(and(
+          eq(users.subscription, 'premium'),
+          sql`${users.subscriptionExpiresAt} > NOW()`,
+          isNull(users.deletedAt),
+        )),
       db.select({ count: sql<number>`COUNT(DISTINCT ${deuceEntries.userId})::int` }).from(deuceEntries)
         .where(sql`DATE(${deuceEntries.loggedAt} AT TIME ZONE 'UTC') = ${today}`),
       db.select({ count: sql<number>`COUNT(*)::int` }).from(deuceEntries)
@@ -2097,7 +2245,9 @@ export class DatabaseStorage implements IStorage {
     return card;
   }
 
-  async checkAndUpdateBingoProgress(userId: string, month: string): Promise<{ completedSquares: number[]; hasBlackout: boolean }> {
+  async checkAndUpdateBingoProgress(
+    userId: string, month: string,
+  ): Promise<{ completedSquares: number[]; hasBlackout: boolean }> {
     const card = await this.getBingoCard(userId, month);
     if (!card) return { completedSquares: [], hasBlackout: false };
 
@@ -2146,7 +2296,10 @@ export class DatabaseStorage implements IStorage {
     for (let i = 0; i < squares.length; i++) {
       if (prevCompleted.has(i)) continue; // already completed, never un-complete
       const square = squares[i];
-      const achieved = evaluateBingoCondition(square.condition_type, square.condition_value, entries, userGroupsRaw, user, reactionCounts);
+      const achieved = evaluateBingoCondition(
+        square.condition_type, square.condition_value,
+        entries, userGroupsRaw, user, reactionCounts,
+      );
       if (achieved) newCompleted.add(i);
     }
 
@@ -2169,7 +2322,12 @@ export class DatabaseStorage implements IStorage {
     return { completedSquares, hasBlackout };
   }
 
-  async getBingoLeaderboard(groupIds: string[], month: string): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; completedCount: number }[]> {
+  async getBingoLeaderboard(
+    groupIds: string[], month: string,
+  ): Promise<{
+    userId: string; username: string | null;
+    profileImageUrl: string | null; completedCount: number;
+  }[]> {
     if (groupIds.length === 0) return [];
 
     // Get all member IDs in these groups (one query)
