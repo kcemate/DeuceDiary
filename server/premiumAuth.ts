@@ -24,7 +24,8 @@ function hasClerkPlan(clerkAuth: Record<string, unknown> | null | undefined): bo
 /**
  * Check if a DB user has an active premium subscription (fallback).
  */
-function hasDbPremium(user: { subscription?: string | null; subscriptionExpiresAt?: Date | string | null } | null | undefined): boolean {
+type DbPremiumUser = { subscription?: string | null; subscriptionExpiresAt?: Date | string | null } | null | undefined;
+function hasDbPremium(user: DbPremiumUser): boolean {
   return (
     user?.subscription === "premium" &&
     user.subscriptionExpiresAt &&

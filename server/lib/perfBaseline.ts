@@ -90,7 +90,8 @@ export function buildDegradedHealth(): Record<string, unknown> {
  * Build the detailed health payload.
  * `pool` is the pg Pool instance passed at registration time.
  */
-export function buildDetailedHealth(pool: { totalCount: number; idleCount: number; waitingCount: number }): Record<string, unknown> {
+type PoolStats = { totalCount: number; idleCount: number; waitingCount: number };
+export function buildDetailedHealth(pool: PoolStats): Record<string, unknown> {
   const mem = process.memoryUsage();
   return {
     status: "ok",

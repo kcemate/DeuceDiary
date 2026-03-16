@@ -10,7 +10,10 @@ interface EnvSpec {
 
 const ENV_SPECS: EnvSpec[] = [
   { name: "DATABASE_URL",           required: true,  description: "PostgreSQL connection string" },
-  { name: "SESSION_SECRET",         required: false, description: "Express session signing secret (insecure default used if absent)" },
+  {
+    name: "SESSION_SECRET", required: false,
+    description: "Express session signing secret (insecure default used if absent)",
+  },
   { name: "CLERK_SECRET_KEY",       required: false, description: "Clerk backend secret (production auth)" },
   { name: "CLERK_PUBLISHABLE_KEY",  required: false, description: "Clerk publishable key" },
   { name: "ADMIN_KEY",              required: false, description: "Admin API key (/api/admin/*)" },

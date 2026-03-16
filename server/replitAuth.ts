@@ -33,7 +33,10 @@ await (async () => {
       const { createClerkClient } = mod;
       clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
     } catch (err) {
-      logger.warn({ err: (err as Error).message }, "[AUTH] Clerk SDK failed to initialise — falling back to session auth");
+      logger.warn(
+        { err: (err as Error).message },
+        "[AUTH] Clerk SDK failed to initialise — falling back to session auth",
+      );
       clerkEnabled = false;
     }
   }
@@ -176,11 +179,19 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   if (clerkEnabled) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      logger.info({ method: req.method, path: req.path, authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING' }, "[AUTH] 401 no-bearer");
+      logger.info(
+        { method: req.method, path: req.path,
+          authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING' },
+        "[AUTH] 401 no-bearer",
+      );
       return res.status(401).json({ message: "Unauthorized" });
     }
     const token = authHeader.split(" ")[1];
-    let payload: { sub: string; email?: string | null; first_name?: string | null; last_name?: string | null; image_url?: string | null };
+    type JWTPayload = {
+      sub: string; email?: string | null; first_name?: string | null;
+      last_name?: string | null; image_url?: string | null;
+    };
+    let payload: JWTPayload;
     try {
       payload = await clerk!.verifyToken(token);
     } catch (err) {

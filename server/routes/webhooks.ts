@@ -34,7 +34,14 @@ export function registerClerkWebhook(app: Express): void {
         return res.status(400).json({ message: "Missing svix headers" });
       }
 
-      type ClerkEvent = { type: string; data: { id?: string; user_id?: string; subscriber_id?: string; email_addresses?: Array<{ email_address?: string }>; first_name?: string | null; last_name?: string | null; image_url?: string | null; username?: string | null; status?: string; current_period_end?: number } };
+      type ClerkEventData = {
+        id?: string; user_id?: string; subscriber_id?: string;
+        email_addresses?: Array<{ email_address?: string }>;
+        first_name?: string | null; last_name?: string | null;
+        image_url?: string | null; username?: string | null;
+        status?: string; current_period_end?: number;
+      };
+      type ClerkEvent = { type: string; data: ClerkEventData };
       let event: ClerkEvent;
       try {
         const wh = new Webhook(WEBHOOK_SECRET);
@@ -117,7 +124,9 @@ export function registerClerkWebhook(app: Express): void {
                 : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
               await storage.updateUserSubscription(userId, "premium", periodEnd);
               await storage.resetStreakInsurance(userId);
-              logger.info(`Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`);
+              logger.info(
+                `Clerk webhook: ${event.type} — user ${userId} → premium until ${periodEnd.toISOString()}`,
+              );
             } else {
               // Canceled / past_due / unpaid → downgrade
               await downgradeToFree(userId, event.type, status);
