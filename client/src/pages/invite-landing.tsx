@@ -172,6 +172,34 @@ export default function InviteLanding() {
     return () => timers.forEach(clearTimeout);
   }, [preview]);
 
+  // Auto-join when authenticated user lands on invite page
+  const [autoJoinAttempted, setAutoJoinAttempted] = useState(false);
+  useEffect(() => {
+    if (!isAuthenticated || authLoading || !code || !preview || autoJoinAttempted) return;
+    setAutoJoinAttempted(true);
+    setLoading(true);
+    fetch(`/api/join/${code}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.message || "Failed to join group");
+          return;
+        }
+        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        toast({
+          title: data.message === "Already a member of this group" ? "Already in!" : "You're in! 🚽",
+          description: `${data.message === "Already a member of this group" ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
+        });
+        setLocation("/");
+      })
+      .catch(() => setError("Network error — is the server running?"))
+      .finally(() => setLoading(false));
+  }, [isAuthenticated, authLoading, code, preview, autoJoinAttempted]);
+
   async function handleJoinWithLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim()) return;
