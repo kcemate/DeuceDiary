@@ -48,6 +48,11 @@ targets:
     path: ./server/routes/webhooks.ts
     description: "Webhook handler routes — external service callbacks (142 lines)"
 
+  # Server core — middleware, rate limiting, startup
+  - name: server-index
+    path: ./server/index.ts
+    description: "Express app setup — middleware, rate limiters, CORS, error handlers"
+
   # Lib files — smaller, focused
   - name: error-tracker
     path: ./server/lib/errorTracker.ts
