@@ -21,7 +21,10 @@ async function fetchWeeklyReport(groupId: string, res: Response) {
   try {
     return await storage.getGroupWeeklyReport(groupId);
   } catch (err) {
-    if (err instanceof Error && err.message === "Group not found") { res.status(404).json({ message: "Group not found" }); return null; }
+    if (err instanceof Error && err.message === "Group not found") {
+      res.status(404).json({ message: "Group not found" });
+      return null;
+    }
     throw err;
   }
 }
@@ -30,7 +33,11 @@ async function checkSquadLimit(req: any, res: any): Promise<boolean> {
   if (!isPremiumUser(req.user)) {
     const userGroups = await storage.getUserGroups(req.user.id);
     if (userGroups.length >= 3) {
-      res.status(403).json({ message: 'Upgrade to Premium for unlimited squads', upgrade: true, feature: 'unlimited_squads' });
+      res.status(403).json({
+        message: 'Upgrade to Premium for unlimited squads',
+        upgrade: true,
+        feature: 'unlimited_squads'
+      });
       return true;
     }
   }
@@ -79,7 +86,9 @@ export function createGroupsRouter(): Router {
     res.json(groups);
   }));
 
-  router.get('/api/groups/:groupId', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group details", async (req: any, res) => {
+  router.get('/api/groups/:groupId',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group details",
+    async (req: any, res) => {
     const groupId = req.groupId;
 
     const group = await storage.getGroupById(groupId);
@@ -97,7 +106,9 @@ export function createGroupsRouter(): Router {
   }));
 
   // Invite routes (free)
-  router.post('/api/groups/:groupId/invite', isAuthenticated, requireGroupMember(), asyncRoute("Failed to create invite", async (req: any, res) => {
+  router.post('/api/groups/:groupId/invite',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to create invite",
+    async (req: any, res) => {
     const userId = req.user.id;
     const groupId = req.groupId;
 
@@ -169,7 +180,9 @@ export function createGroupsRouter(): Router {
   });
 
   // Streak routes (free — part of groups)
-  router.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch streak", async (req: any, res) => {
+  router.get('/api/groups/:groupId/streak',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch streak",
+    async (req: any, res) => {
     const groupId = req.groupId;
 
     const today = getTodayUTC();
@@ -201,14 +214,18 @@ export function createGroupsRouter(): Router {
     });
   }));
 
-  router.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), asyncRoute("Failed to check streak risk", async (req: any, res) => {
+  router.post('/api/groups/:groupId/streak/check',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to check streak risk",
+    async (req: any, res) => {
     const groupId = req.groupId;
     const result = await checkAndNotifyStreakRisk(groupId);
     res.json(result);
   }));
 
   // Group Leaderboard — member rankings by deuce count (free)
-  router.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch leaderboard", async (req: any, res) => {
+  router.get('/api/groups/:groupId/leaderboard',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch leaderboard",
+    async (req: any, res) => {
     const groupId = req.groupId;
 
     const members = await storage.getGroupMembers(groupId);
@@ -225,7 +242,9 @@ export function createGroupsRouter(): Router {
   }));
 
   // Weekly Throne Report — group-level shareable summary card
-  router.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group weekly report", async (req: any, res) => {
+  router.get('/api/groups/:groupId/weekly-report',
+    isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group weekly report",
+    async (req: any, res) => {
     const groupId = req.groupId;
     const report = await fetchWeeklyReport(groupId, res);
     if (!report) return;
@@ -233,14 +252,20 @@ export function createGroupsRouter(): Router {
   }));
 
   // Squad Spy Mode — typical log hour per member (premium)
-  router.get('/api/groups/:groupId/spy', isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), asyncRoute("Failed to fetch spy data", async (req: any, res) => {
+  router.get('/api/groups/:groupId/spy',
+    isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), asyncRoute("Failed to fetch spy data",
+    async (req: any, res) => {
     const groupId = req.groupId;
     const typicalHours = await storage.getGroupMemberTypicalHours(groupId);
     res.json(typicalHours);
   }));
 
   // Export Weekly Throne Report as PDF (premium)
-  router.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), asyncRoute("Failed to generate PDF report", async (req: any, res) => {
+  router.get('/api/groups/:groupId/weekly-report/pdf',
+    isAuthenticated, requireGroupMember(),
+    requiresPremiumFor('report_export'),
+    asyncRoute("Failed to generate PDF report",
+    async (req: any, res) => {
       const groupId = req.groupId;
       const report = await fetchWeeklyReport(groupId, res);
       if (!report) return;
@@ -268,7 +293,11 @@ export function createGroupsRouter(): Router {
 
       // Group stats
       pdfSection('Squad Stats');
-      const { totalDeucesThisWeek, currentStreak: groupCurrentStreak, longestStreak: groupLongestStreak } = report.groupStats;
+      const {
+        totalDeucesThisWeek,
+        currentStreak: groupCurrentStreak,
+        longestStreak: groupLongestStreak,
+      } = report.groupStats;
       bodyFont()
         .text(`Total Deuces This Week: ${totalDeucesThisWeek}`)
         .text(`Current Streak: ${groupCurrentStreak} days`)
@@ -286,7 +315,9 @@ export function createGroupsRouter(): Router {
       // Member breakdown
       pdfSection('Member Breakdown');
       for (const m of report.members) {
-        const statusLabel = m.streakStatus === 'active' ? '[Active]' : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
+        const statusLabel = m.streakStatus === 'active'
+          ? '[Active]'
+          : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
         bodyFont()
           .text(`${statusLabel} ${m.username ?? 'Unknown'}: ${m.deucesThisWeek} deuces`);
       }
@@ -295,21 +326,29 @@ export function createGroupsRouter(): Router {
       // Funny stats
       pdfSection('Fun Facts');
       const { longestGap, mostReactionsReceived, funniestEntry } = report.funnyStats;
+      const gapName = longestGap?.username ?? 'Unknown';
+      const rxName = mostReactionsReceived?.username ?? 'Unknown';
+      const funnierName = funniestEntry?.username ?? 'Unknown';
       [
-        longestGap && `Longest gap: ${longestGap.username ?? 'Unknown'} -- ${longestGap.gapDays} days since last log`,
-        mostReactionsReceived && `Most reactions: ${mostReactionsReceived.username ?? 'Unknown'} -- ${mostReactionsReceived.reactionCount} reactions`,
-        funniestEntry && `Funniest entry: "${funniestEntry.thought}" by ${funniestEntry.username ?? 'Unknown'} (${funniestEntry.reactions} reactions)`,
+        longestGap && `Longest gap: ${gapName} -- ${longestGap.gapDays} days since last log`,
+        mostReactionsReceived &&
+          `Most reactions: ${rxName} -- ${mostReactionsReceived.reactionCount} reactions`,
+        funniestEntry &&
+          `Funniest entry: "${funniestEntry.thought}" by ${funnierName} (${funniestEntry.reactions} reactions)`,
       ].filter(Boolean).forEach(fact => bodyFont().text(fact as string));
 
       // Footer
       doc.moveDown(2);
-      doc.fontSize(10).fillColor('#999').text('Generated by Deuce Diary -- track your throne time with your squad', { align: 'center' });
+      doc.fontSize(10).fillColor('#999')
+        .text('Generated by Deuce Diary -- track your throne time with your squad', { align: 'center' });
 
       doc.end();
   }));
 
   // Rich invite preview (public -- no auth, enhanced for OG)
-  router.get('/api/groups/invite-preview/:inviteCode', asyncRoute("Failed to fetch invite preview", async (req, res) => {
+  router.get('/api/groups/invite-preview/:inviteCode',
+    asyncRoute("Failed to fetch invite preview",
+    async (req, res) => {
     const { inviteCode } = req.params;
     const preview = await storage.getGroupInvitePreview(inviteCode);
     if (!preview) {
@@ -335,7 +374,8 @@ export function createGroupsRouter(): Router {
 
       const title = `Join ${preview.name} on Deuce Diary`;
       const topMembers = preview.memberNames.slice(0, 5);
-      const memberList = topMembers.join(', ') + (preview.memberNames.length > 5 ? ` and ${preview.memberNames.length - 5} more` : '');
+      const extra = preview.memberNames.length > 5 ? ` and ${preview.memberNames.length - 5} more` : '';
+      const memberList = topMembers.join(', ') + extra;
       const descParts: string[] = [
         `${preview.memberCount} member${preview.memberCount !== 1 ? 's' : ''}`,
       ];
@@ -383,7 +423,8 @@ export function createGroupsRouter(): Router {
     .description { font-size: 14px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
     .stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
     .stat-value { font-size: 24px; font-weight: 900; }
-    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
     .members { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
     .cta {
       display: inline-block; background: hsl(45, 88%, 48%); color: #000;
