@@ -184,7 +184,7 @@ export default function Premium() {
       </div>
 
       <p className="text-center text-[10px] text-muted-foreground mt-4 px-4">
-        Payment processing coming soon. Upgrade is instant during beta.
+        🎉 Free during beta — no payment required. Tap to unlock instantly.
       </p>
     </div>
   );
