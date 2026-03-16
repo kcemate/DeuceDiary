@@ -34,9 +34,7 @@ const SCRIPT = path.resolve(__dirname, "../../scripts/check-schema-drift.ts");
  * ================================================================ */
 
 // Determine whether we have a usable DATABASE_URL
-const DB_URL =
-  process.env.DATABASE_URL ??
-  "REDACTED_DATABASE_URL";
+const DB_URL = process.env.DATABASE_URL ?? "postgresql://localhost/deucelocal";
 
 describe("Schema drift script — subprocess (requires DB)", () => {
   it("exits with code 0 when no DATABASE_URL is set, after printing a clear error", () => {
