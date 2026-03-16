@@ -13,6 +13,7 @@ import { errorTrackingMiddleware } from "./lib/errorTracker";
 import { responseTimeMiddleware } from "./lib/perfBaseline";
 import { runStartupDiagnostics } from "./lib/startupDiagnostics";
 import { closeWss } from "./lib/wsMetrics";
+import logger from "./lib/logger";
 import crypto from "crypto";
 
 // Initialize Sentry (skip silently if no DSN)
@@ -135,7 +136,7 @@ const referralLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
   message: { message: "Too many referral attempts, please try again later." },
 });
-app.use("/api/referral/apply", referralLimiter);
+app.post("/api/referral/apply", referralLimiter);
 
 // Public profile/share endpoints — prevent user enumeration
 const publicProfileLimiter = rateLimit({
@@ -143,11 +144,11 @@ const publicProfileLimiter = rateLimit({
   ...rateLimitBase,
   message: { message: "Too many requests, please try again later." },
 });
-app.use("/api/share", publicProfileLimiter);
-app.use("/api/og", publicProfileLimiter);
-app.use("/api/users", publicProfileLimiter);
-app.use("/api/groups/preview", publicProfileLimiter);
-app.use("/api/groups/invite-preview", publicProfileLimiter);
+app.get("/api/share", publicProfileLimiter);
+app.get("/api/og", publicProfileLimiter);
+app.get("/api/users", publicProfileLimiter);
+app.get("/api/groups/preview", publicProfileLimiter);
+app.get("/api/groups/invite-preview", publicProfileLimiter);
 
 // --- Request ID (trace each request through logs & error responses) ---
 app.use((req, res, next) => {
@@ -242,7 +243,7 @@ app.use((req, res, next) => {
     const requestId = req.headers['x-request-id'] as string | undefined;
 
     if (status === 500) {
-      console.error("[UNHANDLED ERROR]", requestId ? `[${requestId}]` : '', err.stack || err);
+      logger.error({ err: err.stack || err, requestId }, "[UNHANDLED ERROR]");
     }
 
     if (!res.headersSent) {
@@ -283,7 +284,7 @@ app.use((req, res, next) => {
 
     server.close(async (err) => {
       if (err) {
-        console.error("[SHUTDOWN] Error closing HTTP server:", err);
+        logger.error({ err }, "[SHUTDOWN] Error closing HTTP server");
         process.exit(1);
       }
 
@@ -292,7 +293,7 @@ app.use((req, res, next) => {
         await closeWss();
         log("[SHUTDOWN] WebSocket server closed");
       } catch (wsErr) {
-        console.error("[SHUTDOWN] Error closing WebSocket server:", wsErr);
+        logger.error({ err: wsErr }, "[SHUTDOWN] Error closing WebSocket server");
       }
 
       try {
@@ -300,7 +301,7 @@ app.use((req, res, next) => {
         await dbPool.end();
         log("[SHUTDOWN] DB pool drained — exiting cleanly");
       } catch (dbErr) {
-        console.error("[SHUTDOWN] Error draining DB pool:", dbErr);
+        logger.error({ err: dbErr }, "[SHUTDOWN] Error draining DB pool");
       }
 
       process.exit(0);
@@ -308,7 +309,7 @@ app.use((req, res, next) => {
 
     // Force-exit after 15s if graceful shutdown stalls
     setTimeout(() => {
-      console.error("[SHUTDOWN] Graceful shutdown timed out after 15s — forcing exit");
+      logger.error("[SHUTDOWN] Graceful shutdown timed out after 15s — forcing exit");
       process.exit(1);
     }, 15_000).unref();
   };
@@ -319,10 +320,10 @@ app.use((req, res, next) => {
 
 // --- Unhandled rejection / exception safety net ---
 process.on("unhandledRejection", (reason) => {
-  console.error("[UNHANDLED REJECTION]", reason);
+  logger.error({ reason }, "[UNHANDLED REJECTION]");
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("[UNCAUGHT EXCEPTION]", err);
+  logger.error({ err }, "[UNCAUGHT EXCEPTION]");
   process.exit(1);
 });
