@@ -196,7 +196,7 @@ export default function Home() {
     isLoading: feedLoading,
     isError: feedError,
   } = useQuery<FeedEntry[]>({
-    queryKey: ["/api/deuces", { limit: 15 }],
+    queryKey: ["/api/deuces?limit=15"],
     enabled: !isFree,
   });
 
@@ -617,14 +617,14 @@ export default function Home() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 max-w-[7rem]">
                       <Badge
                         variant={group.lastActivity ? "default" : "secondary"}
                         className="mb-1 rounded-full text-xs font-bold"
                       >
                         {group.lastActivity ? "Active" : "Quiet"}
                       </Badge>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {getActivityTime(group.lastActivity)}
                       </p>
                     </div>
