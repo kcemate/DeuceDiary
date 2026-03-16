@@ -110,7 +110,10 @@ export function WeeklyThroneReport() {
 
   if (isLoading) {
     return (
-      <div className="w-[320px] h-[480px] mx-auto rounded-2xl border-2 border-accent bg-background flex items-center justify-center">
+      <div className={
+        "w-[320px] h-[480px] mx-auto rounded-2xl border-2 border-accent" +
+        " bg-background flex items-center justify-center"
+      }>
         <p className="text-muted-foreground text-sm animate-pulse">Loading report...</p>
       </div>
     );
@@ -180,7 +183,10 @@ export function WeeklyThroneReport() {
           return (
             <div className="flex justify-center mt-2">
               <span
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                className={
+                  "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full" +
+                  " text-[10px] font-bold uppercase tracking-wider"
+                }
                 style={{
                   background: "hsl(38, 28%, 88%)",
                   color: tier.color,
@@ -257,7 +263,10 @@ export function WeeklyThroneReport() {
         {stats.slice(1).map((stat, i) => (
           <div
             key={i}
-            className="bg-card border border-border rounded-xl p-2.5 flex flex-col items-center justify-center text-center"
+            className={
+              "bg-card border border-border rounded-xl p-2.5" +
+              " flex flex-col items-center justify-center text-center"
+            }
           >
             <span className="text-lg leading-none">{stat.emoji}</span>
             <p className="text-sm font-extrabold text-foreground mt-1 leading-tight break-words max-w-full">
