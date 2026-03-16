@@ -70,10 +70,9 @@ app.use(cors({
 }));
 
 // --- Rate Limiting ---
-const rateLimitBase = { standardHeaders: true, legacyHeaders: false };
+const rateLimitBase = { windowMs: 60 * 1000, standardHeaders: true, legacyHeaders: false };
 
 const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 300,
   ...rateLimitBase,
   message: { message: "Too many requests, please try again later." },
@@ -81,7 +80,6 @@ const globalLimiter = rateLimit({
 app.use("/api", globalLimiter);
 
 const authLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 30,
   ...rateLimitBase,
   message: { message: "Too many auth attempts, please try again later." },
@@ -91,7 +89,6 @@ app.post("/api/auth", authLimiter);
 app.post("/api/webhooks", authLimiter);
 
 const logLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 60,
   ...rateLimitBase,
   message: { message: "Too many log requests, please try again later." },
@@ -99,7 +96,6 @@ const logLimiter = rateLimit({
 app.post("/api/deuces", logLimiter);
 
 const pushLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 10,
   ...rateLimitBase,
   message: { message: "Too many push token requests, please try again later." },
@@ -109,7 +105,6 @@ app.post("/api/push/unregister", pushLimiter);
 
 // Group creation — prevent spam squad creation (POST only, not reads)
 const groupCreateLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 10,
   ...rateLimitBase,
   message: { message: "Too many group creation requests, please try again later." },
@@ -118,7 +113,6 @@ app.post("/api/groups", groupCreateLimiter);
 
 // Reactions — prevent emoji spam
 const reactionLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 60,
   ...rateLimitBase,
   message: { message: "Too many reaction requests, please try again later." },
@@ -127,25 +121,24 @@ app.post("/api/entries", reactionLimiter);
 
 // Subscription upgrade — prevent abuse of the dev-mode upgrade endpoint
 const subscriptionLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,  // 1 hour window
   max: isTest ? 10000 : 5,
   ...rateLimitBase,
+  windowMs: 60 * 60 * 1000,  // 1 hour window
   message: { message: "Too many subscription requests, please try again later." },
 });
 app.post("/api/subscription/upgrade", subscriptionLimiter);
 
 // Referral apply — prevent brute-force code guessing
 const referralLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,  // 1 hour window
   max: isTest ? 10000 : 10,
   ...rateLimitBase,
+  windowMs: 60 * 60 * 1000,  // 1 hour window
   message: { message: "Too many referral attempts, please try again later." },
 });
 app.use("/api/referral/apply", referralLimiter);
 
 // Public profile/share endpoints — prevent user enumeration
 const publicProfileLimiter = rateLimit({
-  windowMs: 60 * 1000,
   max: isTest ? 10000 : 30,
   ...rateLimitBase,
   message: { message: "Too many requests, please try again later." },
