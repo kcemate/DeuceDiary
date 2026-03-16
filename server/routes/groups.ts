@@ -13,6 +13,7 @@ import {
   getYesterdayUTC,
   checkAndNotifyStreakRisk,
   escapeHtml,
+  asyncRoute as helperAsyncRoute,
 } from "./helpers";
 
 async function fetchWeeklyReport(groupId: string, res: Response) {
@@ -35,19 +36,8 @@ async function checkSquadLimit(req: any, res: any): Promise<boolean> {
   return false;
 }
 
-function asyncRoute(
-  errMsg: string,
-  handler: (req: any, res: any) => Promise<void>,
-): (req: any, res: any) => Promise<void> {
-  return async (req: any, res: any) => {
-    try {
-      await handler(req, res);
-    } catch (error) {
-      console.error(errMsg, error);
-      res.status(500).json({ message: errMsg });
-    }
-  };
-}
+const asyncRoute = (errMsg: string, handler: (req: any, res: any) => Promise<void>) =>
+  helperAsyncRoute(errMsg, errMsg, handler);
 
 export function createGroupsRouter(): Router {
   const router = Router();
