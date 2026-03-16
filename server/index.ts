@@ -71,7 +71,7 @@ app.use(cors({
 // --- Rate Limiting ---
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: process.env.NODE_ENV === "test" ? 10000 : 100,
+  max: process.env.NODE_ENV === "test" ? 10000 : 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },
@@ -108,7 +108,7 @@ const pushLimiter = rateLimit({
 app.use("/api/notifications/register", pushLimiter);
 app.use("/api/push/unregister", pushLimiter);
 
-// Group creation — prevent spam squad creation
+// Group creation — prevent spam squad creation (POST only, not reads)
 const groupCreateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: process.env.NODE_ENV === "test" ? 10000 : 10,
@@ -116,7 +116,7 @@ const groupCreateLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many group creation requests, please try again later." },
 });
-app.use("/api/groups", groupCreateLimiter);
+app.post("/api/groups", groupCreateLimiter);
 
 // Reactions — prevent emoji spam
 const reactionLimiter = rateLimit({
