@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { SignInButton, SignUpButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 const CLERK_ENABLED = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -147,6 +147,7 @@ export default function InviteLanding() {
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { getToken } = useClerkAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -178,12 +179,16 @@ export default function InviteLanding() {
     if (!isAuthenticated || authLoading || !code || !preview || autoJoinAttempted) return;
     setAutoJoinAttempted(true);
     setLoading(true);
-    fetch(`/api/join/${code}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    })
-      .then(async (res) => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`/api/join/${code}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         const data = await res.json();
         if (!res.ok) {
           setError(data.message || "Failed to join group");
@@ -195,9 +200,12 @@ export default function InviteLanding() {
           description: `${data.message === "Already a member of this group" ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
         });
         setLocation("/");
-      })
-      .catch(() => setError("Network error — is the server running?"))
-      .finally(() => setLoading(false));
+      } catch {
+        setError("Network error — is the server running?");
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [isAuthenticated, authLoading, code, preview, autoJoinAttempted]);
 
   async function handleJoinWithLogin(e: React.FormEvent) {
@@ -240,10 +248,13 @@ export default function InviteLanding() {
     setError("");
 
     try {
+      const token = await getToken();
       const res = await fetch(`/api/join/${code}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
       if (!res.ok) {
         const data = await res.json();
