@@ -70,11 +70,12 @@ app.use(cors({
 }));
 
 // --- Rate Limiting ---
+const rateLimitBase = { standardHeaders: true, legacyHeaders: false };
+
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 300,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many requests, please try again later." },
 });
 app.use("/api", globalLimiter);
@@ -82,8 +83,7 @@ app.use("/api", globalLimiter);
 const authLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 30,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many auth attempts, please try again later." },
 });
 app.post("/api/login", authLimiter);
@@ -93,8 +93,7 @@ app.post("/api/webhooks", authLimiter);
 const logLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 60,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many log requests, please try again later." },
 });
 app.post("/api/deuces", logLimiter);
@@ -102,8 +101,7 @@ app.post("/api/deuces", logLimiter);
 const pushLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many push token requests, please try again later." },
 });
 app.post("/api/notifications/register", pushLimiter);
@@ -113,8 +111,7 @@ app.post("/api/push/unregister", pushLimiter);
 const groupCreateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many group creation requests, please try again later." },
 });
 app.post("/api/groups", groupCreateLimiter);
@@ -123,8 +120,7 @@ app.post("/api/groups", groupCreateLimiter);
 const reactionLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 60,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many reaction requests, please try again later." },
 });
 app.post("/api/entries", reactionLimiter);
@@ -133,8 +129,7 @@ app.post("/api/entries", reactionLimiter);
 const subscriptionLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
   max: isTest ? 10000 : 5,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many subscription requests, please try again later." },
 });
 app.post("/api/subscription/upgrade", subscriptionLimiter);
@@ -143,8 +138,7 @@ app.post("/api/subscription/upgrade", subscriptionLimiter);
 const referralLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,  // 1 hour window
   max: isTest ? 10000 : 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many referral attempts, please try again later." },
 });
 app.use("/api/referral/apply", referralLimiter);
@@ -153,8 +147,7 @@ app.use("/api/referral/apply", referralLimiter);
 const publicProfileLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isTest ? 10000 : 30,
-  standardHeaders: true,
-  legacyHeaders: false,
+  ...rateLimitBase,
   message: { message: "Too many requests, please try again later." },
 });
 app.use("/api/share", publicProfileLimiter);
