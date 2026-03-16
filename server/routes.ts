@@ -2021,7 +2021,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/challenges/complete', isAuthenticated, requiresPremiumFor('daily_challenges'), async (req: any, res) => {
+  app.post('/api/challenges/complete',
+    isAuthenticated, requiresPremiumFor('daily_challenges'),
+    async (req: any, res) => {
     try {
       const userId = req.user.id;
       const challengeDate = todayChallengeDate();
@@ -2044,7 +2046,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Custom Reminder (premium) ---
-  app.put('/api/notifications/reminder', isAuthenticated, requiresPremiumFor('custom_reminder'), async (req: any, res) => {
+  app.put('/api/notifications/reminder',
+    isAuthenticated, requiresPremiumFor('custom_reminder'),
+    async (req: any, res) => {
     try {
       const userId = req.user.id;
       const parsed = reminderSchema.safeParse(req.body);
@@ -2107,18 +2111,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? new Date(data.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : '';
 
+      const ogTitle = `${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25`;
+      const squadPlural = data.squadCount !== 1 ? 's' : '';
+      const ogDesc = `${data.totalLogs} logs \u00B7 ${data.squadCount} squad${squadPlural}` +
+        ` \u00B7 Longest streak: ${data.longestStreak} days`;
+      const twDesc = `${data.totalLogs} logs \u00B7 ` +
+        `${data.squadCount} squad${squadPlural} on Deuce Diary`;
+
       const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${displayName} on Deuce Diary</title>
-  <meta property="og:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta property="og:description" content="${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''} \u00B7 Longest streak: ${data.longestStreak} days" />
+  <meta property="og:title" content="${ogTitle}" />
+  <meta property="og:description" content="${ogDesc}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25" />
-  <meta name="twitter:description" content="${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''} on Deuce Diary" />
+  <meta name="twitter:title" content="${ogTitle}" />
+  <meta name="twitter:description" content="${twDesc}" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -2343,7 +2354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const client = ws as any;
       if (client.missedPongs >= MAX_MISSED_PONGS) {
         incWsCounter('forcedDisconnects');
-        logger.info(`WebSocket terminating dead connection (user ${client.userId}, missed ${client.missedPongs} pongs)`);
+        logger.info(
+          `WebSocket terminating dead connection (user ${client.userId}, missed ${client.missedPongs} pongs)`,
+        );
         ws.terminate();
         return;
       }
