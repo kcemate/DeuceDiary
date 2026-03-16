@@ -23,7 +23,7 @@ export function createPassportRouter(): Router {
         ]);
         res.json({ stamps, stats });
       } catch (error) {
-        logger.error("Error fetching passport:", error);
+        logger.error({ err: error }, "Error fetching passport:");
         res.status(500).json({ message: "Failed to fetch passport data" });
       }
     },
@@ -56,7 +56,7 @@ export function createPassportRouter(): Router {
           },
         });
       } catch (error) {
-        logger.error("Error fetching passport share data:", error);
+        logger.error({ err: error }, "Error fetching passport share data:");
         res.status(500).json({ message: "Failed to fetch passport data" });
       }
     },
@@ -72,7 +72,7 @@ export function createPassportRouter(): Router {
         await storage.deletePassportStamps(userId);
         res.json({ message: "Passport data deleted" });
       } catch (error) {
-        logger.error("Error deleting passport data:", error);
+        logger.error({ err: error }, "Error deleting passport data:");
         res.status(500).json({ message: "Failed to delete passport data" });
       }
     },

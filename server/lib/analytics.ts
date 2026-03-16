@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 export async function track(event: string, userId?: string, props?: Record<string, unknown>) {
   try {
     const { db } = await import("../db");
@@ -12,7 +14,7 @@ export async function track(event: string, userId?: string, props?: Record<strin
   } catch (e) {
     // Analytics should never break the app — fail silently
     if (process.env.NODE_ENV !== "test") {
-      console.error("[analytics]", e);
+      logger.error({ err: e }, "[analytics]");
     }
   }
 }

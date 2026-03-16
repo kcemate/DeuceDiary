@@ -44,7 +44,7 @@ export function registerClerkWebhook(app: Express): void {
           "svix-signature": svixSignature,
         });
       } catch (err) {
-        logger.error("Clerk webhook verification failed:", err);
+        logger.error({ err }, "Clerk webhook verification failed");
         return res.status(400).json({ message: "Invalid webhook signature" });
       }
 
@@ -140,7 +140,7 @@ export function registerClerkWebhook(app: Express): void {
         }
       } catch (err) {
         // Already sent 200 — log but don't fail
-        logger.error(`Clerk webhook: error processing ${event.type}:`, err);
+        logger.error({ err, eventType: event.type }, "Clerk webhook: error processing event");
       }
     },
   );

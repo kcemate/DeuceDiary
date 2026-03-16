@@ -1,6 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
+import logger from "./logger";
 
 /** Captured error entry stored in memory and written to disk. */
 export interface ErrorEntry {
@@ -62,7 +63,7 @@ function appendToLog(entry: ErrorEntry): void {
     const line = JSON.stringify(entry) + "\n";
     fs.appendFileSync(currentLogPath(), line, "utf-8");
   } catch (err) {
-    console.error("[ERROR TRACKER] Failed to write log file:", err);
+    logger.error({ err }, "[ERROR TRACKER] Failed to write log file");
   }
 }
 

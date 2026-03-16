@@ -8,31 +8,107 @@ import type { BingoSquare } from "@shared/schema";
 
 // 25 challenge templates — shuffled each month per card
 const BINGO_CHALLENGES: Omit<BingoSquare, 'id' | 'completed'>[] = [
-  { title: 'Early Bird',        description: 'Log before 7am',                          condition_type: 'time_before',       condition_value: 7  },
-  { title: 'Consistency King',  description: '5-day squad streak',                      condition_type: 'streak_days',       condition_value: 5  },
-  { title: 'Throne Veteran',     description: 'Log 10 deuces this month',                 condition_type: 'monthly_logs',      condition_value: 10 },
-  { title: 'Night Owl',         description: 'Log after 10pm',                          condition_type: 'time_after',        condition_value: 22 },
-  { title: 'Marathon Session',  description: 'Maintain a 7-day squad streak',           condition_type: 'streak_days',       condition_value: 7  },
-  { title: 'Location Scout',    description: 'Log from 3 different locations',          condition_type: 'unique_locations',  condition_value: 3  },
-  { title: 'Speed Demon',       description: 'Log 3 quick notes (under 20 chars)',      condition_type: 'fast_log',          condition_value: 3  },
-  { title: 'Double Flush',      description: 'Log twice in one day',                    condition_type: 'daily_count',       condition_value: 2  },
-  { title: 'Weekend Warrior',   description: 'Log both Sat and Sun this month',         condition_type: 'weekend_both',      condition_value: 1  },
-  { title: 'Group Legend',      description: 'Squad streak hits 10+',                  condition_type: 'group_streak_min',  condition_value: 10 },
-  { title: 'Creature of Habit', description: 'Log at the same time (±1hr) 3 days in a row', condition_type: 'consistent_time', condition_value: 3  },
-  { title: 'Early Riser',       description: 'Log before 6am',                         condition_type: 'time_before',       condition_value: 6  },
-  { title: 'Hat Trick',         description: 'Log 3 times in one day',                 condition_type: 'daily_count',       condition_value: 3  },
-  { title: 'Globetrotter',      description: 'Log from 5 different locations',         condition_type: 'unique_locations',  condition_value: 5  },
-  { title: 'Monthly Loyal',     description: 'Log on 20 different days this month',    condition_type: 'monthly_days',      condition_value: 20 },
-  { title: 'Midnight Flush',    description: 'Log after 11pm',                         condition_type: 'time_after',        condition_value: 23 },
-  { title: 'Social Throne',     description: 'Receive 5 reactions on your entries',    condition_type: 'reactions_received',condition_value: 5  },
-  { title: 'Triple Crown',      description: '3-day squad streak',                     condition_type: 'streak_days',       condition_value: 3  },
-  { title: 'Throne Thoughts',    description: 'Write 5 logs with notes',                 condition_type: 'thoughts_count',    condition_value: 5  },
-  { title: 'Wordsmith',         description: 'Write 3 thoughtful logs (100+ chars)',   condition_type: 'long_thoughts',     condition_value: 3  },
-  { title: 'Full Week',         description: 'Log all 7 days of a single week',        condition_type: 'full_week',         condition_value: 1  },
-  { title: 'Tuesday Throne',    description: 'Log on 3 different Tuesdays',            condition_type: 'weekday_logs',      condition_value: 3  },
-  { title: 'Power Hour',        description: 'Log twice within 30 minutes',            condition_type: 'hourly_burst',      condition_value: 1  },
-  { title: 'The Regular',       description: 'Visit the same location 5 times',        condition_type: 'repeated_location', condition_value: 5  },
-  { title: 'Century Club',      description: 'Reach 50 all-time logs',                 condition_type: 'total_logs',        condition_value: 50 },
+  {
+    title: 'Early Bird', description: 'Log before 7am',
+    condition_type: 'time_before', condition_value: 7,
+  },
+  {
+    title: 'Consistency King', description: '5-day squad streak',
+    condition_type: 'streak_days', condition_value: 5,
+  },
+  {
+    title: 'Throne Veteran', description: 'Log 10 deuces this month',
+    condition_type: 'monthly_logs', condition_value: 10,
+  },
+  {
+    title: 'Night Owl', description: 'Log after 10pm',
+    condition_type: 'time_after', condition_value: 22,
+  },
+  {
+    title: 'Marathon Session', description: 'Maintain a 7-day squad streak',
+    condition_type: 'streak_days', condition_value: 7,
+  },
+  {
+    title: 'Location Scout', description: 'Log from 3 different locations',
+    condition_type: 'unique_locations', condition_value: 3,
+  },
+  {
+    title: 'Speed Demon', description: 'Log 3 quick notes (under 20 chars)',
+    condition_type: 'fast_log', condition_value: 3,
+  },
+  {
+    title: 'Double Flush', description: 'Log twice in one day',
+    condition_type: 'daily_count', condition_value: 2,
+  },
+  {
+    title: 'Weekend Warrior', description: 'Log both Sat and Sun this month',
+    condition_type: 'weekend_both', condition_value: 1,
+  },
+  {
+    title: 'Group Legend', description: 'Squad streak hits 10+',
+    condition_type: 'group_streak_min', condition_value: 10,
+  },
+  {
+    title: 'Creature of Habit',
+    description: 'Log at the same time (±1hr) 3 days in a row',
+    condition_type: 'consistent_time', condition_value: 3,
+  },
+  {
+    title: 'Early Riser', description: 'Log before 6am',
+    condition_type: 'time_before', condition_value: 6,
+  },
+  {
+    title: 'Hat Trick', description: 'Log 3 times in one day',
+    condition_type: 'daily_count', condition_value: 3,
+  },
+  {
+    title: 'Globetrotter', description: 'Log from 5 different locations',
+    condition_type: 'unique_locations', condition_value: 5,
+  },
+  {
+    title: 'Monthly Loyal', description: 'Log on 20 different days this month',
+    condition_type: 'monthly_days', condition_value: 20,
+  },
+  {
+    title: 'Midnight Flush', description: 'Log after 11pm',
+    condition_type: 'time_after', condition_value: 23,
+  },
+  {
+    title: 'Social Throne', description: 'Receive 5 reactions on your entries',
+    condition_type: 'reactions_received', condition_value: 5,
+  },
+  {
+    title: 'Triple Crown', description: '3-day squad streak',
+    condition_type: 'streak_days', condition_value: 3,
+  },
+  {
+    title: 'Throne Thoughts', description: 'Write 5 logs with notes',
+    condition_type: 'thoughts_count', condition_value: 5,
+  },
+  {
+    title: 'Wordsmith', description: 'Write 3 thoughtful logs (100+ chars)',
+    condition_type: 'long_thoughts', condition_value: 3,
+  },
+  {
+    title: 'Full Week', description: 'Log all 7 days of a single week',
+    condition_type: 'full_week', condition_value: 1,
+  },
+  {
+    title: 'Tuesday Throne', description: 'Log on 3 different Tuesdays',
+    condition_type: 'weekday_logs', condition_value: 3,
+  },
+  {
+    title: 'Power Hour', description: 'Log twice within 30 minutes',
+    condition_type: 'hourly_burst', condition_value: 1,
+  },
+  {
+    title: 'The Regular', description: 'Visit the same location 5 times',
+    condition_type: 'repeated_location', condition_value: 5,
+  },
+  {
+    title: 'Century Club', description: 'Reach 50 all-time logs',
+    condition_type: 'total_logs', condition_value: 50,
+  },
 ];
 
 function getCurrentMonth(): string {
@@ -57,14 +133,17 @@ function generateSquares(): BingoSquare[] {
   }));
 }
 
-type BingoRouteHandler = (userId: string, month: string, req: Request & { user: { id: string } }, res: Response) => Promise<void>;
+type BingoRouteHandler = (
+  userId: string, month: string,
+  req: Request & { user: { id: string } }, res: Response,
+) => Promise<void>;
 
 function bingoHandler(label: string, handler: BingoRouteHandler) {
   return async (req: Request & { user: { id: string } }, res: Response) => {
     try {
       await handler(req.user.id, getCurrentMonth(), req, res);
     } catch (error) {
-      logger.error(`Error ${label}:`, error);
+      logger.error({ err: error }, `Error ${label}`);
       res.status(500).json({ message: `Failed to ${label}` });
     }
   };

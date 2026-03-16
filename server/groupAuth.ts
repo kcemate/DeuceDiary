@@ -1,5 +1,6 @@
 import type { Request, RequestHandler } from "express";
 import { storage } from "./storage";
+import logger from "./lib/logger";
 
 /**
  * Middleware that verifies the authenticated user is a member of the group
@@ -33,7 +34,7 @@ export function requireGroupMember(paramName = "groupId"): RequestHandler {
     try {
       isMember = await storage.isUserInGroup(userId, groupId);
     } catch (err) {
-      console.error("[groupAuth] isUserInGroup error:", err);
+      logger.error({ err }, "[groupAuth] isUserInGroup error");
       return res.status(500).json({ message: "Internal server error" });
     }
 

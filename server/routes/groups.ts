@@ -184,7 +184,7 @@ export function createGroupsRouter(): Router {
       currentStreak = 0;
       // Fire-and-forget persistence: non-critical, safe to proceed even if it fails
       storage.resetGroupStreak(groupId).catch(err =>
-        logger.error(`[STREAK] Failed to persist stale streak reset for group ${groupId}:`, err)
+        logger.error({ err, groupId }, "[STREAK] Failed to persist stale streak reset for group")
       );
     }
 

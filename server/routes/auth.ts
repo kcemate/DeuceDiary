@@ -101,7 +101,7 @@ export function createAuthRouter(uploadsDir: string): Router {
           createdBy: userId,
         });
         groups = await storage.getUserGroups(userId);
-        logger.info(`Auth sync: created Solo Deuces for user ${userId}`);
+        logger.info({ userId }, "Auth sync: created Solo Deuces for user");
       }
 
       // Fetch streak data from user's groups — single batch query instead of N queries
@@ -118,7 +118,7 @@ export function createAuthRouter(uploadsDir: string): Router {
         streaks,
       });
     } catch (error) {
-      logger.error("Error syncing user:", error);
+      logger.error({ err: error }, "Error syncing user");
       Errors.internal(res, "Failed to sync user");
     }
   });
@@ -136,7 +136,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       if (error instanceof Error && error.message.includes('duplicate key value')) {
         return Errors.badRequest(res, "Username already taken");
       }
-      logger.error("Error updating user:", error);
+      logger.error({ err: error }, "Error updating user");
       Errors.internal(res, "Failed to update user");
     }
   });
@@ -165,7 +165,7 @@ export function createAuthRouter(uploadsDir: string): Router {
 
       res.json(updatedUser);
     } catch (error) {
-      logger.error("Error uploading profile picture:", error);
+      logger.error({ err: error }, "Error uploading profile picture");
       Errors.internal(res, "Failed to upload profile picture");
     }
   });
@@ -176,7 +176,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       const user = await storage.getUser(req.user.id);
       res.json({ theme: user?.theme ?? 'default' });
     } catch (error) {
-      logger.error("Error fetching theme:", error);
+      logger.error({ err: error }, "Error fetching theme");
       Errors.internal(res, "Failed to fetch theme");
     }
   });
@@ -190,7 +190,7 @@ export function createAuthRouter(uploadsDir: string): Router {
       const user = await storage.updateUserTheme(req.user.id, parsed.data.theme);
       res.json({ theme: user.theme });
     } catch (error) {
-      logger.error("Error updating theme:", error);
+      logger.error({ err: error }, "Error updating theme");
       Errors.internal(res, "Failed to update theme");
     }
   });

@@ -2,6 +2,7 @@
  * Reverse geocoding using OpenStreetMap Nominatim (free, no API key).
  * Returns city, region, country, and country code from lat/lng.
  */
+import logger from "./logger";
 
 export interface GeocodedLocation {
   city: string;
@@ -27,7 +28,7 @@ export function triggerPassportStamp(
       if (geo) await onGeo(geo, String(latitude), String(longitude));
     })
     .catch((err) => {
-      console.error("[passport] Failed to create stamp:", err);
+      logger.error({ err }, "[passport] Failed to create stamp");
     });
 }
 
@@ -50,7 +51,7 @@ export async function reverseGeocode(
     });
 
     if (!res.ok) {
-      console.warn(`[geocode] Nominatim returned ${res.status}`);
+      logger.warn({ status: res.status }, "[geocode] Nominatim returned non-OK status");
       return null;
     }
 
@@ -79,7 +80,7 @@ export async function reverseGeocode(
       countryCode: addr.country_code?.toUpperCase() || null,
     };
   } catch (err) {
-    console.warn("[geocode] Reverse geocoding failed:", (err as Error).message);
+    logger.warn({ err: (err as Error).message }, "[geocode] Reverse geocoding failed");
     return null;
   }
 }

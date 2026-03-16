@@ -43,7 +43,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const locations = await storage.getLocations();
       res.json(locations);
     } catch (error) {
-      logger.error("Error fetching locations:", error);
+      logger.error({ err: error }, "Error fetching locations");
       res.status(500).json({ message: "Failed to fetch locations" });
     }
   });
@@ -75,7 +75,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       res.json(location);
     } catch (error) {
-      logger.error("Error creating location:", error);
+      logger.error({ err: error }, "Error creating location");
       res.status(500).json({ message: "Failed to create location" });
     }
   });
@@ -102,7 +102,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       res.json(reaction);
     } catch (error) {
-      logger.error("Error adding reaction:", error);
+      logger.error({ err: error }, "Error adding reaction");
       if (error instanceof Error && error.message.includes('duplicate key')) {
         return res.status(400).json({ message: "You've already reacted with this emoji" });
       }
@@ -123,7 +123,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       await storage.removeReaction(userId, entryId, emoji);
       res.json({ message: "Reaction removed" });
     } catch (error) {
-      logger.error("Error removing reaction:", error);
+      logger.error({ err: error }, "Error removing reaction");
       res.status(500).json({ message: "Failed to remove reaction" });
     }
   });
@@ -139,7 +139,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const reactions = await storage.getEntryReactions(entryId);
       res.json(reactions);
     } catch (error) {
-      logger.error("Error fetching reactions:", error);
+      logger.error({ err: error }, "Error fetching reactions");
       res.status(500).json({ message: "Failed to fetch reactions" });
     }
   });
@@ -163,7 +163,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       await storage.deleteDeuceEntry(id);
       res.json({ ok: true });
     } catch (error) {
-      logger.error("Error deleting deuce entry:", error);
+      logger.error({ err: error }, "Error deleting deuce entry");
       res.status(500).json({ message: "Failed to delete entry" });
     }
   });
@@ -199,7 +199,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const entries = await storage.getFeedEntries(groupIds, limit, offset);
       res.json(entries);
     } catch (error) {
-      logger.error("Error fetching deuces feed:", error);
+      logger.error({ err: error }, "Error fetching deuces feed");
       res.status(500).json({ message: "Failed to fetch deuces feed" });
     }
   });
@@ -314,7 +314,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         try {
           await recalculateStreak(groupId);
         } catch (err) {
-          logger.error(`Error recalculating streak for group ${groupId}:`, err);
+          logger.error({ err, groupId }, "Error recalculating streak for group");
         }
       }
       // Batch fetch streaks after all recalculations — single query instead of N
@@ -333,7 +333,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       res.json({ entries, count: entries.length, streak: maxStreak });
     } catch (error) {
-      logger.error("Error creating deuce entry:", error);
+      logger.error({ err: error }, "Error creating deuce entry");
       res.status(500).json({ message: "Failed to create deuce entry" });
     }
   });

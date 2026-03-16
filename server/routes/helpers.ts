@@ -22,7 +22,7 @@ export function asyncRoute(label: string, failMsg: string, handler: (req: Reques
     try {
       await handler(req, res);
     } catch (error) {
-      logger.error(`Error ${label}:`, error);
+      logger.error({ err: error }, `Error ${label}`);
       res.status(500).json({ message: failMsg });
     }
   };

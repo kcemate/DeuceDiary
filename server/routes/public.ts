@@ -13,7 +13,7 @@ function handleRouteError(res: Response, error: unknown, notFoundMsg: string | n
     res.status(404).json({ message: notFoundMsg });
     return;
   }
-  logger.error(logMsg, error);
+  logger.error({ err: error }, logMsg);
   res.status(500).json({ message: failMsg });
 }
 

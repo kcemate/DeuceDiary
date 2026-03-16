@@ -6,7 +6,12 @@ import { z, ZodError } from "zod";
 import { timingSafeEqual } from "crypto";
 import { storage } from "./storage";
 import { db, pool } from "./db";
-import { groups, groupMembers, deuceEntries, users, insertGroupSchema, insertDeuceEntrySchema, insertInviteSchema, updateUserSchema, type DeuceEntry } from "@shared/schema";
+import {
+  groups, groupMembers, deuceEntries, users,
+  insertGroupSchema, insertDeuceEntrySchema,
+  insertInviteSchema, updateUserSchema,
+  type DeuceEntry,
+} from "@shared/schema";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { setupAuth, isAuthenticated, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { requiresPremiumFor } from "./premiumAuth";
@@ -132,7 +137,9 @@ function safeKeyCompare(provided: string | undefined, expected: string | undefin
 /** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
 function getTodayInZone(tz: string): string {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
   } catch {
     return new Date().toISOString().slice(0, 10);
   }
@@ -143,7 +150,9 @@ function getYesterdayInZone(tz: string): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d);
   } catch {
     d.setUTCDate(d.getUTCDate());
     return d.toISOString().slice(0, 10);
@@ -217,12 +226,18 @@ async function recalculateStreak(groupId: string): Promise<void> {
         return;
       }
 
-      const newStreak = (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today))
-        ? 1
-        : streak.currentStreak + 1;
+      const streakExpired = !streak.lastStreakDate ||
+        (streak.lastStreakDate !== yesterday &&
+         streak.lastStreakDate !== today);
+      const newStreak = streakExpired ? 1 : streak.currentStreak + 1;
       const newLongest = Math.max(newStreak, streak.longestStreak);
       await tx.update(groups)
-        .set({ currentStreak: newStreak, longestStreak: newLongest, lastStreakDate: today, updatedAt: new Date() })
+        .set({
+          currentStreak: newStreak,
+          longestStreak: newLongest,
+          lastStreakDate: today,
+          updatedAt: new Date(),
+        })
         .where(eq(groups.id, groupId));
     });
     return;
@@ -616,7 +631,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         Intl.DateTimeFormat(undefined, { timeZone: timezone });
       } catch {
-        return Errors.badRequest(res, `Unknown timezone: "${timezone}". Use an IANA timezone name (e.g. "America/New_York")`);
+        return Errors.badRequest(
+          res,
+          `Unknown timezone: "${timezone}". Use an IANA timezone name (e.g. "America/New_York")`,
+        );
       }
       const [user] = await db
         .update(users)

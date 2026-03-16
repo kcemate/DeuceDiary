@@ -13,6 +13,7 @@ import connectPg from "connect-pg-simple";
 import { z } from "zod";
 import { storage } from "./storage";
 import { v4 as uuidv4 } from "uuid";
+import logger from "./lib/logger";
 
 const loginSchema = z.object({
   username: z.string().min(3).max(50),
@@ -32,7 +33,7 @@ await (async () => {
       const { createClerkClient } = mod;
       clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY! });
     } catch (err) {
-      console.warn("[AUTH] Clerk SDK failed to initialise — falling back to session auth:", (err as Error).message);
+      logger.warn({ err: (err as Error).message }, "[AUTH] Clerk SDK failed to initialise — falling back to session auth");
       clerkEnabled = false;
     }
   }
@@ -51,7 +52,7 @@ export function getSession() {
   });
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret && process.env.NODE_ENV === "production") {
-    console.warn("[AUTH] WARNING: SESSION_SECRET is not set in production — using insecure default");
+    logger.warn("[AUTH] WARNING: SESSION_SECRET is not set in production — using insecure default");
   }
   return session({
     secret: sessionSecret || "local-dev-secret",
@@ -127,14 +128,14 @@ export async function setupAuth(app: Express) {
               }
             }
           } catch (joinErr) {
-            console.error("Auto-join on login failed:", joinErr);
+            logger.error({ err: joinErr }, "Auto-join on login failed");
           }
         }
 
         req.session.userId = userId;
         req.session.save((err: Error | null) => {
           if (err) {
-            console.error("Session save error:", err);
+            logger.error({ err }, "Session save error");
             return res.status(500).json({ message: "Failed to save session" });
           }
           res.json({
@@ -149,7 +150,7 @@ export async function setupAuth(app: Express) {
           });
         });
       } catch (error) {
-        console.error("Login error:", error);
+        logger.error({ err: error }, "Login error");
         res.status(500).json({ message: "Login failed" });
       }
     });
@@ -175,7 +176,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   if (clerkEnabled) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith("Bearer ")) {
-      console.log(`[AUTH] 401 no-bearer: ${req.method} ${req.path} | auth header: ${authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING'}`);
+      logger.info({ method: req.method, path: req.path, authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING' }, "[AUTH] 401 no-bearer");
       return res.status(401).json({ message: "Unauthorized" });
     }
     const token = authHeader.split(" ")[1];
@@ -183,7 +184,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
     try {
       payload = await clerk!.verifyToken(token);
     } catch (err) {
-      console.error(`[AUTH] 401 bad-token: ${req.method} ${req.path}`, err);
+      logger.error({ err, method: req.method, path: req.path }, "[AUTH] 401 bad-token");
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -198,7 +199,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
           lastName: payload.last_name ?? null,
           profileImageUrl: payload.image_url ?? null,
         });
-        console.log(`[AUTH] auto-created user: ${payload.sub}`);
+        logger.info({ userId: payload.sub }, "[AUTH] auto-created user");
 
         // Auto-create "Solo Deuces" default group
         try {
@@ -211,10 +212,10 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
               description: "Your personal throne log",
               createdBy: payload.sub,
             });
-            console.log(`[AUTH] auto-created Solo Deuces for: ${payload.sub}`);
+            logger.info({ userId: payload.sub }, "[AUTH] auto-created Solo Deuces");
           }
         } catch (groupErr) {
-          console.error(`[AUTH] failed to create Solo Deuces:`, groupErr);
+          logger.error({ err: groupErr }, "[AUTH] failed to create Solo Deuces");
           // Non-fatal — user can still use the app
         }
       }
@@ -223,7 +224,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       req.clerkAuth = payload;
       return next();
     } catch (err) {
-      console.error(`[AUTH] 500 db-error: ${req.method} ${req.path} user=${payload.sub}`, err);
+      logger.error({ err, method: req.method, path: req.path, userId: payload.sub }, "[AUTH] 500 db-error");
       return res.status(500).json({ message: "Internal auth error" });
     }
   }

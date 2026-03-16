@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from "@shared/schema";
 import { instrumentPool } from './lib/slowQueryLogger';
+import logger from './lib/logger';
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -28,7 +29,7 @@ instrumentPool(pool);
 // (e.g. Railway restarts, PgBouncer timeout). Without this handler the
 // event becomes an uncaughtException and kills the server.
 pool.on('error', (err) => {
-  console.error('[DB POOL] Unexpected error on idle client:', err.message);
+  logger.error({ err: err.message }, '[DB POOL] Unexpected error on idle client');
 });
 
 export const db = drizzle({ client: pool, schema });

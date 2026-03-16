@@ -1,4 +1,5 @@
 import { log } from "../utils";
+import logger from "./logger";
 
 interface EnvSpec {
   name: string;
@@ -45,7 +46,7 @@ export function runStartupDiagnostics(): void {
 
   if (missing.length > 0) {
     const err = `[STARTUP] Missing required env vars: ${missing.join(", ")}`;
-    console.error(err);
+    logger.error(err);
     throw new Error(err);
   }
 

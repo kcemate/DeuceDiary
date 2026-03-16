@@ -14,7 +14,7 @@ function wrap(logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) 
     try {
       await fn(req, res);
     } catch (error) {
-      logger.error(logMsg, error);
+      logger.error({ err: error }, logMsg);
       res.status(500).json({ message: resMsg });
     }
   };
@@ -69,7 +69,7 @@ export function createPremiumRouter(): Router {
       if (error instanceof Error && error.message === 'REFERRAL_ALREADY_APPLIED') {
         return res.status(400).json({ message: 'You have already used a referral code' });
       }
-      logger.error('Error applying referral:', error);
+      logger.error({ err: error }, 'Error applying referral');
       res.status(500).json({ message: 'Failed to apply referral' });
     }
   });

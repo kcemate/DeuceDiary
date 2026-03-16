@@ -70,7 +70,7 @@ export function registerRevenueCatWebhook(app: Express): void {
         const body = req.body instanceof Buffer ? req.body.toString("utf8") : JSON.stringify(req.body);
         payload = JSON.parse(body);
       } catch (err) {
-        logger.error("RevenueCat webhook: failed to parse body:", err);
+        logger.error({ err }, "RevenueCat webhook: failed to parse body");
         return res.status(400).json({ message: "Invalid JSON body" });
       }
 
@@ -131,7 +131,7 @@ export function registerRevenueCatWebhook(app: Express): void {
         }
       } catch (err) {
         // Already sent 200 — log but don't fail
-        logger.error(`RevenueCat webhook: error processing ${eventType}:`, err);
+        logger.error({ err, eventType }, "RevenueCat webhook: error processing event");
       }
     },
   );

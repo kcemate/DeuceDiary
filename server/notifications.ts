@@ -1,5 +1,6 @@
 import { Expo, type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 import { storage } from "./storage";
+import logger from "./lib/logger";
 
 const expo = new Expo();
 
@@ -30,7 +31,7 @@ export async function sendPushNotification(
     seenTokenValues.add(t.token);
 
     if (!Expo.isExpoPushToken(t.token)) {
-      console.warn(`[PUSH] Invalid Expo push token for user ${userId}: ${t.token}`);
+      logger.warn({ userId, token: t.token }, "[PUSH] Invalid Expo push token");
       invalidTokenValues.push(t.token);
       continue;
     }
@@ -74,15 +75,15 @@ export async function sendPushNotification(
             ticket.details?.error === "InvalidCredentials"
           ) {
             const badToken = (chunk[i] as ExpoPushMessage).to as string;
-            console.log(`[PUSH] Removing unregistered token: ${badToken}`);
+            logger.info({ userId, token: badToken }, "[PUSH] Removing unregistered token");
             await storage.deletePushToken(userId, badToken);
           } else {
-            console.error(`[PUSH] Error sending to user ${userId}:`, ticket.message);
+            logger.error({ userId, message: ticket.message }, "[PUSH] Error sending to user");
           }
         }
       }
     } catch (err) {
-      console.error(`[PUSH] Chunk send failed for user ${userId}:`, err);
+      logger.error({ err, userId }, "[PUSH] Chunk send failed for user");
       failed += chunk.length;
     }
   }
