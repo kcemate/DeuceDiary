@@ -4,13 +4,23 @@ import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import { requireGroupMember } from "../groupAuth";
-import { pushTokenSchema, unregisterPushSchema, reminderSchema, broadcastSchema, MAX_PUSH_TOKENS_PER_USER, parseOrFail, asyncRoute } from "./helpers";
+import {
+  pushTokenSchema,
+  unregisterPushSchema,
+  reminderSchema,
+  broadcastSchema,
+  MAX_PUSH_TOKENS_PER_USER,
+  parseOrFail,
+  asyncRoute,
+} from "./helpers"
 
 export function createNotificationsRouter(): Router {
   const router = Router();
 
   // --- Push notification token registration ---
-  router.post('/api/notifications/register', isAuthenticated, asyncRoute('registering push token', 'Failed to register push token', async (req, res) => {
+  router.post('/api/notifications/register',
+    isAuthenticated,
+    asyncRoute('registering push token', 'Failed to register push token', async (req, res) => {
     const userId = req.user.id;
     const data = parseOrFail(pushTokenSchema, req.body, res, "token and platform ('ios' or 'android') are required");
     if (!data) return;
@@ -36,7 +46,9 @@ export function createNotificationsRouter(): Router {
   }));
 
   // --- Push notification token unregister ---
-  router.delete('/api/push/unregister', isAuthenticated, asyncRoute('unregistering push token', 'Failed to unregister push token', async (req, res) => {
+  router.delete('/api/push/unregister',
+    isAuthenticated,
+    asyncRoute('unregistering push token', 'Failed to unregister push token', async (req, res) => {
     const userId = req.user.id;
     const data = parseOrFail(unregisterPushSchema, req.body, res, 'token is required');
     if (!data) return;
@@ -46,7 +58,9 @@ export function createNotificationsRouter(): Router {
   }));
 
   // --- Throne Broadcast (premium) ---
-  router.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), requireGroupMember('id'), asyncRoute('creating broadcast', 'Failed to create broadcast', async (req, res) => {
+  router.post('/api/squads/:id/broadcast',
+    isAuthenticated, requiresPremiumFor('throne_broadcast'), requireGroupMember('id'),
+    asyncRoute('creating broadcast', 'Failed to create broadcast', async (req, res) => {
     const userId = req.user.id;
     const groupId = req.groupId;
     const data = parseOrFail(broadcastSchema, req.body, res, 'milestone is required');
@@ -62,7 +76,9 @@ export function createNotificationsRouter(): Router {
   }));
 
   // --- Custom Reminder (premium) ---
-  router.put('/api/notifications/reminder', isAuthenticated, requiresPremiumFor('custom_reminder'), asyncRoute('setting reminder', 'Failed to set reminder', async (req, res) => {
+  router.put('/api/notifications/reminder',
+    isAuthenticated, requiresPremiumFor('custom_reminder'),
+    asyncRoute('setting reminder', 'Failed to set reminder', async (req, res) => {
     const userId = req.user.id;
     const data = parseOrFail(reminderSchema, req.body, res, 'hour (0-23) and minute (0-59) are required');
     if (!data) return;

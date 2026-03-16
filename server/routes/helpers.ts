@@ -179,7 +179,8 @@ export const usernameParamSchema = z.object({
 // --- Utility Functions ---
 
 /** Check if a user has an active premium subscription */
-export function isPremiumUser(user: { subscription?: string | null; subscriptionExpiresAt?: string | Date | null } | null | undefined): boolean {
+type PremiumCheckUser = { subscription?: string | null; subscriptionExpiresAt?: string | Date | null } | null | undefined;
+export function isPremiumUser(user: PremiumCheckUser): boolean {
   return (
     user?.subscription === "premium" &&
     user.subscriptionExpiresAt &&
@@ -202,7 +203,9 @@ export function getYesterdayUTC(): string {
 /** Get today's date as YYYY-MM-DD in the given IANA timezone (falls back to UTC) */
 export function getTodayInZone(tz: string): string {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
   } catch {
     return new Date().toISOString().slice(0, 10);
   }
@@ -213,7 +216,9 @@ export function getYesterdayInZone(tz: string): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(d);
   } catch {
     d.setUTCDate(d.getUTCDate());
     return d.toISOString().slice(0, 10);
@@ -309,7 +314,9 @@ export async function recalculateStreak(groupId: string): Promise<void> {
 /**
  * Check if a group's streak is at risk (any member hasn't logged today).
  */
-export async function checkAndNotifyStreakRisk(groupId: string): Promise<{ atRisk: boolean; missingMembers: string[] }> {
+export async function checkAndNotifyStreakRisk(
+  groupId: string,
+): Promise<{ atRisk: boolean; missingMembers: string[] }> {
   const today = getTodayUTC();
   const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
   const missing = memberStatuses.filter(m => !m.hasLogged);

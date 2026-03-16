@@ -8,7 +8,10 @@ function sendOgHtml(res: Response, html: string): void {
   res.send(html);
 }
 
-function handleRouteError(res: Response, error: unknown, notFoundMsg: string | null, logMsg: string, failMsg: string): void {
+function handleRouteError(
+  res: Response, error: unknown, notFoundMsg: string | null,
+  logMsg: string, failMsg: string,
+): void {
   if (notFoundMsg && error instanceof Error && error.message === notFoundMsg) {
     res.status(404).json({ message: notFoundMsg });
     return;
@@ -106,7 +109,8 @@ export function createPublicRouter(): Router {
       const data = await storage.getShareCardData(userId);
       res.json(data);
     } catch (error) {
-      handleRouteError(res, error, "User not found", 'Error fetching share card data:', 'Failed to fetch share card data');
+      handleRouteError(res, error, "User not found",
+        'Error fetching share card data:', 'Failed to fetch share card data');
     }
   });
 
@@ -129,7 +133,8 @@ export function createPublicRouter(): Router {
       const html = buildOgHtml({
         title: `${displayName} on Deuce Diary`,
         ogTitle: `${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25`,
-        ogDescription: `${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''}`,
+        ogDescription: `${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs`
+          + ` \u00B7 ${data.squadCount} squad${data.squadCount !== 1 ? 's' : ''}`,
         twitterTitle: `${displayName} is on a ${data.currentStreak}-day streak \uD83D\uDD25`,
         twitterDescription: `${escapeHtml(tagline)} \u00B7 ${data.totalLogs} logs on Deuce Diary`,
         cardStyles: `    .card {
@@ -263,7 +268,8 @@ export function createPublicRouter(): Router {
       </div>
       <hr class="divider" />
       <div class="brand-name">\uD83D\uDEBD Deuce Diary</div>
-      <div class="brand-tagline">Drop a log. Leave a mark.${memberSince ? ` \u00B7 Member since ${memberSince}` : ''}</div>
+      <div class="brand-tagline">Drop a log. Leave a mark.\
+${memberSince ? ` \u00B7 Member since ${memberSince}` : ''}</div>
     </div>
   </div>`,
       });
@@ -283,7 +289,8 @@ export function createPublicRouter(): Router {
       const report = await storage.getGroupWeeklyReport(groupId);
       res.json(report);
     } catch (error) {
-      handleRouteError(res, error, "Group not found", "Error fetching shareable group report:", "Failed to fetch group report");
+      handleRouteError(res, error, "Group not found",
+        "Error fetching shareable group report:", "Failed to fetch group report");
     }
   });
 
@@ -305,9 +312,12 @@ export function createPublicRouter(): Router {
       const html = buildOgHtml({
         title: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
         ogTitle: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
-        ogDescription: `${report.groupStats.totalDeucesThisWeek} deuces \u00B7 ${report.groupStats.currentStreak}-day streak \u00B7 MVP: ${escapeHtml(mvpName)} (${mvpCount})`,
+        ogDescription: `${report.groupStats.totalDeucesThisWeek} deuces`
+          + ` \u00B7 ${report.groupStats.currentStreak}-day streak`
+          + ` \u00B7 MVP: ${escapeHtml(mvpName)} (${mvpCount})`,
         twitterTitle: `${escapeHtml(report.groupName)} - Weekly Throne Report`,
-        twitterDescription: `${report.groupStats.totalDeucesThisWeek} deuces this week \u00B7 ${report.members.length} members`,
+        twitterDescription: `${report.groupStats.totalDeucesThisWeek} deuces this week`
+          + ` \u00B7 ${report.members.length} members`,
         cardStyles: `    .card {
       background: hsl(38, 30%, 94%);
       border: 1px solid hsl(38, 18%, 83%);
@@ -322,9 +332,11 @@ export function createPublicRouter(): Router {
     .subtitle { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 20px; }
     .stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; }
     .stat-value { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
-    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
+    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
     .mvp { background: hsl(45, 80%, 92%); border-radius: 12px; padding: 12px; margin-bottom: 16px; }
-    .mvp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: hsl(25, 12%, 42%); }
+    .mvp-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: hsl(25, 12%, 42%); }
     .mvp-name { font-size: 16px; font-weight: 800; margin-top: 4px; }
     .thought { font-style: italic; font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 16px; }
     .brand { font-size: 11px; color: hsl(25, 12%, 42%); margin-top: 12px; }`,
@@ -357,7 +369,8 @@ export function createPublicRouter(): Router {
 
       sendOgHtml(res, html);
     } catch (error) {
-      handleRouteError(res, error, "Group not found", "Error rendering group report OG card:", "Failed to render group report card");
+      handleRouteError(res, error, "Group not found",
+        "Error rendering group report OG card:", "Failed to render group report card");
     }
   });
 
@@ -398,7 +411,9 @@ function formatWeekRange(weekOf: string, weekEnding: string): string {
     const end = new Date(weekEnding + 'T00:00:00Z');
     const fmtOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
     const year = end.getUTCFullYear();
-    return `${start.toLocaleDateString('en-US', fmtOpts)} – ${end.toLocaleDateString('en-US', { ...fmtOpts, year: 'numeric' })}`;
+    const startStr = start.toLocaleDateString('en-US', fmtOpts);
+    const endStr = end.toLocaleDateString('en-US', { ...fmtOpts, year: 'numeric' });
+    return `${startStr} – ${endStr}`;
   } catch {
     return `${weekOf} – ${weekEnding}`;
   }
