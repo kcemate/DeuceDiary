@@ -137,6 +137,11 @@ function OfflineBanner() {
   );
 }
 
+const TOILET_SVG_PATH =
+  "M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1" +
+  "V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9" +
+  "zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z";
+
 function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
   const { lastMessage, joinGroup } = useWebSocket();
@@ -265,7 +270,9 @@ function Router() {
       {/* Skip to main content — keyboard/screen reader shortcut */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium"
+        className={"sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100]" +
+          " focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground" +
+          " focus:rounded-md focus:text-sm focus:font-medium"}
       >
         Skip to main content
       </a>
@@ -283,7 +290,7 @@ function Router() {
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center" aria-hidden="true">
                 <svg className="w-5 h-5 text-primary" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 2V1h6v1c2.21 0 4 1.79 4 4v2c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-2.21 1.79-4 4-4zm0 2c-1.1 0-2 .9-2 2v1h10V6c0-1.1-.9-2-2-2H9zm-3 8v9c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-9H6zm2 2h2v5H8v-5zm6 0h2v5h-2v-5z" />
+                  <path d={TOILET_SVG_PATH} />
                 </svg>
               </div>
               <div>
