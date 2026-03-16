@@ -521,13 +521,13 @@ export default function Home() {
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-xs text-muted-foreground">{entries.length}</span>
                 </div>
-                <div className="space-y-3 mb-3">
+                <div className="space-y-1 mb-2">
                   {entries.map((entry) => (
-                    <div key={entry.id} className="border-l-4 border-primary pl-3 py-1.5">
-                      <div className="flex items-center mb-1.5">
-                        <Avatar className="w-7 h-7 mr-2">
+                    <div key={entry.id} className="border-l-3 border-primary pl-3 py-1">
+                      <div className="flex items-center mb-0.5">
+                        <Avatar className="w-6 h-6 mr-1.5">
                           <AvatarImage src={entry.ghost ? undefined : (entry.user.profileImageUrl || undefined)} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-[10px]">
                             {entry.ghost ? "👻" : (entry.user.username || "?")[0].toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
@@ -536,7 +536,7 @@ export default function Home() {
                         </span>
                         {groupNameMap.get(entry.groupId) && (
                           <Link href={`/groups/${entry.groupId}`}>
-                            <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
+                            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
                               {groupNameMap.get(entry.groupId)}
                             </Badge>
                           </Link>
@@ -546,16 +546,13 @@ export default function Home() {
                         </span>
                       </div>
                       {entry.thoughts && !entry.ghost && (
-                        <p className="text-sm text-foreground mb-1.5">{entry.thoughts}</p>
+                        <p className="text-sm text-foreground mb-0.5">{entry.thoughts}</p>
                       )}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <svg className="w-3 h-3" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span>📍</span>
                         <span>{entry.location}</span>
                       </div>
-                      <div className="mt-2">
+                      <div className="mt-1">
                         <Reactions entryId={entry.id} />
                       </div>
                     </div>
