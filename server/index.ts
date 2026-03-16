@@ -85,9 +85,9 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many auth attempts, please try again later." },
 });
-app.use("/api/login", authLimiter);
-app.use("/api/auth", authLimiter);
-app.use("/api/webhooks", authLimiter);
+app.post("/api/login", authLimiter);
+app.post("/api/auth", authLimiter);
+app.post("/api/webhooks", authLimiter);
 
 const logLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -96,7 +96,7 @@ const logLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many log requests, please try again later." },
 });
-app.use("/api/deuces", logLimiter);
+app.post("/api/deuces", logLimiter);
 
 const pushLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -105,8 +105,8 @@ const pushLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many push token requests, please try again later." },
 });
-app.use("/api/notifications/register", pushLimiter);
-app.use("/api/push/unregister", pushLimiter);
+app.post("/api/notifications/register", pushLimiter);
+app.post("/api/push/unregister", pushLimiter);
 
 // Group creation — prevent spam squad creation (POST only, not reads)
 const groupCreateLimiter = rateLimit({
@@ -126,7 +126,7 @@ const reactionLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many reaction requests, please try again later." },
 });
-app.use("/api/entries", reactionLimiter);
+app.post("/api/entries", reactionLimiter);
 
 // Subscription upgrade — prevent abuse of the dev-mode upgrade endpoint
 const subscriptionLimiter = rateLimit({
@@ -136,7 +136,7 @@ const subscriptionLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many subscription requests, please try again later." },
 });
-app.use("/api/subscription/upgrade", subscriptionLimiter);
+app.post("/api/subscription/upgrade", subscriptionLimiter);
 
 // Referral apply — prevent brute-force code guessing
 const referralLimiter = rateLimit({
