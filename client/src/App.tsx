@@ -11,7 +11,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { NotificationBanner } from "@/components/notification-banner";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
@@ -179,17 +179,7 @@ function Router() {
     },
     onError: (error) => {
       setProcessingInvite(false);
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Error",
         description: error.message || "Failed to join group",

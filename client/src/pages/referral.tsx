@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
 import { useAuth } from "@/hooks/useAuth";
@@ -94,17 +94,7 @@ export default function Referral() {
       setApplyCode("");
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "Session expired. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Couldn't apply code",
         description: error.message || "Something went wrong.",

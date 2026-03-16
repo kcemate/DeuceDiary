@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 import { addToQueue } from "@/lib/offlineQueue";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { format } from "date-fns";
@@ -236,17 +236,7 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
       onOpenChange(false);
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       // Extract server error message (format: "STATUS: {"message":"..."}")
       let description = "Failed to log deuce. Please try again.";
       const errMsg = (error as Error)?.message || "";

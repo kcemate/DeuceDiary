@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { updateUserSchema, type UpdateUserRequest } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 
 import {
   Dialog,
@@ -60,23 +60,10 @@ export function EditUsernameModal({ open, onOpenChange, currentUsername }: EditU
       form.reset();
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Authentication Issue",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      
-      let errorMessage = "Failed to update username";
-      if (error.message?.includes("Username already taken")) {
-        errorMessage = "Username already taken";
-      }
-      
+      if (handleAuthError(error, toast)) return;
+      const errorMessage = error.message?.includes("Username already taken")
+        ? "Username already taken"
+        : "Failed to update username";
       toast({
         title: "Error",
         description: errorMessage,

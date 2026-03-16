@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ratchet Report — DeuceDiary Opus Session</title>
+<style>
+  @page { size: A4; margin: 24mm 20mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e6edf3; line-height: 1.6; padding: 40px; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; color: #f0f6fc; margin-bottom: 4px; }
+  .subtitle { color: #8b949e; font-size: 14px; margin-bottom: 32px; }
+  .score-banner { display: flex; align-items: center; gap: 24px; background: linear-gradient(135deg, #161b22, #1c2333); border: 1px solid #30363d; border-radius: 12px; padding: 24px 28px; margin-bottom: 28px; }
+  .score-big { font-size: 56px; font-weight: 800; color: #3fb950; }
+  .score-arrow { font-size: 32px; color: #8b949e; }
+  .score-old { font-size: 56px; font-weight: 800; color: #8b949e; }
+  .score-delta { font-size: 18px; color: #3fb950; font-weight: 600; margin-left: auto; background: rgba(63,185,80,0.12); padding: 6px 14px; border-radius: 8px; }
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 16px; font-weight: 700; color: #f0f6fc; margin-bottom: 12px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #161b22; }
+  .metric-label { color: #c9d1d9; font-size: 14px; }
+  .metric-bar-wrap { width: 180px; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+  .metric-bar { height: 100%; border-radius: 4px; }
+  .bar-green { background: #3fb950; }
+  .bar-yellow { background: #d29922; }
+  .bar-red { background: #f85149; }
+  .metric-score { font-size: 14px; font-weight: 600; color: #e6edf3; min-width: 50px; text-align: right; }
+  .commit-list { list-style: none; padding: 0; }
+  .commit-list li { padding: 8px 0; border-bottom: 1px solid #161b22; font-size: 13px; display: flex; gap: 10px; }
+  .commit-hash { color: #58a6ff; font-family: 'SF Mono', monospace; font-size: 12px; min-width: 72px; }
+  .commit-msg { color: #c9d1d9; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px; margin-left: 6px; }
+  .tag-green { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .tag-blue { background: rgba(88,166,255,0.15); color: #58a6ff; }
+  .tag-orange { background: rgba(210,153,34,0.15); color: #d29922; }
+  .remaining { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 18px 22px; }
+  .remaining-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: #8b949e; }
+  .remaining-pts { color: #d29922; font-weight: 600; }
+  .footer { margin-top: 32px; text-align: center; color: #484f58; font-size: 12px; }
+  .test-badge { display: inline-block; background: rgba(63,185,80,0.15); color: #3fb950; font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 6px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔧 Ratchet Report — DeuceDiary</h1>
+  <p class="subtitle">Opus Heavy Session • Mon 2026-03-16 • 7 clicks</p>
+  
+  <div class="score-banner">
+    <span class="score-old">74</span>
+    <span class="score-arrow">→</span>
+    <span class="score-big">83</span>
+    <span class="score-delta">+9 pts</span>
+  </div>
+  
+  <span class="test-badge">✅ 828 tests passing • 0 regressions</span>
+
+  <div class="section">
+    <div class="section-title">Category Breakdown</div>
+    
+    <div class="metric-row">
+      <span class="metric-label">🧪 Testing</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-green" style="width:92%"></div></div>
+      <span class="metric-score">23/25</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">🔒 Security</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-green" style="width:87%"></div></div>
+      <span class="metric-score">13/15 <span class="tag tag-green">+3</span></span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">📝 Type Safety</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-green" style="width:87%"></div></div>
+      <span class="metric-score">13/15</span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">⚠️ Error Handling</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-yellow" style="width:80%"></div></div>
+      <span class="metric-score">16/20 <span class="tag tag-green">+4</span></span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">⚡ Performance</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-green" style="width:100%"></div></div>
+      <span class="metric-score">10/10 <span class="tag tag-green">+2</span></span>
+    </div>
+    <div class="metric-row">
+      <span class="metric-label">📖 Code Quality</span>
+      <div class="metric-bar-wrap"><div class="metric-bar bar-red" style="width:53%"></div></div>
+      <span class="metric-score">8/15</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Commits Landed (12 total)</div>
+    <ul class="commit-list">
+      <li><span class="commit-hash">088d481b</span><span class="commit-msg">Install pino + pino-pretty</span><span class="tag tag-blue">infra</span></li>
+      <li><span class="commit-hash">85e2a656</span><span class="commit-msg">Replace all console.error/warn/log → pino logger across server/</span><span class="tag tag-green">+6 pts</span></li>
+      <li><span class="commit-hash">b1799315</span><span class="commit-msg">Narrow rate limiter scope: app.use → method-specific</span><span class="tag tag-green">+3 pts</span></li>
+      <li><span class="commit-hash">9e68dbcb</span><span class="commit-msg">Fix 3 empty catch blocks in group-detail.tsx</span><span class="tag tag-green">+2 pts</span></li>
+      <li><span class="commit-hash">d95440a2</span><span class="commit-msg">Pino structured logger — second pass (Opus)</span><span class="tag tag-orange">dedup</span></li>
+      <li><span class="commit-hash">6eee305b</span><span class="commit-msg">Empty catch + rate limiter scope — Opus pass</span><span class="tag tag-orange">dedup</span></li>
+      <li><span class="commit-hash">7138fe73</span><span class="commit-msg">Fix 46 long lines in server/storage.ts</span><span class="tag tag-green">lines</span></li>
+      <li><span class="commit-hash">203fc1c6</span><span class="commit-msg">Fix 30 long lines in server/routes.ts</span><span class="tag tag-green">lines</span></li>
+      <li><span class="commit-hash">ac895833</span><span class="commit-msg">Fix 18 long lines in server/routes/groups.ts</span><span class="tag tag-green">lines</span></li>
+      <li><span class="commit-hash">ced5aa6c</span><span class="commit-msg">Break long lines in server route files</span><span class="tag tag-green">lines</span></li>
+      <li><span class="commit-hash">2a33bb91</span><span class="commit-msg">Fix remaining long lines in server files</span><span class="tag tag-green">lines</span></li>
+      <li><span class="commit-hash">87af6bcc</span><span class="commit-msg">Add ratchet session docs</span><span class="tag tag-blue">docs</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Remaining Ceiling (+17 pts theoretical)</div>
+    <div class="remaining">
+      <div class="remaining-item"><span>Structured logging — 44 console calls still mixed in</span><span class="remaining-pts">+4 pts</span></div>
+      <div class="remaining-item"><span>Line length — 342 lines over 120 chars</span><span class="remaining-pts">+3 pts</span></div>
+      <div class="remaining-item"><span>Duplication — 703 repeated lines</span><span class="remaining-pts">+3 pts</span></div>
+      <div class="remaining-item"><span>Any types — 86 remaining</span><span class="remaining-pts">+2 pts</span></div>
+      <div class="remaining-item"><span>Auth & rate limiting — 1 missing control</span><span class="remaining-pts">+2 pts</span></div>
+      <div class="remaining-item"><span>Console cleanup — 5 console.log remaining</span><span class="remaining-pts">+2 pts</span></div>
+      <div class="remaining-item"><span>Function length — 64 functions >50 lines</span><span class="remaining-pts">+1 pt</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by Ratchet • ratchetcli.com • Built by Giovanni 🤌
+  </div>
+</div>
+</body>
+</html>

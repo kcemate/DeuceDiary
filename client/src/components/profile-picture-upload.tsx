@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth-token";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 
 interface ProfilePictureUploadProps {
   user: {
@@ -68,18 +68,7 @@ export function ProfilePictureUpload({
       setIsUploading(false);
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Error",
         description: "Failed to upload profile picture. Please try again.",

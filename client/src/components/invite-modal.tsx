@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 
 interface InviteModalProps {
   open: boolean;
@@ -48,17 +48,7 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Authentication Issue",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 1000);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Error",
         description: "Failed to generate invite link",

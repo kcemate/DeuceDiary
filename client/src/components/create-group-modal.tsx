@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 import { Loader2, CheckCircle2, Users } from "lucide-react";
 
 interface CreateGroupModalProps {
@@ -76,17 +76,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
       setCreatedName(vars.name);
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Error",
         description: "Failed to create group",

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { handleAuthError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName, getInitials } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
@@ -181,17 +181,7 @@ export default function GroupDetail() {
       setLocation("/groups");
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      if (handleAuthError(error, toast)) return;
       toast({
         title: "Couldn't leave",
         description: "Something clogged up. Try again.",
