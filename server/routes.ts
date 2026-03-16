@@ -140,7 +140,8 @@ function getTodayInZone(tz: string): string {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(new Date());
-  } catch {
+  } catch (err) {
+    logger.debug({ err }, "[timezone] Invalid timezone for getTodayInZone — falling back to UTC");
     return new Date().toISOString().slice(0, 10);
   }
 }
@@ -153,7 +154,8 @@ function getYesterdayInZone(tz: string): string {
     return new Intl.DateTimeFormat('en-CA', {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(d);
-  } catch {
+  } catch (err) {
+    logger.debug({ err }, "[timezone] Invalid timezone for getYesterdayInZone — falling back to UTC");
     d.setUTCDate(d.getUTCDate());
     return d.toISOString().slice(0, 10);
   }
@@ -757,7 +759,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Invite routes (free)
-  app.post('/api/groups/:groupId/invite', isAuthenticated, requiresPremiumFor('squad_invite'), requireGroupMember(), async (req: any, res) => {
+  app.post('/api/groups/:groupId/invite',
+    isAuthenticated, requiresPremiumFor('squad_invite'), requireGroupMember(),
+    async (req: any, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -808,8 +812,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isPremiumUser(req.user)) {
         const members = await storage.getGroupMembers(invite.groupId);
         if (members.length >= 1) {
-          logger.warn(`[join] premium gate hit: userId=${userId} groupId=${invite.groupId} memberCount=${members.length}`);
-          return res.status(403).json({ feature: 'squad_social', message: 'Premium required to join multi-member squads', upgrade: true });
+          logger.warn(
+            `[join] premium gate hit: userId=${userId} groupId=${invite.groupId} memberCount=${members.length}`,
+          );
+          return res.status(403).json({
+            feature: 'squad_social',
+            message: 'Premium required to join multi-member squads',
+            upgrade: true,
+          });
         }
       }
 
@@ -1046,7 +1056,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Squad Spy Mode — typical log hour per member (premium)
-  app.get('/api/groups/:groupId/spy', isAuthenticated, requiresPremiumFor('squad_spy'), requireGroupMember(), async (req: any, res) => {
+  app.get('/api/groups/:groupId/spy',
+    isAuthenticated, requiresPremiumFor('squad_spy'), requireGroupMember(),
+    async (req: any, res) => {
     try {
       const groupId = req.groupId;
 
@@ -1059,7 +1071,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly Throne Report — group-level weekly summary (premium)
-  app.get('/api/groups/:groupId/weekly-report', isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'), async (req: any, res) => {
+  app.get('/api/groups/:groupId/weekly-report',
+    isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'),
+    async (req: any, res) => {
     try {
       const groupId = req.groupId;
       const report = await storage.getGroupWeeklyReport(groupId);
@@ -1072,7 +1086,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Export Weekly Throne Report as PDF (premium)
-  app.get('/api/groups/:groupId/weekly-report/pdf', isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'), async (req: any, res) => {
+  app.get('/api/groups/:groupId/weekly-report/pdf',
+    isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'),
+    async (req: any, res) => {
     try {
       const groupId = req.groupId;
       const report = await storage.getGroupWeeklyReport(groupId);
@@ -1116,7 +1132,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ccc');
       doc.moveDown(0.5);
       for (const m of report.members) {
-        const statusLabel = m.streakStatus === 'active' ? '[Active]' : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
+        const statusLabel = m.streakStatus === 'active'
+          ? '[Active]'
+          : m.streakStatus === 'at_risk' ? '[At Risk]' : '[Inactive]';
         doc.fontSize(12).font('Helvetica')
           .text(`${statusLabel} ${m.username ?? 'Unknown'}: ${m.deucesThisWeek} deuces`);
       }
@@ -1129,20 +1147,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (report.funnyStats.longestGap) {
         doc.fontSize(12).font('Helvetica')
-          .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'} — ${report.funnyStats.longestGap.gapDays} days since last log`);
+          .text(`Longest gap: ${report.funnyStats.longestGap.username ?? 'Unknown'}` +
+            ` — ${report.funnyStats.longestGap.gapDays} days since last log`);
       }
       if (report.funnyStats.mostReactionsReceived) {
         doc.fontSize(12).font('Helvetica')
-          .text(`Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'} — ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`);
+          .text(`Most reactions: ${report.funnyStats.mostReactionsReceived.username ?? 'Unknown'}` +
+            ` — ${report.funnyStats.mostReactionsReceived.reactionCount} reactions`);
       }
       if (report.funnyStats.funniestEntry) {
         doc.fontSize(12).font('Helvetica')
-          .text(`Funniest entry: "${report.funnyStats.funniestEntry.thought}" by ${report.funnyStats.funniestEntry.username ?? 'Unknown'} (${report.funnyStats.funniestEntry.reactions} reactions)`);
+          .text(`Funniest entry: "${report.funnyStats.funniestEntry.thought}"` +
+            ` by ${report.funnyStats.funniestEntry.username ?? 'Unknown'}` +
+            ` (${report.funnyStats.funniestEntry.reactions} reactions)`);
       }
 
       // Footer
       doc.moveDown(2);
-      doc.fontSize(10).fillColor('#999').text('Generated by Deuce Diary — track your throne time with your squad', { align: 'center' });
+      doc.fontSize(10).fillColor('#999').text(
+        'Generated by Deuce Diary — track your throne time with your squad',
+        { align: 'center' },
+      );
 
       doc.end();
     } catch (error) {
@@ -1187,7 +1212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const title = `Join ${preview.name} on Deuce Diary`;
       const topMembers = preview.memberNames.slice(0, 5);
-      const memberList = topMembers.join(', ') + (preview.memberNames.length > 5 ? ` and ${preview.memberNames.length - 5} more` : '');
+      const overflow = preview.memberNames.length > 5
+        ? ` and ${preview.memberNames.length - 5} more`
+        : '';
+      const memberList = topMembers.join(', ') + overflow;
       const descParts: string[] = [
         `${preview.memberCount} member${preview.memberCount !== 1 ? 's' : ''}`,
       ];
@@ -1235,7 +1263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     .description { font-size: 14px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
     .stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
     .stat-value { font-size: 24px; font-weight: 900; }
-    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
     .members { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
     .cta {
       display: inline-block; background: hsl(45, 88%, 48%); color: #000;
@@ -1398,8 +1427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create display name for notifications
       const displayName = user?.username ||
-                          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-                          'Someone';
+        (user?.firstName && user?.lastName
+          ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
+        'Someone';
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
@@ -1645,7 +1675,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
 
           for (const groupId of validGroups) {
-            try { await recalculateStreak(groupId); } catch (err) { logger.error('[sync] recalculateStreak failed for group', groupId, err); }
+            try {
+              await recalculateStreak(groupId);
+            } catch (err) {
+              logger.error('[sync] recalculateStreak failed for group', groupId, err);
+            }
           }
 
           results.push({ id: entry.id, status: 'ok' });
@@ -1767,7 +1801,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/subscription', isAuthenticated, async (req: any, res) => {
     try {
       const sub = await storage.getUserSubscription(req.user.id);
-      const isPremium = sub.subscription === 'premium' && sub.subscriptionExpiresAt && new Date(sub.subscriptionExpiresAt) > new Date();
+      const isPremium = sub.subscription === 'premium' &&
+        sub.subscriptionExpiresAt &&
+        new Date(sub.subscriptionExpiresAt) > new Date();
       res.json({
         tier: isPremium ? 'premium' : 'free',
         expiresAt: sub.subscriptionExpiresAt,
@@ -1781,7 +1817,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/subscription/streak-insurance', isAuthenticated, requiresPremiumFor('streak_insurance'), async (req: any, res) => {
+  app.post('/api/subscription/streak-insurance',
+    isAuthenticated, requiresPremiumFor('streak_insurance'),
+    async (req: any, res) => {
     try {
       const sub = await storage.getUserSubscription(req.user.id);
       if (sub.streakInsuranceUsed) {
@@ -1804,7 +1842,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.useStreakInsurance(req.user.id);
-      res.json({ used: true, extended, message: extended ? "Streak preserved!" : "Insurance activated (no at-risk streaks found)" });
+      res.json({
+        used: true,
+        extended,
+        message: extended
+          ? "Streak preserved!"
+          : "Insurance activated (no at-risk streaks found)",
+      });
     } catch (error) {
       logger.error("Error using streak insurance:", error);
       Errors.internal(res, "Failed to use streak insurance");
@@ -1841,7 +1885,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Weekly Throne Report (premium) — own data only
-  app.get('/api/users/:userId/weekly-report', isAuthenticated, requiresPremiumFor('analytics'), async (req: any, res) => {
+  app.get('/api/users/:userId/weekly-report',
+    isAuthenticated, requiresPremiumFor('analytics'),
+    async (req: any, res) => {
     try {
       // Only allow access to own report — prevents IDOR
       const targetUserId = req.params.userId === 'me' ? req.user.id : req.params.userId;
@@ -1935,7 +1981,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Throne Broadcast (premium) ---
-  app.post('/api/squads/:id/broadcast', isAuthenticated, requiresPremiumFor('throne_broadcast'), requireGroupMember('id'), async (req: any, res) => {
+  app.post('/api/squads/:id/broadcast',
+    isAuthenticated, requiresPremiumFor('throne_broadcast'),
+    requireGroupMember('id'), async (req: any, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -2246,7 +2294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           userId = user.id;
-        } catch {
+        } catch (wsAuthErr) {
+          logger.warn({ err: wsAuthErr }, "[WebSocket] Auth token verification failed");
           incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
