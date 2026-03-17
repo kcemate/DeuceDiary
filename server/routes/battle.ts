@@ -9,10 +9,12 @@ import { STANDARD_GRID, QUICK_GRID, SHIPS } from "@shared/schema";
 type AuthReq = Request & { user: { id: string } };
 
 // --- Validation schemas ---
+const matchTypeSchema = z.enum(["standard", "quick"]).default("standard");
+
 const challengeSchema = z.object({
   groupId: z.string().min(1),
   opponentId: z.string().min(1),
-  matchType: z.enum(["standard", "quick"]).default("standard"),
+  matchType: matchTypeSchema,
 });
 
 const placeShipsSchema = z.object({
@@ -35,7 +37,7 @@ const powerupSchema = z.object({
 
 const matchmakeSchema = z.object({
   groupId: z.string().min(1),
-  matchType: z.enum(["standard", "quick"]).default("standard"),
+  matchType: matchTypeSchema,
 });
 
 // --- Ship placement validation ---
