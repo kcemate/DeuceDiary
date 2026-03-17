@@ -39,7 +39,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   const router = Router();
 
   // Location routes
-  router.get('/api/locations', async (req, res) => {
+  router.get('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const locations = await storage.getLocations();
       res.json(locations);
