@@ -70,7 +70,6 @@ export function useWebSocket() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("WebSocket connected");
         setIsConnected(true);
         setConnectionState("connected");
         reconnectAttemptRef.current = 0; // reset backoff on successful connect
@@ -92,13 +91,12 @@ export function useWebSocket() {
             }
           }
           setLastMessage(message);
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
+        } catch {
+          // ignore malformed messages
         }
       };
 
       ws.onclose = () => {
-        console.log("WebSocket disconnected");
         setIsConnected(false);
 
         // Only reconnect if the ref says we should — avoids stale-closure
@@ -120,12 +118,11 @@ export function useWebSocket() {
         }
       };
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
+      ws.onerror = () => {
         setIsConnected(false);
       };
-    } catch (error) {
-      console.error("Failed to create WebSocket connection:", error);
+    } catch {
+      // ignore connection errors — reconnect logic will retry
     }
   };
 

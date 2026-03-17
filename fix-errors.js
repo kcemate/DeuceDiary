@@ -12,4 +12,3 @@ content = content.replace(/return res\.status\(403\)\.json\(\{ message: `Not aut
 content = content.replace(/return res\.status\(400\)\.json\(\{ message: `Maximum of \$\{MAX_PUSH_TOKENS_PER_USER\} devices reached` \}\);/, 'return Errors.badRequest(res, `Maximum of ${MAX_PUSH_TOKENS_PER_USER} devices reached`);');
 
 fs.writeFileSync('server/routes.ts', content);
-console.log('✅ Fixed remaining error responses');

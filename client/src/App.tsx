@@ -223,7 +223,6 @@ function Router() {
       const joinInviteId = urlParams.get("join");
 
       if (joinInviteId && !joinGroupMutation.isPending && !processingInvite) {
-        console.log("Processing invite link:", joinInviteId);
         setProcessingInvite(true);
 
         toast({
