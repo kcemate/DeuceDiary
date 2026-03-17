@@ -194,7 +194,6 @@ export function createKingRouter(): Router {
             return res.status(400).json({ message: "Invalid template key" });
           }
           finalTitle = template.title;
-          finalTemplateKey = templateKey;
         }
 
         const challenge = await storage.createChallenge({
