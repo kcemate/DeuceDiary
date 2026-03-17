@@ -46,6 +46,7 @@ import {
   escapeHtml,
   MAX_LOGS_PER_DAY,
   sanitizeUserForResponse,
+  createDeuceSchema,
 } from "./routes/helpers";
 
 type AuthReq = Request & { user: { id: string } };
@@ -65,18 +66,6 @@ const createLocationSchema = z.object({
   name: z.string().min(1).max(100),
 });
 
-const createDeuceSchema = z.object({
-  groupIds: z.array(z.string()).optional(),
-  groupId: z.string().optional(),
-  location: z.string().min(1).max(100),
-  thoughts: z.string().max(500, "Thought must be 500 characters or less").optional(),
-  loggedAt: z.union([z.string(), z.null()]).optional(),
-  ghost: z.boolean().optional(),
-  bristolScore: z.number().int().min(1).max(7).optional(),
-  photoUrl: z.string().url().optional(),
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-});
 
 const reactionSchema = z.object({
   emoji: z.string().min(1).max(10),
