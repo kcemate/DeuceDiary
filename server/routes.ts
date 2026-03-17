@@ -655,13 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
 
-      // Free users limited to 3 squads
-      if (!isPremiumUser(req.user)) {
-        const userGroups = await storage.getUserGroups(userId);
-        if (userGroups.length >= 3) {
-          return Errors.upgradRequired(res, 'unlimited_squads');
-        }
-      }
+      // Squads are free — no creation limit
 
       const parsed = createGroupSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -747,9 +741,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Invite routes (free)
+  // Invite routes (free — squads are free, enhancements are premium)
   app.post('/api/groups/:groupId/invite',
-    isAuthenticated, requiresPremiumFor('squad_invite'), requireGroupMember(),
+    isAuthenticated, requireGroupMember(),
     async (req, res) => {
     try {
       const userId = req.user.id;
@@ -797,21 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ group, message: "Already a member of this group" });
       }
       
-      // Multi-member squads require premium — solo squads are free
-      if (!isPremiumUser(req.user)) {
-        const members = await storage.getGroupMembers(invite.groupId);
-        if (members.length >= 1) {
-          logger.warn(
-            `[join] premium gate hit: userId=${userId} groupId=${invite.groupId} memberCount=${members.length}`,
-          );
-          return res.status(403).json({
-            feature: 'squad_social',
-            message: 'Premium required to join multi-member squads',
-            upgrade: true,
-          });
-        }
-      }
-
+      // Squads are free — no premium gate on joining
       await storage.addGroupMember({
         groupId: invite.groupId,
         userId,

@@ -778,21 +778,20 @@ describe("Free tier — power features get 403 with { upgrade: true }", () => {
 /* ================================================================
  *  FREE TIER — 3-SQUAD LIMIT
  * ================================================================ */
-describe("Free tier — 3-squad limit", () => {
-  it("POST /api/groups → 403 when free user already in 3 groups", async () => {
+describe("Squads are free — no creation limit", () => {
+  it("POST /api/groups → 200 when free user creates 4th group (squads are free)", async () => {
     const agent = await loginAs("limituser");
     // Already in 1 group (Solo Deuces from login). Create 2 more to reach 3.
     await agent.post("/api/groups").send({ name: "Squad 2" });
     await agent.post("/api/groups").send({ name: "Squad 3" });
 
-    // 4th should be blocked
+    // 4th should succeed — squads are free
     const res = await agent.post("/api/groups").send({ name: "Squad 4" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-    expect(res.body.feature).toBe("unlimited_squads");
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Squad 4");
   });
 
-  it("POST /api/join/:inviteId → 403 when free user tries to join multi-member squad", async () => {
+  it("POST /api/join/:inviteId → 200 when free user joins multi-member squad (squads are free)", async () => {
     // Premium user creates a group and invite
     const premium = await loginAs("inviter");
     await upgradeToPremium(premium);
@@ -800,12 +799,11 @@ describe("Free tier — 3-squad limit", () => {
     const inviteRes = await premium.post(`/api/groups/${groupRes.body.id}/invite`);
     const inviteId = inviteRes.body.id;
 
-    // Free user tries to join — blocked because squad already has 1 member
+    // Free user joins — squads are free, no premium gate
     const free = await loginAs("limitjoin");
     const joinRes = await free.post(`/api/join/${inviteId}`);
-    expect(joinRes.status).toBe(403);
-    expect(joinRes.body.upgrade).toBe(true);
-    expect(joinRes.body.feature).toBe("squad_social");
+    expect(joinRes.status).toBe(200);
+    expect(joinRes.body.group).toBeDefined();
   });
 
   it("premium users have no squad limit", async () => {

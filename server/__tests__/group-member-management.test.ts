@@ -481,28 +481,16 @@ describe("POST /api/groups — free user squad limit", () => {
     expect(r2.status).toBe(200);
   });
 
-  it("blocks free user from creating a 4th group", async () => {
+  it("allows free user to create a 4th group (squads are free)", async () => {
     const alice = await loginAs("alice");
     // Login auto-creates group 1. Create 2 more.
     await alice.post("/api/groups").send({ name: "Squad Alpha" });
     await alice.post("/api/groups").send({ name: "Squad Beta" });
 
-    // 4th attempt should be blocked
+    // 4th attempt should succeed — squads are free
     const res = await alice.post("/api/groups").send({ name: "Squad Gamma" });
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
-    expect(res.body.feature).toBe("unlimited_squads");
-  });
-
-  it("allows premium user to create more than 3 groups", async () => {
-    const alice = await loginAs("alice");
-    const aliceId = "dev-alice";
-    await memStore.updateUserSubscription(aliceId, "premium", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
-
-    await alice.post("/api/groups").send({ name: "Squad Alpha" });
-    await alice.post("/api/groups").send({ name: "Squad Beta" });
-    const r4 = await alice.post("/api/groups").send({ name: "Squad Gamma" });
-    expect(r4.status).toBe(200);
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Squad Gamma");
   });
 });
 
@@ -510,7 +498,7 @@ describe("POST /api/groups — free user squad limit", () => {
  *  POST /api/join/:inviteId — free user squad limit on join
  * ================================================================ */
 describe("POST /api/join/:inviteId — free user squad limit on join", () => {
-  it("blocks free user from joining a 4th group via invite", async () => {
+  it("allows free user to join a 4th group via invite (squads are free)", async () => {
     // Alice (premium) owns the target group and creates invite
     const alice = await loginAsPremium("alice");
     const groupId = await getSoloGroupId("alice");
@@ -524,10 +512,10 @@ describe("POST /api/join/:inviteId — free user squad limit on join", () => {
     await bob.post("/api/groups").send({ name: "Bob Squad 2" });
     await bob.post("/api/groups").send({ name: "Bob Squad 3" });
 
-    // Bob tries to join Alice's group (would be 4th)
+    // Bob joins Alice's group (4th) — squads are free
     const res = await bob.post(`/api/join/${inviteId}`);
-    expect(res.status).toBe(403);
-    expect(res.body.upgrade).toBe(true);
+    expect(res.status).toBe(200);
+    expect(res.body.group).toBeDefined();
   });
 
   it("allows already-member to 'join' again without error", async () => {
