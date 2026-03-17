@@ -72,44 +72,26 @@ app.use(cors({
 
 // --- Rate Limiting ---
 const rateLimitBase = { windowMs: 60 * 1000, standardHeaders: true, legacyHeaders: false };
+const limit = (max: number, msg = "Too many requests, please try again later.") =>
+  rateLimit({ max: isTest ? 10000 : max, ...rateLimitBase, message: { message: msg } });
 
-const globalLimiter = rateLimit({
-  max: isTest ? 10000 : 300,
-  ...rateLimitBase,
-  message: { message: "Too many requests, please try again later." },
-});
+const globalLimiter = limit(300);
 app.use("/api", globalLimiter);
 
-const authLimiter = rateLimit({
-  max: isTest ? 10000 : 30,
-  ...rateLimitBase,
-  message: { message: "Too many auth attempts, please try again later." },
-});
+const authLimiter = limit(30, "Too many auth attempts, please try again later.");
 app.post("/api/login", authLimiter);
 app.post("/api/auth", authLimiter);
 app.post("/api/webhooks", authLimiter);
 
-const logLimiter = rateLimit({
-  max: isTest ? 10000 : 60,
-  ...rateLimitBase,
-  message: { message: "Too many log requests, please try again later." },
-});
+const logLimiter = limit(60, "Too many log requests, please try again later.");
 app.post("/api/deuces", logLimiter);
 
-const pushLimiter = rateLimit({
-  max: isTest ? 10000 : 10,
-  ...rateLimitBase,
-  message: { message: "Too many push token requests, please try again later." },
-});
+const pushLimiter = limit(10, "Too many push token requests, please try again later.");
 app.post("/api/notifications/register", pushLimiter);
 app.post("/api/push/unregister", pushLimiter);
 
 // Group creation — prevent spam squad creation (POST only, not reads)
-const groupCreateLimiter = rateLimit({
-  max: isTest ? 10000 : 10,
-  ...rateLimitBase,
-  message: { message: "Too many group creation requests, please try again later." },
-});
+const groupCreateLimiter = limit(10, "Too many group creation requests, please try again later.");
 app.post("/api/groups", groupCreateLimiter);
 
 // Reactions — prevent emoji spam
