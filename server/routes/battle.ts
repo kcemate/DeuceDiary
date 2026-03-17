@@ -82,24 +82,14 @@ function validateShipPlacement(
     const uniqueCols = new Set(cols);
     const uniqueRows = new Set(rows);
 
-    if (uniqueRows.size === 1) {
-      // Horizontal: same row, consecutive cols
-      const sortedCols = [...cols].sort((a, b) => a - b);
-      for (let i = 1; i < sortedCols.length; i++) {
-        if (sortedCols[i] !== sortedCols[i - 1] + 1) {
-          return `Ship ${ship.type} cells must be contiguous (no gaps)`;
-        }
-      }
-    } else if (uniqueCols.size === 1) {
-      // Vertical: same col, consecutive rows
-      const sortedRows = [...rows].sort((a, b) => a - b);
-      for (let i = 1; i < sortedRows.length; i++) {
-        if (sortedRows[i] !== sortedRows[i - 1] + 1) {
-          return `Ship ${ship.type} cells must be contiguous (no gaps)`;
-        }
-      }
-    } else {
+    if (uniqueRows.size !== 1 && uniqueCols.size !== 1) {
       return `Ship ${ship.type} must be placed in a single row or column (no diagonal)`;
+    }
+    const values = uniqueRows.size === 1 ? [...cols].sort((a, b) => a - b) : [...rows].sort((a, b) => a - b);
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] !== values[i - 1] + 1) {
+        return `Ship ${ship.type} cells must be contiguous (no gaps)`;
+      }
     }
 
     // Check overlap
