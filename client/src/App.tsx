@@ -32,6 +32,8 @@ const Legacy = lazy(() => import("@/pages/legacy"));
 const Referral = lazy(() => import("@/pages/referral"));
 const Bingo = lazy(() => import("@/pages/bingo"));
 const Passport = lazy(() => import("@/pages/passport"));
+const BattleLobby = lazy(() => import("@/pages/battle-lobby"));
+const BattleMatch = lazy(() => import("@/pages/battle-match"));
 
 // Lightweight fallback shown while a lazy page chunk loads
 function PageFallback() {
@@ -116,6 +118,8 @@ function AppRoutes({
         <Route path="/referral">{() => <ErrorBoundary><Referral /></ErrorBoundary>}</Route>
         <Route path="/bingo">{() => <ErrorBoundary><Bingo /></ErrorBoundary>}</Route>
         <Route path="/passport">{() => <ErrorBoundary><Passport /></ErrorBoundary>}</Route>
+        <Route path="/battle">{() => <ErrorBoundary><BattleLobby /></ErrorBoundary>}</Route>
+        <Route path="/battle/:matchId">{() => <ErrorBoundary><BattleMatch /></ErrorBoundary>}</Route>
         <Route path="/legacy/:username" component={Legacy} />
         <Route component={NotFound} />
       </Switch>
