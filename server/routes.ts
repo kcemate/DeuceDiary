@@ -23,6 +23,7 @@ import { createBingoRouter } from "./routes/bingo";
 import { createPassportRouter } from "./routes/passport";
 import { createPremiumRouter } from "./routes/premium";
 import { createKingRouter } from "./routes/king";
+import { createBattleRouter } from "./routes/battle";
 import { getRandomTemplate } from "./challengeTemplates";
 import { v4 as uuidv4 } from "uuid";
 import multer from "multer";
@@ -1464,6 +1465,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
         storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
 
+      // Battle Shits: generate tokens for active matches (fire-and-forget)
+      const primaryEntry = entries[0];
+      if (primaryEntry) {
+        (async () => {
+          try {
+            const activeMatches = await storage.getUserActiveMatches(userId);
+            if (activeMatches.length === 0) return;
+            // Check double flush: 2+ entries today
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const todayCount = await storage.getUserDailyLogCount(userId, todayStr);
+            for (const match of activeMatches) {
+              if (match.status !== "active") continue;
+              // Standard token for this entry
+              await storage.createBattleToken(match.id, userId, primaryEntry.id, "standard");
+              // Double flush bonus (unique on match+entry+type, so safe to insert)
+              if (todayCount >= 2) {
+                await storage.createBattleToken(match.id, userId, primaryEntry.id, "double_flush");
+              }
+            }
+          } catch (err) {
+            logger.error({ err }, "[battle] token generation error");
+          }
+        })();
+      }
+
       res.json({ entries, count: entries.length });
     } catch (error) {
       logger.error("Error creating deuce entry:", error);
@@ -2497,6 +2523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Deuce King Challenge routes ---
   app.use(createKingRouter());
+
+  // --- Battle Shits routes ---
+  app.use(createBattleRouter());
 
   // Cleanup expired invites periodically
   setInterval(async () => {

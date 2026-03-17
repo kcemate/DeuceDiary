@@ -203,6 +203,114 @@ const migrations: { name: string; sql: string }[] = [
     name: "add_deuce_entries_longitude",
     sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS longitude numeric",
   },
+
+  // --- Battle Shits tables ---
+  {
+    name: "table.battle_matches",
+    sql: `CREATE TABLE IF NOT EXISTS battle_matches (
+      id varchar PRIMARY KEY NOT NULL,
+      group_id varchar NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+      challenger_id varchar NOT NULL REFERENCES users(id),
+      opponent_id varchar NOT NULL REFERENCES users(id),
+      match_type varchar(10) NOT NULL DEFAULT 'standard',
+      status varchar(20) NOT NULL DEFAULT 'pending',
+      winner_id varchar REFERENCES users(id),
+      week_start timestamp NOT NULL,
+      week_end timestamp NOT NULL,
+      placement_deadline timestamp NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT NOW()
+    )`,
+  },
+  {
+    name: "idx.battle_matches_group",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_matches_group ON battle_matches(group_id)",
+  },
+  {
+    name: "idx.battle_matches_status",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_matches_status ON battle_matches(status)",
+  },
+  {
+    name: "idx.battle_matches_players",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_matches_players ON battle_matches(challenger_id, opponent_id)",
+  },
+  {
+    name: "table.battle_ships",
+    sql: `CREATE TABLE IF NOT EXISTS battle_ships (
+      id serial PRIMARY KEY NOT NULL,
+      match_id varchar NOT NULL REFERENCES battle_matches(id) ON DELETE CASCADE,
+      user_id varchar NOT NULL REFERENCES users(id),
+      ship_type varchar(15) NOT NULL,
+      cells jsonb NOT NULL,
+      is_sunk boolean NOT NULL DEFAULT false,
+      created_at timestamptz NOT NULL DEFAULT NOW(),
+      UNIQUE(match_id, user_id, ship_type)
+    )`,
+  },
+  {
+    name: "idx.battle_ships_match",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_ships_match ON battle_ships(match_id)",
+  },
+  {
+    name: "table.battle_attacks",
+    sql: `CREATE TABLE IF NOT EXISTS battle_attacks (
+      id serial PRIMARY KEY NOT NULL,
+      match_id varchar NOT NULL REFERENCES battle_matches(id) ON DELETE CASCADE,
+      attacker_id varchar NOT NULL REFERENCES users(id),
+      col integer NOT NULL,
+      row integer NOT NULL,
+      is_hit boolean NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT NOW(),
+      UNIQUE(match_id, attacker_id, col, row)
+    )`,
+  },
+  {
+    name: "idx.battle_attacks_match",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_attacks_match ON battle_attacks(match_id)",
+  },
+  {
+    name: "table.battle_tokens",
+    sql: `CREATE TABLE IF NOT EXISTS battle_tokens (
+      id serial PRIMARY KEY NOT NULL,
+      match_id varchar NOT NULL REFERENCES battle_matches(id) ON DELETE CASCADE,
+      user_id varchar NOT NULL REFERENCES users(id),
+      deuce_entry_id varchar NOT NULL REFERENCES deuce_entries(id),
+      token_type varchar(15) NOT NULL DEFAULT 'standard',
+      created_at timestamptz NOT NULL DEFAULT NOW(),
+      UNIQUE(match_id, deuce_entry_id, token_type)
+    )`,
+  },
+  {
+    name: "idx.battle_tokens_match_user",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_tokens_match_user ON battle_tokens(match_id, user_id)",
+  },
+  {
+    name: "table.battle_powerups",
+    sql: `CREATE TABLE IF NOT EXISTS battle_powerups (
+      id serial PRIMARY KEY NOT NULL,
+      match_id varchar NOT NULL REFERENCES battle_matches(id) ON DELETE CASCADE,
+      user_id varchar NOT NULL REFERENCES users(id),
+      powerup_type varchar(15) NOT NULL,
+      used_at timestamptz,
+      earned_at timestamptz NOT NULL DEFAULT NOW(),
+      revealed_cell jsonb,
+      UNIQUE(match_id, user_id, powerup_type)
+    )`,
+  },
+  {
+    name: "table.battle_badges",
+    sql: `CREATE TABLE IF NOT EXISTS battle_badges (
+      id serial PRIMARY KEY NOT NULL,
+      user_id varchar NOT NULL REFERENCES users(id),
+      badge_type varchar(30) NOT NULL,
+      match_id varchar REFERENCES battle_matches(id),
+      expires_at timestamp,
+      created_at timestamptz NOT NULL DEFAULT NOW()
+    )`,
+  },
+  {
+    name: "idx.battle_badges_user",
+    sql: "CREATE INDEX IF NOT EXISTS idx_battle_badges_user ON battle_badges(user_id)",
+  },
 ];
 
 export async function runMigrations() {

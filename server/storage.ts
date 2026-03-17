@@ -49,6 +49,19 @@ import {
   type Challenge,
   type InsertChallenge,
   type ChallengeCompletion,
+  battleMatches,
+  battleShips,
+  battleAttacks,
+  battleTokens,
+  battlePowerups,
+  battleBadges,
+  type BattleMatch,
+  type InsertBattleMatch,
+  type BattleShip,
+  type BattleAttack,
+  type BattleToken,
+  type BattlePowerup,
+  type BattleBadge,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, count, sql, inArray, gte, gt, lt, lte, isNull } from "drizzle-orm";
@@ -440,6 +453,33 @@ export interface IStorage {
     allTime: { totalDeuces: number; reactionsReceived: number; currentStreak: number };
     isMvp: boolean;
   }[]>;
+
+  // Battle Shits operations
+  createBattleMatch(match: InsertBattleMatch): Promise<BattleMatch>;
+  getBattleMatch(matchId: string): Promise<BattleMatch | null>;
+  getUserActiveMatches(userId: string): Promise<BattleMatch[]>;
+  getGroupMatches(groupId: string, limit: number): Promise<BattleMatch[]>;
+  updateBattleMatchStatus(matchId: string, status: string, winnerId?: string): Promise<void>;
+
+  placeShips(matchId: string, userId: string, ships: { shipType: string; cells: { col: number; row: number }[] }[]): Promise<void>;
+  getShips(matchId: string, userId: string): Promise<BattleShip[]>;
+
+  createAttack(matchId: string, attackerId: string, col: number, row: number, isHit: boolean): Promise<BattleAttack>;
+  getAttacks(matchId: string): Promise<BattleAttack[]>;
+  getAttacksByUser(matchId: string, userId: string): Promise<BattleAttack[]>;
+  markShipSunk(shipId: number): Promise<void>;
+
+  createBattleToken(matchId: string, userId: string, deuceEntryId: string, tokenType: string): Promise<void>;
+  getTokenBalance(matchId: string, userId: string): Promise<{ earned: number; spent: number }>;
+
+  earnPowerup(matchId: string, userId: string, type: string): Promise<void>;
+  usePowerup(matchId: string, userId: string, type: string, revealedCell?: { col: number; row: number }): Promise<void>;
+  getPowerups(matchId: string, userId: string): Promise<BattlePowerup[]>;
+
+  awardBadge(userId: string, badgeType: string, matchId?: string, expiresAt?: Date): Promise<void>;
+  getUserBattleBadges(userId: string): Promise<BattleBadge[]>;
+  getBattleLeaderboard(groupId: string, seasonStart: Date): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; wins: number }[]>;
+  getBattleStats(userId: string): Promise<{ wins: number; losses: number; totalMatches: number; hitRate: number; tokensEarned: number }>;
 
   // Bingo operations
   getBingoCard(userId: string, month: string): Promise<BingoCard | undefined>;
@@ -2815,6 +2855,246 @@ export class DatabaseStorage implements IStorage {
       .where(eq(challenges.deuceKingId, deuceKingId))
       .limit(1);
     return challenge ?? null;
+  }
+
+  // --- Battle Shits ---
+
+  async createBattleMatch(match: InsertBattleMatch): Promise<BattleMatch> {
+    const [created] = await db.insert(battleMatches).values(match).returning();
+    return created;
+  }
+
+  async getBattleMatch(matchId: string): Promise<BattleMatch | null> {
+    const [match] = await db.select().from(battleMatches).where(eq(battleMatches.id, matchId)).limit(1);
+    return match ?? null;
+  }
+
+  async getUserActiveMatches(userId: string): Promise<BattleMatch[]> {
+    return db
+      .select()
+      .from(battleMatches)
+      .where(
+        and(
+          or(eq(battleMatches.challengerId, userId), eq(battleMatches.opponentId, userId)),
+          inArray(battleMatches.status, ["pending", "placement", "active"]),
+        ),
+      )
+      .orderBy(desc(battleMatches.createdAt));
+  }
+
+  async getGroupMatches(groupId: string, limit: number): Promise<BattleMatch[]> {
+    return db
+      .select()
+      .from(battleMatches)
+      .where(eq(battleMatches.groupId, groupId))
+      .orderBy(desc(battleMatches.createdAt))
+      .limit(limit);
+  }
+
+  async updateBattleMatchStatus(matchId: string, status: string, winnerId?: string): Promise<void> {
+    await db
+      .update(battleMatches)
+      .set({ status, ...(winnerId ? { winnerId } : {}) })
+      .where(eq(battleMatches.id, matchId));
+  }
+
+  async placeShips(
+    matchId: string,
+    userId: string,
+    ships: { shipType: string; cells: { col: number; row: number }[] }[],
+  ): Promise<void> {
+    const values = ships.map((s) => ({
+      matchId,
+      userId,
+      shipType: s.shipType,
+      cells: s.cells,
+    }));
+    await db.insert(battleShips).values(values).onConflictDoNothing();
+  }
+
+  async getShips(matchId: string, userId: string): Promise<BattleShip[]> {
+    return db
+      .select()
+      .from(battleShips)
+      .where(and(eq(battleShips.matchId, matchId), eq(battleShips.userId, userId)));
+  }
+
+  async createAttack(
+    matchId: string,
+    attackerId: string,
+    col: number,
+    row: number,
+    isHit: boolean,
+  ): Promise<BattleAttack> {
+    const [attack] = await db
+      .insert(battleAttacks)
+      .values({ matchId, attackerId, col, row, isHit })
+      .returning();
+    return attack;
+  }
+
+  async getAttacks(matchId: string): Promise<BattleAttack[]> {
+    return db.select().from(battleAttacks).where(eq(battleAttacks.matchId, matchId));
+  }
+
+  async getAttacksByUser(matchId: string, userId: string): Promise<BattleAttack[]> {
+    return db
+      .select()
+      .from(battleAttacks)
+      .where(and(eq(battleAttacks.matchId, matchId), eq(battleAttacks.attackerId, userId)));
+  }
+
+  async markShipSunk(shipId: number): Promise<void> {
+    await db.update(battleShips).set({ isSunk: true }).where(eq(battleShips.id, shipId));
+  }
+
+  async createBattleToken(
+    matchId: string,
+    userId: string,
+    deuceEntryId: string,
+    tokenType: string,
+  ): Promise<void> {
+    await db
+      .insert(battleTokens)
+      .values({ matchId, userId, deuceEntryId, tokenType })
+      .onConflictDoNothing();
+  }
+
+  async getTokenBalance(matchId: string, userId: string): Promise<{ earned: number; spent: number }> {
+    const tokens = await db
+      .select()
+      .from(battleTokens)
+      .where(and(eq(battleTokens.matchId, matchId), eq(battleTokens.userId, userId)));
+    const earned = tokens.length;
+    // Spent = number of attacks fired by this user
+    const attacks = await this.getAttacksByUser(matchId, userId);
+    return { earned, spent: attacks.length };
+  }
+
+  async earnPowerup(matchId: string, userId: string, type: string): Promise<void> {
+    await db
+      .insert(battlePowerups)
+      .values({ matchId, userId, powerupType: type })
+      .onConflictDoNothing();
+  }
+
+  async usePowerup(
+    matchId: string,
+    userId: string,
+    type: string,
+    revealedCell?: { col: number; row: number },
+  ): Promise<void> {
+    await db
+      .update(battlePowerups)
+      .set({ usedAt: new Date(), revealedCell: revealedCell ?? null })
+      .where(
+        and(
+          eq(battlePowerups.matchId, matchId),
+          eq(battlePowerups.userId, userId),
+          eq(battlePowerups.powerupType, type),
+        ),
+      );
+  }
+
+  async getPowerups(matchId: string, userId: string): Promise<BattlePowerup[]> {
+    return db
+      .select()
+      .from(battlePowerups)
+      .where(and(eq(battlePowerups.matchId, matchId), eq(battlePowerups.userId, userId)));
+  }
+
+  async awardBadge(
+    userId: string,
+    badgeType: string,
+    matchId?: string,
+    expiresAt?: Date,
+  ): Promise<void> {
+    await db.insert(battleBadges).values({
+      userId,
+      badgeType,
+      matchId: matchId ?? null,
+      expiresAt: expiresAt ?? null,
+    });
+  }
+
+  async getUserBattleBadges(userId: string): Promise<BattleBadge[]> {
+    return db.select().from(battleBadges).where(eq(battleBadges.userId, userId));
+  }
+
+  async getBattleLeaderboard(
+    groupId: string,
+    seasonStart: Date,
+  ): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; wins: number }[]> {
+    const rows = await db
+      .select({
+        userId: battleMatches.winnerId,
+        wins: count(),
+      })
+      .from(battleMatches)
+      .where(
+        and(
+          eq(battleMatches.groupId, groupId),
+          eq(battleMatches.status, "completed"),
+          gte(battleMatches.createdAt, seasonStart),
+        ),
+      )
+      .groupBy(battleMatches.winnerId);
+
+    // Enrich with user info
+    const results = [];
+    for (const r of rows) {
+      if (!r.userId) continue;
+      const [user] = await db
+        .select({ username: users.username, profileImageUrl: users.profileImageUrl })
+        .from(users)
+        .where(eq(users.id, r.userId))
+        .limit(1);
+      results.push({
+        userId: r.userId,
+        username: user?.username ?? null,
+        profileImageUrl: user?.profileImageUrl ?? null,
+        wins: r.wins,
+      });
+    }
+    return results.sort((a, b) => b.wins - a.wins);
+  }
+
+  async getBattleStats(
+    userId: string,
+  ): Promise<{ wins: number; losses: number; totalMatches: number; hitRate: number; tokensEarned: number }> {
+    const matches = await db
+      .select()
+      .from(battleMatches)
+      .where(
+        and(
+          or(eq(battleMatches.challengerId, userId), eq(battleMatches.opponentId, userId)),
+          eq(battleMatches.status, "completed"),
+        ),
+      );
+
+    const wins = matches.filter((m) => m.winnerId === userId).length;
+    const losses = matches.length - wins;
+
+    const allAttacks = await db
+      .select()
+      .from(battleAttacks)
+      .where(eq(battleAttacks.attackerId, userId));
+
+    const hits = allAttacks.filter((a) => a.isHit).length;
+    const hitRate = allAttacks.length > 0 ? hits / allAttacks.length : 0;
+
+    const tokens = await db
+      .select({ c: count() })
+      .from(battleTokens)
+      .where(eq(battleTokens.userId, userId));
+
+    return {
+      wins,
+      losses,
+      totalMatches: matches.length,
+      hitRate,
+      tokensEarned: tokens[0]?.c ?? 0,
+    };
   }
 }
 

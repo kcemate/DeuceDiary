@@ -287,6 +287,129 @@ export const challengeCompletions = pgTable("challenge_completions", {
   challengeIdx: index("idx_challenge_completions_challenge").on(table.challengeId),
 }));
 
+// --- Battle Shits tables ---
+export const battleMatches = pgTable(
+  "battle_matches",
+  {
+    id: varchar("id").primaryKey().notNull(),
+    groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: "cascade" }),
+    challengerId: varchar("challenger_id").notNull().references(() => users.id),
+    opponentId: varchar("opponent_id").notNull().references(() => users.id),
+    matchType: varchar("match_type", { length: 10 }).notNull().default("standard"), // 'standard' | 'quick'
+    status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'placement' | 'active' | 'completed' | 'forfeited' | 'voided'
+    winnerId: varchar("winner_id").references(() => users.id),
+    weekStart: timestamp("week_start").notNull(),
+    weekEnd: timestamp("week_end").notNull(),
+    placementDeadline: timestamp("placement_deadline").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_battle_matches_group").on(table.groupId),
+    index("idx_battle_matches_status").on(table.status),
+    index("idx_battle_matches_players").on(table.challengerId, table.opponentId),
+  ],
+);
+
+export const battleShips = pgTable(
+  "battle_ships",
+  {
+    id: serial("id").primaryKey().notNull(),
+    matchId: varchar("match_id").notNull().references(() => battleMatches.id, { onDelete: "cascade" }),
+    userId: varchar("user_id").notNull().references(() => users.id),
+    shipType: varchar("ship_type", { length: 15 }).notNull(), // 'floater' | 'log' | 'battleshit'
+    cells: jsonb("cells").notNull().$type<{ col: number; row: number }[]>(),
+    isSunk: boolean("is_sunk").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_battle_ships_match").on(table.matchId),
+    unique("uq_battle_ships_match_user_type").on(table.matchId, table.userId, table.shipType),
+  ],
+);
+
+export const battleAttacks = pgTable(
+  "battle_attacks",
+  {
+    id: serial("id").primaryKey().notNull(),
+    matchId: varchar("match_id").notNull().references(() => battleMatches.id, { onDelete: "cascade" }),
+    attackerId: varchar("attacker_id").notNull().references(() => users.id),
+    col: integer("col").notNull(),
+    row: integer("row").notNull(),
+    isHit: boolean("is_hit").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_battle_attacks_match").on(table.matchId),
+    unique("uq_battle_attacks_match_attacker_cell").on(table.matchId, table.attackerId, table.col, table.row),
+  ],
+);
+
+export const battleTokens = pgTable(
+  "battle_tokens",
+  {
+    id: serial("id").primaryKey().notNull(),
+    matchId: varchar("match_id").notNull().references(() => battleMatches.id, { onDelete: "cascade" }),
+    userId: varchar("user_id").notNull().references(() => users.id),
+    deuceEntryId: varchar("deuce_entry_id").notNull().references(() => deuceEntries.id),
+    tokenType: varchar("token_type", { length: 15 }).notNull().default("standard"), // 'standard' | 'double_flush'
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_battle_tokens_match_user").on(table.matchId, table.userId),
+    unique("uq_battle_tokens_match_entry_type").on(table.matchId, table.deuceEntryId, table.tokenType),
+  ],
+);
+
+export const battlePowerups = pgTable(
+  "battle_powerups",
+  {
+    id: serial("id").primaryKey().notNull(),
+    matchId: varchar("match_id").notNull().references(() => battleMatches.id, { onDelete: "cascade" }),
+    userId: varchar("user_id").notNull().references(() => users.id),
+    powerupType: varchar("powerup_type", { length: 15 }).notNull(), // 'sonar_ping' | 'ghost_wipe'
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    earnedAt: timestamp("earned_at", { withTimezone: true }).defaultNow().notNull(),
+    revealedCell: jsonb("revealed_cell").$type<{ col: number; row: number } | null>(),
+  },
+  (table) => [
+    unique("uq_battle_powerups_match_user_type").on(table.matchId, table.userId, table.powerupType),
+  ],
+);
+
+export const battleBadges = pgTable(
+  "battle_badges",
+  {
+    id: serial("id").primaryKey().notNull(),
+    userId: varchar("user_id").notNull().references(() => users.id),
+    badgeType: varchar("badge_type", { length: 30 }).notNull(), // 'battle_winner' | 'admiral' | 'abandon_ship'
+    matchId: varchar("match_id").references(() => battleMatches.id),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_battle_badges_user").on(table.userId),
+  ],
+);
+
+// Battle grid constants
+export const STANDARD_GRID = { cols: 7, rows: 3 };
+export const QUICK_GRID = { cols: 3, rows: 3 };
+
+export const SHIPS = {
+  standard: [
+    { type: "floater", size: 2, emoji: "🚤" },
+    { type: "log", size: 3, emoji: "🥖" },
+    { type: "battleshit", size: 4, emoji: "💣" },
+  ],
+  quick: [
+    { type: "floater", size: 2, emoji: "🚤" },
+    { type: "log", size: 3, emoji: "🥖" },
+  ],
+} as const;
+
+export const TIME_SLOTS = ["Morning", "Afternoon", "Night"] as const;
+export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   groupMemberships: many(groupMembers),
@@ -420,6 +543,44 @@ export const passportStampsRelations = relations(passportStamps, ({ one }) => ({
   user: one(users, { fields: [passportStamps.userId], references: [users.id] }),
 }));
 
+export const battleMatchesRelations = relations(battleMatches, ({ one, many }) => ({
+  group: one(groups, { fields: [battleMatches.groupId], references: [groups.id] }),
+  challenger: one(users, { fields: [battleMatches.challengerId], references: [users.id] }),
+  opponent: one(users, { fields: [battleMatches.opponentId], references: [users.id] }),
+  winner: one(users, { fields: [battleMatches.winnerId], references: [users.id] }),
+  ships: many(battleShips),
+  attacks: many(battleAttacks),
+  tokens: many(battleTokens),
+  powerups: many(battlePowerups),
+  badges: many(battleBadges),
+}));
+
+export const battleShipsRelations = relations(battleShips, ({ one }) => ({
+  match: one(battleMatches, { fields: [battleShips.matchId], references: [battleMatches.id] }),
+  user: one(users, { fields: [battleShips.userId], references: [users.id] }),
+}));
+
+export const battleAttacksRelations = relations(battleAttacks, ({ one }) => ({
+  match: one(battleMatches, { fields: [battleAttacks.matchId], references: [battleMatches.id] }),
+  attacker: one(users, { fields: [battleAttacks.attackerId], references: [users.id] }),
+}));
+
+export const battleTokensRelations = relations(battleTokens, ({ one }) => ({
+  match: one(battleMatches, { fields: [battleTokens.matchId], references: [battleMatches.id] }),
+  user: one(users, { fields: [battleTokens.userId], references: [users.id] }),
+  deuceEntry: one(deuceEntries, { fields: [battleTokens.deuceEntryId], references: [deuceEntries.id] }),
+}));
+
+export const battlePowerupsRelations = relations(battlePowerups, ({ one }) => ({
+  match: one(battleMatches, { fields: [battlePowerups.matchId], references: [battleMatches.id] }),
+  user: one(users, { fields: [battlePowerups.userId], references: [users.id] }),
+}));
+
+export const battleBadgesRelations = relations(battleBadges, ({ one }) => ({
+  user: one(users, { fields: [battleBadges.userId], references: [users.id] }),
+  match: one(battleMatches, { fields: [battleBadges.matchId], references: [battleMatches.id] }),
+}));
+
 // Schema types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -457,6 +618,18 @@ export type Challenge = typeof challenges.$inferSelect;
 export type InsertChallenge = typeof challenges.$inferInsert;
 export type ChallengeCompletion = typeof challengeCompletions.$inferSelect;
 export type InsertChallengeCompletion = typeof challengeCompletions.$inferInsert;
+export type BattleMatch = typeof battleMatches.$inferSelect;
+export type InsertBattleMatch = typeof battleMatches.$inferInsert;
+export type BattleShip = typeof battleShips.$inferSelect;
+export type InsertBattleShip = typeof battleShips.$inferInsert;
+export type BattleAttack = typeof battleAttacks.$inferSelect;
+export type InsertBattleAttack = typeof battleAttacks.$inferInsert;
+export type BattleToken = typeof battleTokens.$inferSelect;
+export type InsertBattleToken = typeof battleTokens.$inferInsert;
+export type BattlePowerup = typeof battlePowerups.$inferSelect;
+export type InsertBattlePowerup = typeof battlePowerups.$inferInsert;
+export type BattleBadge = typeof battleBadges.$inferSelect;
+export type InsertBattleBadge = typeof battleBadges.$inferInsert;
 
 // Zod schemas
 export const insertGroupSchema = createInsertSchema(groups).omit({
