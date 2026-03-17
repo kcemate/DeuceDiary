@@ -11,7 +11,7 @@ import { BottomNavigation } from "@/components/bottom-navigation";
 import { NotificationBanner } from "@/components/notification-banner";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
@@ -153,38 +153,21 @@ function Router() {
 
   // Handle invite link joining
   const joinGroupMutation = useMutation({
-    mutationFn: async (inviteId: string) => {
-      return await apiRequest<{ message: string; group: { id: string; name: string } }>(`/api/join/${inviteId}`, {
-        method: "POST",
-      });
-    },
+    mutationFn: (inviteId: string) =>
+      apiRequest<{ message: string; group: { id: string; name: string } }>(`/api/join/${inviteId}`, { method: "POST" }),
     onSuccess: (response: { message: string; group: { id: string; name: string } }) => {
-      console.log("Successfully joined group:", response.group);
       setProcessingInvite(false);
-
       if (response.message === "Already a member of this group") {
-        toast({
-          title: "Already a member",
-          description: `You're already in the group "${response.group.name}"`,
-        });
+        toast({ title: "Already a member", description: `You're already in the group "${response.group.name}"` });
       } else {
-        toast({
-          title: "Success",
-          description: `Joined group "${response.group.name}" successfully!`,
-        });
+        toast({ title: "Success", description: `Joined group "${response.group.name}" successfully!` });
       }
-
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setLocation("/groups");
     },
     onError: (error) => {
       setProcessingInvite(false);
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Error",
-        description: error.message || "Failed to join group",
-        variant: "destructive",
-      });
+      mutationErrorHandler(toast, (e) => e.message || "Failed to join group")(error);
     },
   });
 

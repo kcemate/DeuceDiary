@@ -12,7 +12,7 @@ import logger from "./lib/logger";
  * @param paramName - route param to read the group ID from (default "groupId")
  */
 export function requireGroupMember(paramName = "groupId"): RequestHandler {
-  return async (req: Request & { user?: { id: string }; groupId?: string }, res, next) => {
+  return async (req: Request, res, next) => {
     const groupId: string | undefined = req.params[paramName];
 
     if (!groupId || typeof groupId !== "string") {

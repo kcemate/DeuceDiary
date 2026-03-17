@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth-token";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 
 interface ProfilePictureUploadProps {
   user: {
@@ -68,12 +68,7 @@ export function ProfilePictureUpload({
       setIsUploading(false);
     },
     onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Error",
-        description: "Failed to upload profile picture. Please try again.",
-        variant: "destructive",
-      });
+      mutationErrorHandler(toast, "Failed to upload profile picture. Please try again.")(error);
       setIsUploading(false);
     },
   });

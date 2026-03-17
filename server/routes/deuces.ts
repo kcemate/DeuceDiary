@@ -1,4 +1,4 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import logger from "../lib/logger";
 import { WebSocket } from "ws";
 import { storage } from "../storage";
@@ -16,6 +16,7 @@ import {
   sanitizeUserForResponse,
 } from "./helpers";
 import { triggerPassportStamp } from "../lib/geocode";
+import type { DeuceEntry } from "@shared/schema";
 
 type BroadcastFn = (groupId: string, message: unknown) => void;
 
@@ -48,7 +49,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     }
   });
 
-  router.post('/api/locations', isAuthenticated, async (req: any, res) => {
+  router.post('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = createLocationSchema.safeParse(req.body);
@@ -81,7 +82,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   });
 
   // Reaction routes (free)
-  router.post('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  router.post('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -110,7 +111,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     }
   });
 
-  router.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  router.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -128,7 +129,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     }
   });
 
-  router.get('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  router.get('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -145,7 +146,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   });
 
   // Delete a deuce entry (owner only — IDOR protection)
-  router.delete('/api/deuces/:id', isAuthenticated, async (req: any, res) => {
+  router.delete('/api/deuces/:id', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { id } = req.params;
@@ -169,7 +170,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   });
 
   // Deuce feed route (free)
-  router.get('/api/deuces', isAuthenticated, async (req: any, res) => {
+  router.get('/api/deuces', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.query;
@@ -205,7 +206,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   });
 
   // Deuce entry routes
-  router.post('/api/deuces', isAuthenticated, async (req: any, res) => {
+  router.post('/api/deuces', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -257,7 +258,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const isGhost = !!entryData.ghost;
 
       // Create entry for each selected group
-      const entries: any[] = [];
+      const entries: DeuceEntry[] = [];
       for (const groupId of targetGroupIds) {
         // bristolScore validated by zod (1-7 int), but double-check for safety
         if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {

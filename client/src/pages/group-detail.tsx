@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName, getInitials } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
@@ -167,27 +167,13 @@ export default function GroupDetail() {
   });
 
   const leaveGroupMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest(`/api/groups/${groupId}/leave`, {
-        method: "POST",
-      });
-    },
+    mutationFn: () => apiRequest(`/api/groups/${groupId}/leave`, { method: "POST" }),
     onSuccess: () => {
-      toast({
-        title: "You're out",
-        description: "You left the squad. They'll miss your wisdom.",
-      });
+      toast({ title: "You're out", description: "You left the squad. They'll miss your wisdom." });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setLocation("/groups");
     },
-    onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Couldn't leave",
-        description: "Something clogged up. Try again.",
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorHandler(toast, "Something clogged up. Try again.", "Couldn't leave"),
   });
 
   const inviteCrewMutation = useMutation({

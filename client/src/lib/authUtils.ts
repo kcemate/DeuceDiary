@@ -20,3 +20,26 @@ export function handleAuthError(error: Error, toast: ToastFn): boolean {
   }, 500);
   return true;
 }
+
+/**
+ * Creates a standard onError handler for useMutation callbacks.
+ * Handles 401 auth errors (session expired) and shows a destructive toast.
+ *
+ * @param toast - toast function from useToast()
+ * @param description - error description string, or a function receiving the error
+ * @param title - toast title (defaults to "Error")
+ */
+export function mutationErrorHandler(
+  toast: ToastFn,
+  description: string | ((error: Error) => string),
+  title = "Error",
+) {
+  return (error: Error) => {
+    if (handleAuthError(error, toast)) return;
+    toast({
+      title,
+      description: typeof description === "function" ? description(error) : description,
+      variant: "destructive",
+    });
+  };
+}

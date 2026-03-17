@@ -731,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remove a member from a group (admin only, or self-leave)
-  app.delete('/api/groups/:groupId/members/:userId', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.delete('/api/groups/:groupId/members/:userId', isAuthenticated, requireGroupMember(), async (req, res) => {
     try {
       const requestingUserId = req.user.id;
       const groupId = req.groupId;
@@ -761,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Invite routes (free)
   app.post('/api/groups/:groupId/invite',
     isAuthenticated, requiresPremiumFor('squad_invite'), requireGroupMember(),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -786,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/join/:inviteId', isAuthenticated, async (req: any, res) => {
+  app.post('/api/join/:inviteId', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { inviteId } = req.params;
@@ -842,7 +842,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Referral landing: /join?ref=CODE → store code in session, redirect to /
-  app.get('/join', (req: any, res) => {
+  app.get('/join', (req, res) => {
     const ref = req.query.ref;
     // Only store alphanumeric codes of reasonable length
     if (ref && typeof ref === 'string' && /^[A-Z0-9]{4,20}$/i.test(ref) && req.session) {
@@ -852,12 +852,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legacy /join/:inviteId redirect → new client-side /invite/:code page
-  app.get('/join/:inviteId', async (req: any, res) => {
+  app.get('/join/:inviteId', async (req, res) => {
     res.redirect(`/invite/${req.params.inviteId}`);
   });
 
   // Location routes
-  app.get('/api/locations', isAuthenticated, async (req: any, res) => {
+  app.get('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const locations = await storage.getLocationsForUser(req.user.id);
       res.json(locations);
@@ -867,7 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/locations', isAuthenticated, async (req: any, res) => {
+  app.post('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = createLocationSchema.safeParse(req.body);
@@ -903,7 +903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const ENTRY_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   // Reaction routes (free)
-  app.post('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  app.post('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -943,7 +943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -974,7 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/entries/:entryId/reactions', isAuthenticated, async (req: any, res) => {
+  app.get('/api/entries/:entryId/reactions', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
@@ -998,7 +998,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Streak routes (free — part of groups)
-  app.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.get('/api/groups/:groupId/streak', isAuthenticated, requireGroupMember(), async (req, res) => {
     try {
       const groupId = req.groupId;
 
@@ -1031,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.post('/api/groups/:groupId/streak/check', isAuthenticated, requireGroupMember(), async (req, res) => {
     try {
       const groupId = req.groupId;
 
@@ -1044,7 +1044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Group Leaderboard — weekly/monthly/all-time stats per member with MVP designation (free)
-  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), async (req: any, res) => {
+  app.get('/api/groups/:groupId/leaderboard', isAuthenticated, requireGroupMember(), async (req, res) => {
     try {
       const groupId = req.groupId;
       const leaderboard = await storage.getGroupLeaderboard(groupId);
@@ -1058,7 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Squad Spy Mode — typical log hour per member (premium)
   app.get('/api/groups/:groupId/spy',
     isAuthenticated, requiresPremiumFor('squad_spy'), requireGroupMember(),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const groupId = req.groupId;
 
@@ -1073,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Weekly Throne Report — group-level weekly summary (premium)
   app.get('/api/groups/:groupId/weekly-report',
     isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const groupId = req.groupId;
       const report = await storage.getGroupWeeklyReport(groupId);
@@ -1088,7 +1088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Export Weekly Throne Report as PDF (premium)
   app.get('/api/groups/:groupId/weekly-report/pdf',
     isAuthenticated, requireGroupMember(), requiresPremiumFor('report_export'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const groupId = req.groupId;
       const report = await storage.getGroupWeeklyReport(groupId);
@@ -1307,7 +1307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Deuce feed route (free)
-  app.get('/api/deuces', isAuthenticated, async (req: any, res) => {
+  app.get('/api/deuces', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const { groupId } = req.query;
@@ -1342,7 +1342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Deuce entry routes
-  app.post('/api/deuces', isAuthenticated, async (req: any, res) => {
+  app.post('/api/deuces', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -1466,7 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk deuce logging - log to multiple groups in one transaction (atomic)
-  app.post('/api/deuces/bulk', isAuthenticated, async (req: any, res) => {
+  app.post('/api/deuces/bulk', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
 
@@ -1610,7 +1610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })).min(1).max(50),
   });
 
-  app.post('/api/deuces/sync', isAuthenticated, async (req: any, res) => {
+  app.post('/api/deuces/sync', isAuthenticated, async (req, res) => {
     try {
       const parsed = syncDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -1698,7 +1698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Referral routes ---
 
-  app.get('/api/referral', isAuthenticated, async (req: any, res) => {
+  app.get('/api/referral', isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       if (!user) return Errors.notFound(res, 'User not found');
@@ -1714,7 +1714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/referral/apply', isAuthenticated, async (req: any, res) => {
+  app.post('/api/referral/apply', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = referralApplySchema.safeParse(req.body);
@@ -1764,7 +1764,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/referral/stats', isAuthenticated, requiresPremiumFor('referral_stats'), async (req: any, res) => {
+  app.get('/api/referral/stats', isAuthenticated, requiresPremiumFor('referral_stats'), async (req, res) => {
     try {
       const stats = await storage.getReferralStats(req.user.id);
       res.json(stats);
@@ -1776,7 +1776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Referral dashboard routes ---
 
-  app.get('/api/referrals/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/referrals/stats', isAuthenticated, async (req, res) => {
     try {
       const stats = await storage.getReferralDashboardStats(req.user.id);
       res.json(stats);
@@ -1786,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/referrals/leaderboard', isAuthenticated, async (req: any, res) => {
+  app.get('/api/referrals/leaderboard', isAuthenticated, async (req, res) => {
     try {
       const leaderboard = await storage.getReferralLeaderboard();
       res.json(leaderboard);
@@ -1798,7 +1798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Subscription routes ---
 
-  app.get('/api/subscription', isAuthenticated, async (req: any, res) => {
+  app.get('/api/subscription', isAuthenticated, async (req, res) => {
     try {
       const sub = await storage.getUserSubscription(req.user.id);
       const isPremium = sub.subscription === 'premium' &&
@@ -1819,7 +1819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/subscription/streak-insurance',
     isAuthenticated, requiresPremiumFor('streak_insurance'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const sub = await storage.getUserSubscription(req.user.id);
       if (sub.streakInsuranceUsed) {
@@ -1857,7 +1857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Premium analytics ---
 
-  app.get('/api/analytics/me', isAuthenticated, requiresPremiumFor('analytics'), async (req: any, res) => {
+  app.get('/api/analytics/me', isAuthenticated, requiresPremiumFor('analytics'), async (req, res) => {
     try {
       const analytics = await storage.getPremiumAnalytics(req.user.id);
       res.json(analytics);
@@ -1867,7 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analytics/most-deuces', isAuthenticated, requiresPremiumFor('analytics'), async (req: any, res) => {
+  app.get('/api/analytics/most-deuces', isAuthenticated, requiresPremiumFor('analytics'), async (req, res) => {
     try {
       const userId = req.user.id;
       const deucesByDate = await storage.getUserDeucesByDate(userId);
@@ -1887,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Weekly Throne Report (premium) — own data only
   app.get('/api/users/:userId/weekly-report',
     isAuthenticated, requiresPremiumFor('analytics'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       // Only allow access to own report — prevents IDOR
       const targetUserId = req.params.userId === 'me' ? req.user.id : req.params.userId;
@@ -1903,7 +1903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Subscription upgrade (beta: instant upgrade for testing — real payments go through RevenueCat later)
-  app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
+  app.post('/api/subscription/upgrade', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = subscriptionUpgradeSchema.safeParse(req.body);
@@ -1930,7 +1930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Push notification token registration ---
   const MAX_PUSH_TOKENS_PER_USER = 10;
 
-  app.post('/api/notifications/register', isAuthenticated, async (req: any, res) => {
+  app.post('/api/notifications/register', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = pushTokenSchema.safeParse(req.body);
@@ -1963,7 +1963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Push notification token unregister ---
-  app.delete('/api/push/unregister', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/push/unregister', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = unregisterPushSchema.safeParse(req.body);
@@ -1983,7 +1983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Throne Broadcast (premium) ---
   app.post('/api/squads/:id/broadcast',
     isAuthenticated, requiresPremiumFor('throne_broadcast'),
-    requireGroupMember('id'), async (req: any, res) => {
+    requireGroupMember('id'), async (req, res) => {
     try {
       const userId = req.user.id;
       const groupId = req.groupId;
@@ -2007,7 +2007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Daily Challenges (premium) ---
-  app.get('/api/challenges/today', isAuthenticated, requiresPremiumFor('daily_challenges'), async (req: any, res) => {
+  app.get('/api/challenges/today', isAuthenticated, requiresPremiumFor('daily_challenges'), async (req, res) => {
     try {
       const userId = req.user.id;
       const challenge = getTodayChallenge();
@@ -2023,7 +2023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/challenges/complete',
     isAuthenticated, requiresPremiumFor('daily_challenges'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const userId = req.user.id;
       const challengeDate = todayChallengeDate();
@@ -2048,7 +2048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // --- Custom Reminder (premium) ---
   app.put('/api/notifications/reminder',
     isAuthenticated, requiresPremiumFor('custom_reminder'),
-    async (req: any, res) => {
+    async (req, res) => {
     try {
       const userId = req.user.id;
       const parsed = reminderSchema.safeParse(req.body);
@@ -2086,7 +2086,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Badge system (free)
-  app.get('/api/user/badges', isAuthenticated, async (req: any, res) => {
+  app.get('/api/user/badges', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const badges = await storage.getUserBadges(userId);

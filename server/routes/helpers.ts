@@ -17,10 +17,14 @@ export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Respons
   return parsed.data;
 }
 
-export function asyncRoute(label: string, failMsg: string, handler: (req: Request, res: Response) => Promise<void>) {
+export function asyncRoute<T extends Request = Request>(
+  label: string,
+  failMsg: string,
+  handler: (req: T, res: Response) => Promise<void>,
+) {
   return async (req: Request, res: Response) => {
     try {
-      await handler(req, res);
+      await handler(req as T, res);
     } catch (error) {
       logger.error({ err: error }, `Error ${label}`);
       res.status(500).json({ message: failMsg });

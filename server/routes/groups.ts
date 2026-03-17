@@ -1,4 +1,4 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import logger from "../lib/logger";
 import { storage } from "../storage";
 import { insertGroupSchema } from "@shared/schema";
@@ -29,7 +29,7 @@ async function fetchWeeklyReport(groupId: string, res: Response) {
   }
 }
 
-async function checkSquadLimit(req: any, res: any): Promise<boolean> {
+async function checkSquadLimit(req: Request, res: Response): Promise<boolean> {
   if (!isPremiumUser(req.user)) {
     const userGroups = await storage.getUserGroups(req.user.id);
     if (userGroups.length >= 3) {
@@ -44,14 +44,14 @@ async function checkSquadLimit(req: any, res: any): Promise<boolean> {
   return false;
 }
 
-const asyncRoute = (errMsg: string, handler: (req: any, res: any) => Promise<void>) =>
+const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Promise<void>) =>
   helperAsyncRoute(errMsg, errMsg, handler);
 
 export function createGroupsRouter(): Router {
   const router = Router();
 
   // Group routes (free — squad limit for free users)
-  router.post('/api/groups', isAuthenticated, asyncRoute("Failed to create group", async (req: any, res) => {
+  router.post('/api/groups', isAuthenticated, asyncRoute("Failed to create group", async (req, res) => {
     const userId = req.user.id;
 
     // Free users limited to 3 squads
@@ -80,7 +80,7 @@ export function createGroupsRouter(): Router {
     res.json(group);
   }));
 
-  router.get('/api/groups', isAuthenticated, asyncRoute("Failed to fetch groups", async (req: any, res) => {
+  router.get('/api/groups', isAuthenticated, asyncRoute("Failed to fetch groups", async (req, res) => {
     const userId = req.user.id;
     const groups = await storage.getUserGroups(userId);
     res.json(groups);
@@ -88,7 +88,7 @@ export function createGroupsRouter(): Router {
 
   router.get('/api/groups/:groupId',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group details",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
 
     const group = await storage.getGroupById(groupId);
@@ -108,7 +108,7 @@ export function createGroupsRouter(): Router {
   // Invite routes (free)
   router.post('/api/groups/:groupId/invite',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to create invite",
-    async (req: any, res) => {
+    async (req, res) => {
     const userId = req.user.id;
     const groupId = req.groupId;
 
@@ -131,7 +131,7 @@ export function createGroupsRouter(): Router {
     res.json({ inviteLink, id: inviteId });
   }));
 
-  router.post('/api/join/:inviteId', isAuthenticated, asyncRoute("Failed to join group", async (req: any, res) => {
+  router.post('/api/join/:inviteId', isAuthenticated, asyncRoute("Failed to join group", async (req, res) => {
     const userId = req.user.id;
     const { inviteId } = req.params;
 
@@ -165,7 +165,7 @@ export function createGroupsRouter(): Router {
   }));
 
   // Referral landing: /join?ref=CODE -> store code in session, redirect to /
-  router.get('/join', (req: any, res) => {
+  router.get('/join', (req, res) => {
     const ref = req.query.ref;
     // Only store alphanumeric codes of reasonable length (matches routes.ts validation)
     if (ref && typeof ref === 'string' && /^[A-Z0-9]{4,20}$/i.test(ref) && req.session) {
@@ -175,14 +175,14 @@ export function createGroupsRouter(): Router {
   });
 
   // Legacy /join/:inviteId redirect -> new client-side /invite/:code page
-  router.get('/join/:inviteId', (req: any, res) => {
+  router.get('/join/:inviteId', (req, res) => {
     res.redirect(`/invite/${req.params.inviteId}`);
   });
 
   // Streak routes (free — part of groups)
   router.get('/api/groups/:groupId/streak',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch streak",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
 
     const today = getTodayUTC();
@@ -216,7 +216,7 @@ export function createGroupsRouter(): Router {
 
   router.post('/api/groups/:groupId/streak/check',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to check streak risk",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
     const result = await checkAndNotifyStreakRisk(groupId);
     res.json(result);
@@ -225,7 +225,7 @@ export function createGroupsRouter(): Router {
   // Group Leaderboard — member rankings by deuce count (free)
   router.get('/api/groups/:groupId/leaderboard',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch leaderboard",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
 
     const members = await storage.getGroupMembers(groupId);
@@ -244,7 +244,7 @@ export function createGroupsRouter(): Router {
   // Weekly Throne Report — group-level shareable summary card
   router.get('/api/groups/:groupId/weekly-report',
     isAuthenticated, requireGroupMember(), asyncRoute("Failed to fetch group weekly report",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
     const report = await fetchWeeklyReport(groupId, res);
     if (!report) return;
@@ -254,7 +254,7 @@ export function createGroupsRouter(): Router {
   // Squad Spy Mode — typical log hour per member (premium)
   router.get('/api/groups/:groupId/spy',
     isAuthenticated, requireGroupMember(), requiresPremiumFor('squad_spy'), asyncRoute("Failed to fetch spy data",
-    async (req: any, res) => {
+    async (req, res) => {
     const groupId = req.groupId;
     const typicalHours = await storage.getGroupMemberTypicalHours(groupId);
     res.json(typicalHours);
@@ -265,7 +265,7 @@ export function createGroupsRouter(): Router {
     isAuthenticated, requireGroupMember(),
     requiresPremiumFor('report_export'),
     asyncRoute("Failed to generate PDF report",
-    async (req: any, res) => {
+    async (req, res) => {
       const groupId = req.groupId;
       const report = await fetchWeeklyReport(groupId, res);
       if (!report) return;

@@ -25,7 +25,13 @@ const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 /** True when Clerk keys are configured and should be used for auth. */
 export let clerkEnabled = !!CLERK_SECRET_KEY;
 
-export let clerk: any = null;
+type ClerkClient = {
+  verifyToken(token: string): Promise<{
+    sub: string; email?: string | null; first_name?: string | null;
+    last_name?: string | null; image_url?: string | null;
+  }>;
+};
+export let clerk: ClerkClient | null = null;
 await (async () => {
   if (clerkEnabled) {
     try {
@@ -78,7 +84,7 @@ export async function setupAuth(app: Express) {
 
   if (!clerkEnabled) {
     // Dev-only login/logout routes
-    app.post("/api/login", async (req: any, res) => {
+    app.post("/api/login", async (req, res) => {
       try {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -158,13 +164,13 @@ export async function setupAuth(app: Express) {
       }
     });
 
-    app.get("/api/logout", (req: any, res) => {
+    app.get("/api/logout", (req, res) => {
       req.session.destroy(() => {
         res.redirect("/");
       });
     });
 
-    app.post("/api/auth/logout", (req: any, res) => {
+    app.post("/api/auth/logout", (req, res) => {
       req.session.destroy(() => {
         res.json({ ok: true });
       });
@@ -174,7 +180,7 @@ export async function setupAuth(app: Express) {
 
 // --------------- isAuthenticated middleware ---------------
 
-export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // --- Clerk mode: verify Bearer JWT ---
   if (clerkEnabled) {
     const authHeader = req.headers.authorization;
@@ -241,7 +247,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   }
 
   // --- Dev mode: session-based auth ---
-  const userId = (req.session as { userId?: string })?.userId;
+  const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }

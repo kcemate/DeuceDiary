@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { updateUserSchema, type UpdateUserRequest } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 
 import {
   Dialog,
@@ -44,32 +44,18 @@ export function EditUsernameModal({ open, onOpenChange, currentUsername }: EditU
   });
 
   const updateUsernameMutation = useMutation({
-    mutationFn: async (data: UpdateUserRequest) => {
-      return await apiRequest("/api/auth/user", {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-    },
+    mutationFn: (data: UpdateUserRequest) =>
+      apiRequest("/api/auth/user", { method: "PUT", body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Success",
-        description: "Username updated successfully!",
-      });
+      toast({ title: "Success", description: "Username updated successfully!" });
       onOpenChange(false);
       form.reset();
     },
-    onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      const errorMessage = error.message?.includes("Username already taken")
-        ? "Username already taken"
-        : "Failed to update username";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorHandler(
+      toast,
+      (e) => e.message?.includes("Username already taken") ? "Username already taken" : "Failed to update username",
+    ),
   });
 
   const handleSubmit = (data: UpdateUserRequest) => {

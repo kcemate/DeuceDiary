@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,14 +93,7 @@ export default function Referral() {
       });
       setApplyCode("");
     },
-    onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Couldn't apply code",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorHandler(toast, (e) => e.message || "Something went wrong.", "Couldn't apply code"),
   });
 
   const getShareText = () => {

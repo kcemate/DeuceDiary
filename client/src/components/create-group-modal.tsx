@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 import { Loader2, CheckCircle2, Users } from "lucide-react";
 
 interface CreateGroupModalProps {
@@ -65,24 +65,13 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const queryClient = useQueryClient();
 
   const createGroupMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string }) => {
-      return await apiRequest("/api/groups", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
+    mutationFn: (data: { name: string; description?: string }) =>
+      apiRequest("/api/groups", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setCreatedName(vars.name);
     },
-    onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Error",
-        description: "Failed to create group",
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorHandler(toast, "Failed to create group"),
   });
 
   const resetForm = () => {

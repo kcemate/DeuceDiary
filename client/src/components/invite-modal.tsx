@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { handleAuthError } from "@/lib/authUtils";
+import { mutationErrorHandler } from "@/lib/authUtils";
 
 interface InviteModalProps {
   open: boolean;
@@ -24,37 +24,21 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
   const { toast } = useToast();
 
   const createInviteMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
+    mutationFn: () =>
+      apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
         method: "POST",
         body: JSON.stringify({}),
-      });
-    },
+      }),
     onSuccess: (response: { id: string }) => {
       const inviteId = response.id;
       if (!inviteId) {
-        toast({
-          title: "Error",
-          description: "Failed to generate invite link - no ID received",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to generate invite link - no ID received", variant: "destructive" });
         return;
       }
-      const fullUrl = `${window.location.origin}/join/${inviteId}`;
-      setInviteLink(fullUrl);
-      toast({
-        title: "Success",
-        description: "Invite link generated successfully!",
-      });
+      setInviteLink(`${window.location.origin}/join/${inviteId}`);
+      toast({ title: "Success", description: "Invite link generated successfully!" });
     },
-    onError: (error) => {
-      if (handleAuthError(error, toast)) return;
-      toast({
-        title: "Error",
-        description: "Failed to generate invite link",
-        variant: "destructive",
-      });
-    },
+    onError: mutationErrorHandler(toast, "Failed to generate invite link"),
   });
 
   const copyToClipboard = async () => {

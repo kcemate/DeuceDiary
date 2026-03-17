@@ -39,7 +39,7 @@ export function createAuthRouter(uploadsDir: string): Router {
   });
 
   // Auth routes
-  router.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  router.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       track("user_login", userId);
@@ -61,7 +61,7 @@ export function createAuthRouter(uploadsDir: string): Router {
   });
 
   // Clerk frontend sync — called after Clerk login to upsert user + return profile
-  router.post('/api/auth/sync', isAuthenticated, async (req: any, res) => {
+  router.post('/api/auth/sync', isAuthenticated, async (req, res) => {
     try {
       const bodyParsed = syncBodySchema.safeParse(req.body);
       const clerkData = bodyParsed.success ? bodyParsed.data : {};
@@ -69,11 +69,7 @@ export function createAuthRouter(uploadsDir: string): Router {
 
       // In Clerk mode, identity fields (email, name) come from the verified JWT,
       // not the request body, to prevent spoofing. Only username is user-supplied.
-      type JwtClaimsShape = {
-        email?: string | null; first_name?: string | null;
-        last_name?: string | null; image_url?: string | null;
-      };
-      const jwtClaims = req.clerkAuth as JwtClaimsShape | undefined;
+      const jwtClaims = req.clerkAuth;
       const upsertData = clerkEnabled
         ? {
             id: userId,
@@ -127,7 +123,7 @@ export function createAuthRouter(uploadsDir: string): Router {
     }
   });
 
-  router.put('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  router.put('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
       const userData = updateUserSchema.parse(req.body);
@@ -149,7 +145,7 @@ export function createAuthRouter(uploadsDir: string): Router {
   router.post(
     '/api/auth/user/profile-picture',
     isAuthenticated, upload.single('profilePicture'),
-    async (req: any, res) => {
+    async (req, res) => {
       try {
       const userId = req.user.id;
 
@@ -178,7 +174,7 @@ export function createAuthRouter(uploadsDir: string): Router {
   });
 
   // Theme routes
-  router.get('/api/user/theme', isAuthenticated, async (req: any, res) => {
+  router.get('/api/user/theme', isAuthenticated, async (req, res) => {
     try {
       const user = await storage.getUser(req.user.id);
       res.json({ theme: user?.theme ?? 'default' });
@@ -188,7 +184,7 @@ export function createAuthRouter(uploadsDir: string): Router {
     }
   });
 
-  router.put('/api/user/theme', isAuthenticated, requiresPremiumFor('custom_themes'), async (req: any, res) => {
+  router.put('/api/user/theme', isAuthenticated, requiresPremiumFor('custom_themes'), async (req, res) => {
     try {
       const parsed = themeSchema.safeParse(req.body);
       if (!parsed.success) {
