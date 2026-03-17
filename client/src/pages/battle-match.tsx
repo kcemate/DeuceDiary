@@ -629,9 +629,7 @@ export default function BattleMatch() {
   const { data, isLoading, error, refetch } = useQuery<MatchData>({
     queryKey: ["/api/battle/match", matchId],
     queryFn: async () => {
-      const res = await fetch(`/api/battle/match/${matchId}`);
-      if (!res.ok) throw new Error("Failed to fetch match");
-      return res.json();
+      return apiRequest<MatchData>(`/api/battle/match/${matchId}`);
     },
     enabled: !!matchId,
     refetchInterval: 10000, // Poll every 10s for updates

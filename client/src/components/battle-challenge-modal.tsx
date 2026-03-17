@@ -52,9 +52,7 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
   const { data: groupDetail, isLoading: loadingMembers } = useQuery<GroupDetail>({
     queryKey: ["/api/groups", selectedGroupId],
     queryFn: async () => {
-      const res = await fetch(`/api/groups/${selectedGroupId}`);
-      if (!res.ok) throw new Error("Failed to load group");
-      return res.json();
+      return apiRequest<GroupDetail>(`/api/groups/${selectedGroupId}`);
     },
     enabled: open && !!selectedGroupId,
   });
