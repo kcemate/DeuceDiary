@@ -38,17 +38,6 @@ async function getAuthorizedEntry(entryId: string, userId: string, res: Response
 export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   const router = Router();
 
-  // Location routes
-  router.get('/api/locations', isAuthenticated, async (req, res) => {
-    try {
-      const locations = await storage.getLocations();
-      res.json(locations);
-    } catch (error) {
-      logger.error({ err: error }, "Error fetching locations");
-      res.status(500).json({ message: "Failed to fetch locations" });
-    }
-  });
-
   router.post('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
@@ -257,13 +246,14 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
       const isGhost = !!entryData.ghost;
 
+      // bristolScore validated by zod (1-7 int), but double-check for safety
+      if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
+        return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
+      }
+
       // Create entry for each selected group
       const entries: DeuceEntry[] = [];
       for (const groupId of targetGroupIds) {
-        // bristolScore validated by zod (1-7 int), but double-check for safety
-        if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
-          return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
-        }
         const entry = await storage.createDeuceEntry({
           ...entryData,
           thoughts: entryData.thoughts ?? "",
