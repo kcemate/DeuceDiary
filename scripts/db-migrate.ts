@@ -191,6 +191,18 @@ const migrations: { name: string; sql: string }[] = [
       created_at timestamp DEFAULT now()
     )`,
   },
+  {
+    name: "add_groups_avatar_url",
+    sql: "ALTER TABLE groups ADD COLUMN IF NOT EXISTS avatar_url varchar",
+  },
+  {
+    name: "add_deuce_entries_latitude",
+    sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS latitude numeric",
+  },
+  {
+    name: "add_deuce_entries_longitude",
+    sql: "ALTER TABLE deuce_entries ADD COLUMN IF NOT EXISTS longitude numeric",
+  },
 ];
 
 export async function runMigrations() {
