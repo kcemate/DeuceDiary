@@ -196,6 +196,7 @@ export interface IStorage {
   createGroup(group: InsertGroup): Promise<Group>;
   getUserGroups(userId: string): Promise<(Group & { memberCount: number; entryCount: number; lastActivity?: Date })[]>;
   getGroupById(groupId: string): Promise<Group | undefined>;
+  updateGroupAvatar(groupId: string, avatarUrl: string): Promise<Group>;
   addGroupMember(member: InsertGroupMember): Promise<GroupMember>;
   getGroupMembers(groupId: string): Promise<(GroupMember & {
     user: User & { personalRecord?: { date: string; count: number } };
@@ -539,6 +540,15 @@ export class DatabaseStorage implements IStorage {
 
       return newGroup;
     });
+  }
+
+  async updateGroupAvatar(groupId: string, avatarUrl: string): Promise<Group> {
+    const [group] = await db
+      .update(groups)
+      .set({ avatarUrl, updatedAt: new Date() })
+      .where(eq(groups.id, groupId))
+      .returning();
+    return group;
   }
 
   async getUserGroups(

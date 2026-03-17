@@ -37,6 +37,7 @@ interface GroupDetail {
     name: string;
     description?: string;
     createdBy: string;
+    avatarUrl?: string | null;
   };
   members: Array<{
     id: number;
@@ -192,6 +193,30 @@ export default function GroupDetail() {
     },
   });
 
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const res = await fetch(`/api/groups/${groupId}/avatar`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Upload failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId] });
+      toast({ title: "Squad photo updated! 📸", description: "Your squad's new look is live." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -339,8 +364,12 @@ export default function GroupDetail() {
 
         {/* Squad identity */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl shrink-0 border border-primary/20">
-            {squadEmoji}
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl shrink-0 border border-primary/20 overflow-hidden">
+            {groupDetail.group.avatarUrl ? (
+              <img src={groupDetail.group.avatarUrl} alt={groupDetail.group.name} className="w-full h-full object-cover" />
+            ) : (
+              squadEmoji
+            )}
           </div>
           <div className="min-w-0">
             <h2 className="text-2xl font-black text-foreground leading-tight truncate">
@@ -606,17 +635,11 @@ export default function GroupDetail() {
               <p className="text-xs font-semibold text-muted-foreground mb-1">
                 {streakData?.currentStreak && streakData.currentStreak >= 3
                   ? `🔥 ${streakData.currentStreak}-day streak — bring in some competition!`
-                  : "Challenge a friend to join your squad"}
+                  : "Invite your friends to join your squad"}
               </p>
               <p className="text-[10px] text-muted-foreground mb-2">
                 They'll see your live feed before they even sign up.
               </p>
-              {user?.subscription !== "premium" && (
-                <div className="mb-2 flex items-center gap-1.5 text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg px-2 py-1.5">
-                  <span>👑</span>
-                  <span>Premium required to invite others. <a href="/premium" className="underline font-bold">Upgrade</a></span>
-                </div>
-              )}
               <div className="flex gap-2">
                 <Button
                   onClick={async () => {
@@ -638,7 +661,7 @@ export default function GroupDetail() {
                     copySuccess ? "border-green-500 text-green-600 bg-green-50" : ""
                   }`}
                 >
-                  {copySuccess ? "✅ Link Copied!" : inviteCrewMutation.isPending ? "Generating..." : "📋 Copy Challenge Link"}
+                  {copySuccess ? "✅ Link Copied!" : inviteCrewMutation.isPending ? "Generating..." : "📋 Copy Invite Link"}
                 </Button>
                 <Button
                   onClick={async () => {
@@ -663,7 +686,7 @@ export default function GroupDetail() {
                   size="sm"
                   className="flex-1 rounded-xl text-xs font-bold"
                 >
-                  🎯 Challenge a Friend
+                  🎯 Invite a Friend
                 </Button>
               </div>
               {inviteCode && (
@@ -673,6 +696,27 @@ export default function GroupDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Upload squad photo — king only */}
+          {kingData?.king?.userId === user?.id && (
+            <div className="mb-3">
+              <label className="cursor-pointer w-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAvatarMutation.mutate(file);
+                    e.target.value = "";
+                  }}
+                />
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+                  {uploadAvatarMutation.isPending ? "Uploading..." : "📸 Upload Squad Photo"}
+                </div>
+              </label>
+            </div>
+          )}
 
           {/* Member list */}
           <div className="space-y-2">
@@ -747,6 +791,9 @@ export default function GroupDetail() {
                         <div className="flex flex-col items-end gap-1 shrink-0">
                           {isAdmin(member) && (
                             <Badge variant="default" className="text-[10px] px-1.5 py-0">Admin</Badge>
+                          )}
+                          {member.user.id === kingData?.king?.userId && (
+                            <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border-0">👑 King</Badge>
                           )}
                           <span className="text-sm" title={loggedToday ? "Logged today" : "Not logged today"}>
                             {loggedToday ? "✅" : "⏳"}

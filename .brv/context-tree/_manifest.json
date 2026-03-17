@@ -1,0 +1,49 @@
+{
+  "active_context": [
+    {
+      "order": 3,
+      "path": "_index.md",
+      "tokens": 511,
+      "type": "summary"
+    },
+    {
+      "order": 2,
+      "path": "monetization/_index.md",
+      "tokens": 511,
+      "type": "summary"
+    },
+    {
+      "order": 1,
+      "path": "monetization/squads/_index.md",
+      "tokens": 379,
+      "type": "summary"
+    },
+    {
+      "importance": 50,
+      "path": "monetization/context.md",
+      "tokens": 85,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "monetization/squads/context.md",
+      "tokens": 45,
+      "type": "context"
+    },
+    {
+      "importance": 50,
+      "path": "monetization/squads/squads_monetization_policy.md",
+      "tokens": 347,
+      "type": "context"
+    }
+  ],
+  "generated_at": "2026-03-17T10:34:38.970Z",
+  "lane_tokens": {
+    "contexts": 477,
+    "stubs": 0,
+    "summaries": 1401
+  },
+  "source_fingerprint": "2e865fde22eccd3ee01aa50e3f2fc59d3aaaef33fed442feca0d0f0f4531c7b7",
+  "total_tokens": 1878,
+  "version": 1
+}

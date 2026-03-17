@@ -61,6 +61,7 @@ export const groups = pgTable("groups", {
   currentStreak: integer("current_streak").default(0).notNull(),
   longestStreak: integer("longest_streak").default(0).notNull(),
   lastStreakDate: varchar("last_streak_date"), // ISO date string YYYY-MM-DD
+  avatarUrl: varchar("avatar_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

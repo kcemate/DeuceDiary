@@ -741,6 +741,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Squad avatar upload — king only
+  app.post('/api/groups/:groupId/avatar',
+    isAuthenticated, requireGroupMember(), upload.single('avatar'),
+    async (req: AuthReq, res) => {
+      try {
+        const userId = req.user.id;
+        const groupId = req.groupId;
+
+        if (!req.file) {
+          return Errors.badRequest(res, "No file uploaded");
+        }
+
+        // Only the current Deuce King may upload
+        const currentKing = await storage.getCurrentKing(groupId);
+        if (!currentKing || currentKing.userId !== userId) {
+          return Errors.forbidden(res, "Only the current Deuce King can upload a squad photo");
+        }
+
+        const filename = `group-${groupId}-${Date.now()}.jpg`;
+        const filepath = path.join(uploadsDir, filename);
+
+        await sharp(req.file.buffer)
+          .resize(200, 200, { fit: "cover" })
+          .jpeg({ quality: 85 })
+          .toFile(filepath);
+
+        const avatarUrl = `/uploads/${filename}`;
+        const updatedGroup = await storage.updateGroupAvatar(groupId, avatarUrl);
+
+        res.json(updatedGroup);
+      } catch (error) {
+        logger.error("Error uploading squad avatar:", error);
+        Errors.internal(res, "Failed to upload squad avatar");
+      }
+    },
+  );
+
   // Invite routes (free — squads are free, enhancements are premium)
   app.post('/api/groups/:groupId/invite',
     isAuthenticated, requireGroupMember(),
