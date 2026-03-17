@@ -25,7 +25,7 @@ export function GoldCrownBadge({ subscription, subscriptionExpiresAt, size = "sm
       title="Porcelain Premium"
       aria-label="Premium member"
     >
-      👑
+      💎
     </span>
   );
 }
