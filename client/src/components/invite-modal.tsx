@@ -19,6 +19,10 @@ interface InviteModalProps {
   groupId: string;
 }
 
+const copyIconPath =
+  "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2" +
+  "m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z";
+
 export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
   const [inviteLink, setInviteLink] = useState("");
   const { toast } = useToast();
@@ -32,7 +36,11 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
     onSuccess: (response: { id: string }) => {
       const inviteId = response.id;
       if (!inviteId) {
-        toast({ title: "Error", description: "Failed to generate invite link - no ID received", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Failed to generate invite link - no ID received",
+          variant: "destructive",
+        });
         return;
       }
       setInviteLink(`${window.location.origin}/join/${inviteId}`);
@@ -111,7 +119,12 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
                 size="sm"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d={copyIconPath}
+                  />
                 </svg>
               </Button>
             </div>

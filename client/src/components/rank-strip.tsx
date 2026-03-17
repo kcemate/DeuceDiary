@@ -10,7 +10,12 @@ export function RankStrip({ deuceCount }: RankStripProps) {
 
   return (
     <Link href="/profile">
-      <div className="bg-card border border-border rounded-2xl p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99]">
+      <div
+        className={
+          "bg-card border border-border rounded-2xl p-3 cursor-pointer" +
+          " hover:border-primary/30 transition-all active:scale-[0.99]"
+        }
+      >
         <div className="flex items-center gap-3">
           <div className="text-2xl shrink-0">{rank.icon}</div>
           <div className="flex-1 min-w-0">

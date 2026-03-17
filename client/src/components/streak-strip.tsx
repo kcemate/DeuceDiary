@@ -21,7 +21,10 @@ export function StreakStrip({ maxStreak }: StreakStripProps) {
   return (
     <Link href="/profile">
       <div
-        className="rounded-2xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99]"
+        className={
+          "rounded-2xl border border-border p-3 cursor-pointer" +
+          " hover:border-primary/30 transition-all active:scale-[0.99]"
+        }
         style={{ backgroundColor: `color-mix(in srgb, ${tier.color} 5%, transparent)` }}
       >
         <div className="flex items-center gap-3">

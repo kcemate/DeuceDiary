@@ -197,7 +197,11 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
           <button
             onClick={() => setShowAllReactions(true)}
             aria-label={`Show ${hiddenCount} more reaction${hiddenCount !== 1 ? 's' : ''}`}
-            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[44px] transition-colors"
+            className={
+              "inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full" +
+              " text-xs font-medium bg-muted hover:bg-muted/80" +
+              " text-muted-foreground min-h-[44px] transition-colors"
+            }
           >
             +{hiddenCount}
             <ChevronDown className="h-3 w-3" aria-hidden="true" />
@@ -206,7 +210,11 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
         {showAllReactions && sortedEntries.length > maxVisible && (
           <button
             onClick={() => setShowAllReactions(false)}
-            className="inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full text-xs font-medium bg-muted hover:bg-muted/80 text-muted-foreground min-h-[44px] transition-colors"
+            className={
+              "inline-flex items-center gap-0.5 px-2 py-1.5 rounded-full" +
+              " text-xs font-medium bg-muted hover:bg-muted/80" +
+              " text-muted-foreground min-h-[44px] transition-colors"
+            }
             aria-label="Show fewer reactions"
           >
             <ChevronDown className="h-3 w-3 rotate-180 transition-transform" />
@@ -237,7 +245,11 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
                     <button
                       key={emoji}
                       onClick={() => handleEmojiClick(emoji)}
-                      className="h-9 w-9 flex items-center justify-center rounded-lg text-xl bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)] hover:bg-[hsl(45,88%,48%)]/30 active:scale-90 transition-all"
+                      className={
+                        "h-9 w-9 flex items-center justify-center rounded-lg text-xl" +
+                        " bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]" +
+                        " hover:bg-[hsl(45,88%,48%)]/30 active:scale-90 transition-all"
+                      }
                       aria-label={`Remove ${emoji}`}
                       title="Tap to remove"
                     >

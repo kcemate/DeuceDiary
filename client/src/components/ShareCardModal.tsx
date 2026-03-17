@@ -12,7 +12,9 @@ import { Copy, Share2, Download } from "lucide-react";
 import { getThroneRank, getStreakTier } from "@/lib/gamification";
 
 // Subtle dot-grid pattern as an inline SVG data URL
-const DOT_GRID_BG = `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='hsl(45%2C55%25%2C72%25)' fill-opacity='0.35'/%3E%3C/svg%3E")`;
+const DOT_GRID_BG =
+  `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E` +
+  `%3Ccircle cx='1' cy='1' r='1' fill='hsl(45%2C55%25%2C72%25)' fill-opacity='0.35'/%3E%3C/svg%3E")`;
 
 export function getStreakTagline(streak: number): string {
   if (streak === 0) return "Ready to start the streak";
@@ -107,7 +109,8 @@ export function ShareCardModal({
           style={{
             background: `${DOT_GRID_BG}, linear-gradient(160deg, hsl(38, 38%, 96%) 0%, hsl(38, 28%, 91%) 100%)`,
             border: "1.5px solid hsl(45, 55%, 72%)",
-            boxShadow: "0 2px 16px hsl(45 60% 60% / 0.12), 0 1px 3px hsl(25 20% 20% / 0.08)",
+            boxShadow:
+              "0 2px 16px hsl(45 60% 60% / 0.12), 0 1px 3px hsl(25 20% 20% / 0.08)",
           }}
         >
           {/* Gold accent bar at top */}
@@ -120,7 +123,10 @@ export function ShareCardModal({
             {/* Streak tier badge */}
           <div className="flex justify-center mb-3">
             <span
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+              className={
+                "inline-flex items-center gap-1 px-3 py-1 rounded-full" +
+                " text-xs font-bold uppercase tracking-wider"
+              }
               style={{
                 background: "hsl(45, 88%, 48%)",
                 color: "hsl(25, 30%, 8%)",
@@ -175,30 +181,48 @@ export function ShareCardModal({
           >
             <div className="text-center">
               <div className="text-base leading-none mb-0.5">💩</div>
-              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+              <div
+                className="text-lg font-black leading-none"
+                style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}
+              >
                 {data?.totalLogs ?? 0}
               </div>
-              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
+                style={{ color: "hsl(25, 12%, 42%)" }}
+              >
                 Logs
               </div>
             </div>
             <div className="w-px self-stretch" style={{ background: "hsl(38, 18%, 80%)" }} />
             <div className="text-center">
               <div className="text-base leading-none mb-0.5">🏆</div>
-              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+              <div
+                className="text-lg font-black leading-none"
+                style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}
+              >
                 {data?.longestStreak ?? 0}
               </div>
-              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
+                style={{ color: "hsl(25, 12%, 42%)" }}
+              >
                 Best Streak
               </div>
             </div>
             <div className="w-px self-stretch" style={{ background: "hsl(38, 18%, 80%)" }} />
             <div className="text-center">
               <div className="text-base leading-none mb-0.5">👥</div>
-              <div className="text-lg font-black leading-none" style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}>
+              <div
+                className="text-lg font-black leading-none"
+                style={{ color: "hsl(25, 30%, 8%)", fontVariantNumeric: "tabular-nums" }}
+              >
                 {data?.squadCount ?? 0}
               </div>
-              <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5" style={{ color: "hsl(25, 12%, 42%)" }}>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
+                style={{ color: "hsl(25, 12%, 42%)" }}
+              >
                 Squads
               </div>
             </div>
@@ -208,14 +232,23 @@ export function ShareCardModal({
           {rank.nextRank && (
             <div className="mt-4 px-1">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 42%)" }}>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wider"
+                  style={{ color: "hsl(25, 12%, 42%)" }}
+                >
                   {rank.rank.icon} {rank.rank.title}
                 </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "hsl(25, 12%, 52%)" }}>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-wider"
+                  style={{ color: "hsl(25, 12%, 52%)" }}
+                >
                   {rank.nextRank.icon} {rank.nextRank.title}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full w-full overflow-hidden" style={{ background: "hsl(38, 25%, 84%)" }}>
+              <div
+                className="h-1.5 rounded-full w-full overflow-hidden"
+                style={{ background: "hsl(38, 25%, 84%)" }}
+              >
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -240,7 +273,13 @@ export function ShareCardModal({
             <div className="text-[10px] mt-0.5" style={{ color: "hsl(25, 12%, 52%)" }}>
               Drop a log. Leave a mark.
               {data?.memberSince && (
-                <> · Member since {new Date(data.memberSince).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</>
+                <>
+                  {" "}· Member since{" "}
+                  {new Date(data.memberSince).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </>
               )}
             </div>
           </div>

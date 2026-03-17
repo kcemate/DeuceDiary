@@ -148,7 +148,11 @@ export function GroupWeeklyReport({ groupId }: { groupId: string }) {
             </div>
 
             {/* Fun facts */}
-            {(report.funnyStats.longestGap || report.funnyStats.mostReactionsReceived || report.funnyStats.funniestEntry) && (
+            {(
+              report.funnyStats.longestGap ||
+              report.funnyStats.mostReactionsReceived ||
+              report.funnyStats.funniestEntry
+            ) && (
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
                   Fun Facts
@@ -156,17 +160,29 @@ export function GroupWeeklyReport({ groupId }: { groupId: string }) {
                 <div className="space-y-1.5">
                   {report.funnyStats.longestGap && (
                     <p className="text-xs text-muted-foreground">
-                      💤 <span className="font-medium text-foreground">{report.funnyStats.longestGap.username || "Someone"}</span> — longest gap: {report.funnyStats.longestGap.gapDays} day{report.funnyStats.longestGap.gapDays !== 1 ? "s" : ""}
+                      💤{" "}
+                      <span className="font-medium text-foreground">
+                        {report.funnyStats.longestGap.username || "Someone"}
+                      </span>
+                      {" "}— longest gap: {report.funnyStats.longestGap.gapDays} day
+                      {report.funnyStats.longestGap.gapDays !== 1 ? "s" : ""}
                     </p>
                   )}
                   {report.funnyStats.mostReactionsReceived && (
                     <p className="text-xs text-muted-foreground">
-                      🎭 <span className="font-medium text-foreground">{report.funnyStats.mostReactionsReceived.username || "Someone"}</span> — most reactions: {report.funnyStats.mostReactionsReceived.reactionCount}
+                      🎭{" "}
+                      <span className="font-medium text-foreground">
+                        {report.funnyStats.mostReactionsReceived.username || "Someone"}
+                      </span>
+                      {" "}— most reactions: {report.funnyStats.mostReactionsReceived.reactionCount}
                     </p>
                   )}
                   {report.funnyStats.funniestEntry && (
                     <p className="text-xs text-muted-foreground">
-                      😂 Best quote: "{report.funnyStats.funniestEntry.thought}" — <span className="font-medium text-foreground">{report.funnyStats.funniestEntry.username || "Anonymous"}</span>
+                      😂 Best quote: &ldquo;{report.funnyStats.funniestEntry.thought}&rdquo; —{" "}
+                      <span className="font-medium text-foreground">
+                        {report.funnyStats.funniestEntry.username || "Anonymous"}
+                      </span>
                     </p>
                   )}
                 </div>

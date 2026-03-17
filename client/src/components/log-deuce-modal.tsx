@@ -9,7 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -70,7 +76,12 @@ const BINGO_NUDGES = [
   "🎯 Bingo progress updated!",
 ];
 
-function getSuccessMessage(streak: number, count: number, totalDeuces?: number, isPremium?: boolean): { title: string; description: string } {
+function getSuccessMessage(
+  streak: number,
+  count: number,
+  totalDeuces?: number,
+  isPremium?: boolean,
+): { title: string; description: string } {
   // Check for milestone first
   if (totalDeuces && DEUCE_MILESTONES[totalDeuces]) {
     return {
@@ -102,13 +113,20 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   const [showCustomLocation, setShowCustomLocation] = useState(false);
   const [showDateTimePicker, setShowDateTimePicker] = useState(false);
   const [shareLocation, setShareLocation] = useState(false);
-  const [geoCoords, setGeoCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [geoCoords, setGeoCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isOnline, syncQueue } = useOfflineSync();
 
-  const { data: groups = [], error: groupsError, isLoading: groupsLoading } = useQuery<Group[]>({
+  const {
+    data: groups = [],
+    error: groupsError,
+    isLoading: groupsLoading,
+  } = useQuery<Group[]>({
     queryKey: ["/api/groups"],
     enabled: open,
   });
@@ -179,12 +197,22 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
   });
 
   const logDeuceMutation = useMutation({
-    mutationFn: async (data: { location: string; thoughts: string; groupIds: string[]; loggedAt: string; latitude?: number; longitude?: number }) => {
+    mutationFn: async (data: {
+      location: string;
+      thoughts: string;
+      groupIds: string[];
+      loggedAt: string;
+      latitude?: number;
+      longitude?: number;
+    }) => {
       // Optimistically update the user's deuce count in the cache
-      queryClient.setQueryData(["/api/auth/user"], (old: { deuceCount?: number } | undefined) => {
-        if (!old) return old;
-        return { ...old, deuceCount: (old.deuceCount ?? 0) + 1 };
-      });
+      queryClient.setQueryData(
+        ["/api/auth/user"],
+        (old: { deuceCount?: number } | undefined) => {
+          if (!old) return old;
+          return { ...old, deuceCount: (old.deuceCount ?? 0) + 1 };
+        },
+      );
 
       // If offline, queue and return a synthetic success response
       if (!navigator.onLine) {
@@ -199,19 +227,29 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         });
       } catch (err) {
         // Network failure mid-request — queue for later
-        if (err instanceof TypeError && err.message.toLowerCase().includes('fetch')) {
+        if (
+          err instanceof TypeError &&
+          err.message.toLowerCase().includes('fetch')
+        ) {
           await addToQueue({ id: uuidv4(), ...data });
           return { count: data.groupIds.length, queued: true };
         }
         // Roll back optimistic count update for non-network errors
-        queryClient.setQueryData(["/api/auth/user"], (old: { deuceCount?: number } | undefined) => {
-          if (!old) return old;
-          return { ...old, deuceCount: Math.max(0, (old.deuceCount ?? 1) - 1) };
-        });
+        queryClient.setQueryData(
+          ["/api/auth/user"],
+          (old: { deuceCount?: number } | undefined) => {
+            if (!old) return old;
+            return { ...old, deuceCount: Math.max(0, (old.deuceCount ?? 1) - 1) };
+          },
+        );
         throw err;
       }
     },
-    onSuccess: (response: { count?: number; queued?: boolean; streak?: number }) => {
+    onSuccess: (response: {
+      count?: number;
+      queued?: boolean;
+      streak?: number;
+    }) => {
       const count = response.count || 1;
       if (response.queued) {
         toast({
@@ -221,9 +259,17 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
         // Kick off sync in background (no-op if still offline)
         syncQueue();
       } else {
-        const userData = queryClient.getQueryData<{ deuceCount?: number; subscription?: string }>(["/api/auth/user"]);
+        const userData = queryClient.getQueryData<{
+          deuceCount?: number;
+          subscription?: string;
+        }>(["/api/auth/user"]);
         const isPremium = userData?.subscription === "premium";
-        const { title, description } = getSuccessMessage(response.streak || 0, count, userData?.deuceCount, isPremium);
+        const { title, description } = getSuccessMessage(
+          response.streak || 0,
+          count,
+          userData?.deuceCount,
+          isPremium,
+        );
         toast({ title, description });
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
         queryClient.invalidateQueries({ queryKey: ["/api/deuces"] });
@@ -275,7 +321,11 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
       return;
     }
     if (!navigator.geolocation) {
-      toast({ title: "Not supported", description: "Geolocation is not supported by your browser", variant: "destructive" });
+      toast({
+        title: "Not supported",
+        description: "Geolocation is not supported by your browser",
+        variant: "destructive",
+      });
       return;
     }
     setGeoLoading(true);
@@ -287,7 +337,11 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
       },
       (err) => {
         setGeoLoading(false);
-        toast({ title: "Location denied", description: "Enable location access in your browser settings to use this feature", variant: "destructive" });
+        toast({
+          title: "Location denied",
+          description: "Enable location access in your browser settings to use this feature",
+          variant: "destructive",
+        });
       },
       { enableHighAccuracy: false, timeout: 10000 },
     );
@@ -494,7 +548,10 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
           </div>
 
           <div>
-            <Label htmlFor="thoughts">What's on your mind? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Label htmlFor="thoughts">
+              What's on your mind?{" "}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
             <Textarea
               id="thoughts"
               placeholder="Share your throne thoughts... or skip and go fast 💨"
@@ -517,7 +574,9 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
             {groupsLoading ? (
               <div className="text-sm text-muted-foreground">Loading groups...</div>
             ) : groupsError ? (
-              <div className="text-sm text-red-500">Error loading groups: {groupsError.message}</div>
+              <div className="text-sm text-red-500">
+                Error loading groups: {groupsError.message}
+              </div>
             ) : groups.length === 0 ? (
               <div className="bg-muted rounded-lg p-3 text-center">
                 <p className="text-sm text-muted-foreground mb-2">You need a group to log deuces.</p>
@@ -548,7 +607,11 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
             ) : (
               <div className="space-y-2">
                 <div className="text-xs text-muted-foreground mb-2">
-                  Selected: {selectedGroupIds.map(id => groups.find(g => g.id === id)?.name).filter(Boolean).join(', ') || 'None'}
+                  Selected:{" "}
+                  {selectedGroupIds
+                    .map((id) => groups.find((g) => g.id === id)?.name)
+                    .filter(Boolean)
+                    .join(", ") || "None"}
                 </div>
                 {groups.map((group) => {
                   const isSelected = selectedGroupIds.includes(group.id);
@@ -558,7 +621,8 @@ export function LogDeuceModal({ open, onOpenChange }: LogDeuceModalProps) {
                         id={`group-${group.id}`}
                         checked={isSelected}
                         onCheckedChange={(checked) => {
-                          const isChecked = checked === true || checked === 'indeterminate';
+                          const isChecked =
+                            checked === true || checked === 'indeterminate';
                           if (isChecked) {
                             setSelectedGroupIds(prev => {
                               if (prev.includes(group.id)) return prev;

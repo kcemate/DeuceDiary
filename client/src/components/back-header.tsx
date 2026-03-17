@@ -14,7 +14,10 @@ export function BackHeader({ to, label, title }: BackHeaderProps) {
     <div className="flex items-center gap-3 mb-6">
       <button
         onClick={() => setLocation(to)}
-        className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors active:scale-95"
+        className={
+          "flex items-center gap-1.5 text-sm font-medium text-muted-foreground" +
+          " hover:text-foreground transition-colors active:scale-95"
+        }
         aria-label={`Back to ${label}`}
       >
         <ArrowLeft className="w-4 h-4" />

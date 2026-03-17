@@ -43,7 +43,12 @@ export function BingoNudge() {
 
   return (
     <Link href="/bingo">
-      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 cursor-pointer hover:border-primary/40 active:scale-[0.99] transition-all">
+      <div
+        className={
+          "bg-primary/5 border border-primary/20 rounded-2xl p-4 cursor-pointer" +
+          " hover:border-primary/40 active:scale-[0.99] transition-all"
+        }
+      >
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <span className="text-lg">🎯</span>

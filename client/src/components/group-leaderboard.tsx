@@ -178,7 +178,9 @@ export function GroupLeaderboard({ groupId }: { groupId: string }) {
           return ("totalDeuces" in d ? d.totalDeuces : 0) === 0;
         }) && (
           <p className="text-xs text-muted-foreground text-center mt-2">
-            No deuces logged {timeRange === "weekly" ? "this week" : timeRange === "monthly" ? "this month" : ""} yet. Time to claim the throne!
+            No deuces logged{" "}
+            {timeRange === "weekly" ? "this week" : timeRange === "monthly" ? "this month" : ""}{" "}
+            yet. Time to claim the throne!
           </p>
         )}
       </CardContent>

@@ -39,7 +39,12 @@ export function BingoStrip() {
 
   return (
     <Link href="/bingo">
-      <div className="rounded-2xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99] bg-card">
+      <div
+        className={
+          "rounded-2xl border border-border p-3 cursor-pointer" +
+          " hover:border-primary/30 transition-all active:scale-[0.99] bg-card"
+        }
+      >
         <div className="flex items-center gap-3">
           {/* Mini 5x5 grid */}
           <div className="shrink-0 grid grid-cols-5 gap-[2px] w-8 h-8">

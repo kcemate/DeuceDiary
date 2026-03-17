@@ -34,7 +34,12 @@ export function NextBadgeTeaser({ deuceCount }: NextBadgeTeaserProps) {
 
     return (
       <Link href="/profile">
-        <div className="bg-card border border-border rounded-2xl p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99]">
+        <div
+          className={
+            "bg-card border border-border rounded-2xl p-3 cursor-pointer" +
+            " hover:border-primary/30 transition-all active:scale-[0.99]"
+          }
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
               <span className="text-xl">{nextMilestone.emoji}</span>
@@ -50,7 +55,10 @@ export function NextBadgeTeaser({ deuceCount }: NextBadgeTeaserProps) {
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700"
+                  className={
+                    "h-full bg-gradient-to-r from-amber-400 to-yellow-500" +
+                    " rounded-full transition-all duration-700"
+                  }
                   style={{ width: `${Math.min(progress, 100)}%` }}
                 />
               </div>
@@ -68,9 +76,19 @@ export function NextBadgeTeaser({ deuceCount }: NextBadgeTeaserProps) {
   if (nextBadge) {
     return (
       <Link href="/profile">
-        <div className="bg-card border border-border rounded-2xl p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99]">
+        <div
+          className={
+            "bg-card border border-border rounded-2xl p-3 cursor-pointer" +
+            " hover:border-primary/30 transition-all active:scale-[0.99]"
+          }
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 opacity-50 grayscale">
+            <div
+              className={
+                "w-10 h-10 rounded-xl bg-amber-500/10 flex items-center" +
+                " justify-center shrink-0 opacity-50 grayscale"
+              }
+            >
               <span className="text-xl">{nextBadge.emoji}</span>
             </div>
             <div className="flex-1 min-w-0">

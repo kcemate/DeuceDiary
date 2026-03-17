@@ -134,7 +134,12 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
               <p className="text-sm text-muted-foreground mt-1">Your squad is live! 🎉</p>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3 w-full justify-center">
+            <div
+              className={
+                "flex items-center gap-2 text-sm text-muted-foreground bg-muted" +
+                " rounded-lg px-4 py-3 w-full justify-center"
+              }
+            >
               <Users className="h-4 w-4 shrink-0" />
               <span>Invite friends from your squad page</span>
             </div>
@@ -168,7 +173,10 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 <button
                   type="button"
                   onClick={() => setShowIconPicker(v => !v)}
-                  className="h-10 w-12 flex items-center justify-center rounded-md border border-input bg-background text-xl hover:bg-muted transition-colors"
+                  className={
+                    "h-10 w-12 flex items-center justify-center rounded-md border" +
+                    " border-input bg-background text-xl hover:bg-muted transition-colors"
+                  }
                   aria-label="Pick squad icon"
                   aria-expanded={showIconPicker}
                 >
@@ -184,7 +192,12 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 )}
 
                 {showIconPicker && (
-                  <div className="absolute top-12 left-0 z-50 bg-popover border rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 w-[196px] max-h-48 overflow-y-auto">
+                  <div
+                    className={
+                      "absolute top-12 left-0 z-50 bg-popover border rounded-lg shadow-lg p-2" +
+                      " grid grid-cols-6 gap-1 w-[196px] max-h-48 overflow-y-auto"
+                    }
+                  >
                     {SQUAD_ICONS.map(e => (
                       <button
                         key={e}
@@ -193,7 +206,9 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                         className={[
                           "h-8 w-8 flex items-center justify-center rounded text-lg",
                           "hover:bg-muted transition-colors",
-                          icon === e ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]" : "",
+                          icon === e
+                            ? "bg-[hsl(45,88%,48%)]/20 ring-1 ring-[hsl(45,88%,48%)]"
+                            : "",
                         ].join(' ')}
                       >
                         {e}
@@ -216,7 +231,7 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
                 <span className={[
                   "absolute right-3 top-1/2 -translate-y-1/2 text-xs tabular-nums pointer-events-none",
                   nameRemaining <= 10 ? "text-destructive" : "text-muted-foreground",
-                ].join(' ')}>
+                ].join(" ")}>
                   {nameRemaining}
                 </span>
               </div>

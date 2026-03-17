@@ -179,7 +179,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             return (
               <div key={s} className="flex items-center gap-2">
                 <div
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold` +
+                    ` transition-all duration-300 ${
                     isActive
                       ? "bg-primary text-white shadow-md"
                       : isDone
@@ -217,7 +218,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               onClick={onComplete}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              className={
+                "text-xs text-muted-foreground hover:text-foreground transition-colors" +
+                " underline-offset-2 hover:underline"
+              }
             >
               Skip for now →
             </motion.button>
@@ -259,7 +263,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       Welcome to Deuce Diary!
                     </h2>
                     <p className="text-muted-foreground">
-                      Every throne needs a name on the door. Pick your username — this is how your squad will know you.
+                      Every throne needs a name on the door. Pick your username —{" "}
+                      this is how your squad will know you.
                     </p>
                   </div>
 
@@ -282,7 +287,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           autoFocus
                         />
                         {/* Character count */}
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">
+                        <span
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono"
+                        >
                           {username.length}/20
                         </span>
                         {/* Validity indicator */}
@@ -368,7 +375,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       Squad up or fly solo?
                     </h2>
                     <p className="text-muted-foreground text-sm">
-                      Your <strong>Solo Deuces</strong> group is ready — but you can also battle friends on the leaderboard.
+                      Your <strong>Solo Deuces</strong> group is ready — but you can also{" "}
+                      battle friends on the leaderboard.
                     </p>
                   </div>
 
@@ -388,7 +396,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <p className="font-bold text-foreground text-sm">Create a Squad</p>
                         <p className="text-muted-foreground text-xs">Start a group and invite your friends</p>
                       </div>
-                      <span className="text-muted-foreground text-xs">{squadMode === "create" ? "▲" : "▼"}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {squadMode === "create" ? "▲" : "▼"}
+                      </span>
                     </button>
                     <AnimatePresence>
                       {squadMode === "create" && (
@@ -407,7 +417,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                               className="rounded-xl text-sm"
                               maxLength={40}
                             />
-                            <p className="text-muted-foreground text-xs mt-1 text-center">You can always create a squad later from Groups</p>
+                            <p className="text-muted-foreground text-xs mt-1 text-center">
+                              You can always create a squad later from Groups
+                            </p>
                           </div>
                         </motion.div>
                       )}
@@ -428,7 +440,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <p className="font-bold text-foreground text-sm">Join a Squad</p>
                         <p className="text-muted-foreground text-xs">Enter an invite code from a friend</p>
                       </div>
-                      <span className="text-muted-foreground text-xs">{squadMode === "join" ? "▲" : "▼"}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {squadMode === "join" ? "▲" : "▼"}
+                      </span>
                     </button>
                     <AnimatePresence>
                       {squadMode === "join" && (
@@ -447,7 +461,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                               className="rounded-xl text-sm text-center tracking-widest font-mono"
                               maxLength={10}
                             />
-                            <p className="text-muted-foreground text-xs mt-1 text-center">Get the code from a friend who invited you</p>
+                            <p className="text-muted-foreground text-xs mt-1 text-center">
+                              Get the code from a friend who invited you
+                            </p>
                           </div>
                         </motion.div>
                       )}
@@ -480,7 +496,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                      "Continue to first log! 💪"}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground mt-2">
-                    Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> to continue
+                    Press{" "}
+                    <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">
+                      Enter
+                    </kbd>{" "}
+                    to continue
                   </p>
                 </CardContent>
               </Card>
@@ -522,10 +542,17 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     </p>
                   </div>
 
-                  <div className="relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-xl mb-6 border border-border">
+                  <div
+                    className={
+                      "relative overflow-hidden bg-gradient-to-br from-card to-muted" +
+                      " p-6 rounded-xl mb-6 border border-border"
+                    }
+                  >
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
-                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Total Deuces</p>
+                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">
+                          Total Deuces
+                        </p>
                         <motion.p
                           key={statCount}
                           initial={{ scale: 1.4, color: "var(--primary)" }}
@@ -549,7 +576,12 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         <span className="text-3xl">🚽</span>
                       </div>
                     </div>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                    <div
+                      className={
+                        "absolute top-0 right-0 w-32 h-32 bg-primary/5" +
+                        " rounded-full -translate-y-1/2 translate-x-1/2"
+                      }
+                    />
                   </div>
 
                   <div className="relative">
@@ -562,7 +594,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       {celebrating ? "Here we go! 🎉" : "Log a Deuce"}
                     </Button>
                     <p className="text-center text-xs text-muted-foreground mt-2">
-                      Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">Enter</kbd> to continue
+                      Press{" "}
+                      <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">
+                        Enter
+                      </kbd>{" "}
+                      to continue
                     </p>
                     {/* Confetti burst */}
                     <AnimatePresence>
