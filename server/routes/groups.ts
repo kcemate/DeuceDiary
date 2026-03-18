@@ -410,10 +410,14 @@ export function createGroupsRouter(uploadsDir: string): Router {
     res.json(updatedGroup);
   }));
 
+  // OG HTML page for invite links -- crawlers get rich meta tags (public)
+  const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const INVITE_NOT_FOUND_HTML = '<html><body><h1>Invite not found or expired</h1></body></html>';
+
   // Group preview for invite landing page (public — no auth)
   router.get('/api/groups/preview/:inviteCode', asyncRoute("Failed to fetch group preview", async (req, res) => {
     const { inviteCode } = req.params;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
+    if (!INVITE_UUID_RE.test(inviteCode)) {
       return res.status(404).json({ message: "Invite not found" });
     }
     const invite = await storage.getInviteById(inviteCode);
@@ -461,9 +465,6 @@ export function createGroupsRouter(uploadsDir: string): Router {
     res.json(preview);
   }));
 
-  // OG HTML page for invite links -- crawlers get rich meta tags (public)
-  const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const INVITE_NOT_FOUND_HTML = '<html><body><h1>Invite not found or expired</h1></body></html>';
   router.get('/api/og/invite/:inviteCode', asyncRoute("Failed to render invite OG page", async (req, res) => {
     const { inviteCode } = req.params;
     // Validate UUID format before using in HTML href to prevent injection
