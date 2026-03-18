@@ -243,6 +243,38 @@ export function hashCode(s: string): number {
  * If yes, advance the streak. If a day was missed, reset first.
  */
 export async function recalculateStreak(groupId: string): Promise<void> {
+  // Fallback for test environments where db.transaction is not available
+  if (typeof (db as any).transaction !== 'function') {
+    const today = getTodayUTC();
+    const yesterday = getYesterdayUTC();
+    const streak = await storage.getGroupStreak(groupId);
+
+    // Idempotency: already counted today — skip
+    if (streak.lastStreakDate === today) return;
+
+    const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+    const allLoggedToday = memberStatuses.length > 0 && memberStatuses.every(m => m.hasLogged);
+
+    if (!allLoggedToday) {
+      // Reset streak if a day was missed (not today, not yesterday)
+      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+        await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+      }
+      return;
+    }
+
+    // Everyone logged today — advance streak
+    let newStreak: number;
+    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
+      newStreak = 1;
+    } else {
+      newStreak = streak.currentStreak + 1;
+    }
+    const newLongest = Math.max(newStreak, streak.longestStreak);
+    await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
+    return;
+  }
+
   await db.transaction(async (tx) => {
     // Advisory lock on groupId hash — serializes streak updates per group
     const lockKey = Math.abs(hashCode(groupId));

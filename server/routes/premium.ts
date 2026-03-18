@@ -65,6 +65,19 @@ export function createPremiumRouter(): Router {
 
       await storage.applyReferral(userId, referrer.id);
 
+      // Auto-grant 1 month premium to referrer after reaching 3 referrals
+      const updatedReferrer = await storage.getUser(referrer.id);
+      if (updatedReferrer && (updatedReferrer.referralCount ?? 0) >= 3) {
+        const isPremiumActive = updatedReferrer.subscription === 'premium' &&
+          updatedReferrer.subscriptionExpiresAt &&
+          new Date(updatedReferrer.subscriptionExpiresAt) > new Date();
+        if (!isPremiumActive) {
+          const expiresAt = new Date();
+          expiresAt.setMonth(expiresAt.getMonth() + 1);
+          await storage.updateUserSubscription(referrer.id, 'premium', expiresAt);
+        }
+      }
+
       res.json({ ok: true, referrerUsername: referrer.username });
     } catch (error) {
       // DB unique constraint fired — concurrent duplicate application
@@ -180,11 +193,14 @@ export function createPremiumRouter(): Router {
     res.json(topDay);
   }));
 
-  // Weekly Throne Report (premium)
+  // Weekly Throne Report (premium) — IDOR: users can only access their own report
   router.get('/api/users/:userId/weekly-report',
     isAuthenticated, requiresPremiumFor('analytics'),
     wrap('Error fetching weekly report:', 'Failed to fetch weekly report', async (req, res) => {
     const targetUserId = req.params.userId === 'me' ? req.user.id : req.params.userId;
+    if (targetUserId !== req.user.id) {
+      return res.status(403).json({ message: 'Cannot access another user\'s weekly report' });
+    }
     const report = await storage.getWeeklyReport(targetUserId);
     res.json(report);
   }));
