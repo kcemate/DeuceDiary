@@ -51,6 +51,7 @@ const memStore = vi.hoisted(() => {
     async addGroupMember(member: any) { const m = { id: _memberId++, groupId: member.groupId, userId: member.userId, role: member.role ?? "member", joinedAt: new Date() }; _members.push(m); return m; },
     async getGroupMembers(groupId: string) { return _members.filter((m) => m.groupId === groupId).map((m) => ({ ...m, user: { ..._users.get(m.userId), personalRecord: undefined } })); },
     async isUserInGroup(userId: string, groupId: string) { return _members.some((m) => m.userId === userId && m.groupId === groupId); },
+    async isUserInGroups(userId: string, groupIds: string[]) { return new Set(groupIds.filter((gid) => _members.some((m) => m.userId === userId && m.groupId === gid))); },
     async removeGroupMember(userId: string, groupId: string) { _members = _members.filter((m) => !(m.userId === userId && m.groupId === groupId)); },
     async createDeuceEntry(entry: any) {
       const e = { id: entry.id, userId: entry.userId, groupId: entry.groupId, location: entry.location, thoughts: entry.thoughts, ghost: entry.ghost ?? false, loggedAt: entry.loggedAt, createdAt: new Date() };

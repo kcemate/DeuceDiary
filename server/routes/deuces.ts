@@ -4,9 +4,11 @@ import { WebSocket } from "ws";
 import { storage } from "../storage";
 import { db } from "../db";
 import { deuceEntries, users } from "@shared/schema";
+import type { DeuceEntry } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { isAuthenticated } from "../replitAuth";
 import { track } from "../lib/analytics";
+import { triggerPassportStamp } from "../lib/geocode";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import {
@@ -20,9 +22,6 @@ import {
 
 // Simple emoji schema — accepts any non-empty string (original behavior)
 const reactionSchema = z.object({ emoji: z.string().min(1).max(10) });
-const deleteReactionSchema = reactionSchema;
-import { triggerPassportStamp } from "../lib/geocode";
-import type { DeuceEntry } from "@shared/schema";
 
 const syncDeuceSchema = z.object({
   entries: z.array(z.object({
@@ -130,7 +129,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
-      const parsed = deleteReactionSchema.safeParse(req.body);
+      const parsed = reactionSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Emoji is required" });
       }
@@ -247,10 +246,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: "At least one group must be selected" });
       }
 
-      // Check if user is in all selected groups
+      // Check if user is in all selected groups (batch)
+      const memberGroupIds = await storage.isUserInGroups(userId, targetGroupIds);
       for (const gid of targetGroupIds) {
-        const isInGroup = await storage.isUserInGroup(userId, gid);
-        if (!isInGroup) {
+        if (!memberGroupIds.has(gid)) {
           return res.status(403).json({ message: `Not authorized for group ${gid}` });
         }
       }
@@ -402,9 +401,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: "bristolScore must be an integer between 1 and 7" });
       }
 
+      const bulkMemberGroupIds = await storage.isUserInGroups(userId, targetGroupIds);
       for (const gid of targetGroupIds) {
-        const isInGroup = await storage.isUserInGroup(userId, gid);
-        if (!isInGroup) return res.status(403).json({ message: `Not authorized for group ${gid}` });
+        if (!bulkMemberGroupIds.has(gid)) return res.status(403).json({ message: `Not authorized for group ${gid}` });
       }
 
       let loggedAt: Date;
@@ -475,6 +474,35 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         }
       }
 
+      // Streak milestone tracking
+      const STREAK_MILESTONES = [7, 30, 100, 365];
+      const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
+      for (const gid of targetGroupIds) {
+        const { currentStreak } = streakMap.get(gid) ?? { currentStreak: 0 };
+        if (STREAK_MILESTONES.includes(currentStreak)) {
+          track("streak_milestone", userId, { groupId: gid, streak: currentStreak });
+        }
+      }
+
+      // Passport stamp (fire-and-forget)
+      triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
+        storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
+
+      // Battle tokens for active matches
+      const bulkEntryId = entries[0]?.id ?? '';
+      try {
+        const activeMatches = await storage.getUserActiveMatches(userId);
+        const activeOnly = activeMatches.filter((m: any) => m.status === 'active');
+        for (const match of activeOnly) {
+          await storage.createBattleToken(match.id, userId, bulkEntryId, 'standard');
+          if (currentCount >= 1) {
+            await storage.createBattleToken(match.id, userId, bulkEntryId, 'double_flush');
+          }
+        }
+      } catch (err) {
+        logger.error({ err }, "Error generating battle tokens");
+      }
+
       res.json({ entries, count: entries.length });
     } catch (error) {
       logger.error({ err: error }, "Error creating bulk deuce entry");
@@ -491,6 +519,11 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const userId = req.user.id;
       const today = getTodayUTC();
       const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
+
+      const syncUser = await storage.getUser(userId);
+      const syncDisplayName = syncUser?.username ||
+        (syncUser?.firstName && syncUser?.lastName ? `${syncUser.firstName} ${syncUser.lastName}` : syncUser?.firstName) ||
+        'Someone';
 
       for (const entry of parsed.data.entries) {
         try {
@@ -529,8 +562,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
             loggedAt = new Date();
           }
 
+          const syncEntries: DeuceEntry[] = [];
           for (const gid of validGroups) {
-            await storage.createDeuceEntry({
+            const created = await storage.createDeuceEntry({
               location: entry.location,
               thoughts: entry.thoughts ?? '',
               ghost: false,
@@ -541,10 +575,43 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
               loggedAt,
               id: uuidv4(),
             });
+            syncEntries.push(created);
           }
 
           await storage.updateUserDeuceCount(userId, 1);
           track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
+
+          // WebSocket broadcast to group members
+          const safeUser = syncUser ? sanitizeUserForResponse(syncUser) : null;
+          for (const gid of validGroups) {
+            const groupEntry = syncEntries.find(e => e.groupId === gid);
+            broadcastToGroup(gid, {
+              type: 'deuce_logged',
+              message: `${syncDisplayName} logged a new deuce`,
+              entry: { ...groupEntry, user: safeUser },
+              userId,
+            });
+          }
+
+          // Battle tokens for active matches
+          const syncEntryId = syncEntries[0]?.id ?? '';
+          const syncCount = await storage.getUserDailyLogCount(userId, today);
+          try {
+            const activeMatches = await storage.getUserActiveMatches(userId);
+            const activeOnly = activeMatches.filter((m: any) => m.status === 'active');
+            for (const match of activeOnly) {
+              await storage.createBattleToken(match.id, userId, syncEntryId, 'standard');
+              if (syncCount >= 1) {
+                await storage.createBattleToken(match.id, userId, syncEntryId, 'double_flush');
+              }
+            }
+          } catch (err) {
+            logger.error({ err }, '[sync] Error generating battle tokens');
+          }
+
+          // Passport stamp (fire-and-forget)
+          triggerPassportStamp(undefined, undefined, (geo, lat, lon) =>
+            storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
 
           for (const gid of validGroups) {
             try { await recalculateStreak(gid); } catch (err) {

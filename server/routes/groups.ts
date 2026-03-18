@@ -362,12 +362,20 @@ export function createGroupsRouter(uploadsDir: string): Router {
       return res.status(400).json({ message: "Missing user ID" });
     }
 
+    const members = await storage.getGroupMembers(groupId);
+
     if (requestingUserId !== targetUserId) {
-      const members = await storage.getGroupMembers(groupId);
       const requestingMember = members.find(m => m.userId === requestingUserId);
       if (!requestingMember || requestingMember.role !== "admin") {
         return res.status(403).json({ message: "Only admins can remove other members" });
       }
+    }
+
+    // Guard: cannot remove the last admin while other members remain
+    const admins = members.filter(m => m.role === "admin");
+    const targetIsAdmin = admins.some(m => m.userId === targetUserId);
+    if (targetIsAdmin && admins.length === 1 && members.length > 1) {
+      return res.status(400).json({ message: "Cannot remove the last admin. Transfer admin role first." });
     }
 
     await storage.removeGroupMember(targetUserId, groupId);

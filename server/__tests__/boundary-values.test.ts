@@ -127,6 +127,7 @@ const memStore = vi.hoisted(() => {
       return _members.filter(m => m.groupId === groupId).map(m => ({ ...m, user: _users.get(m.userId) }));
     },
     async isUserInGroup(userId: string, groupId: string) { return _members.some(m => m.userId === userId && m.groupId === groupId); },
+    async isUserInGroups(userId: string, groupIds: string[]) { return new Set(groupIds.filter(gid => _members.some(m => m.userId === userId && m.groupId === gid))); },
     async removeGroupMember(userId: string, groupId: string) { _members = _members.filter(m => !(m.userId === userId && m.groupId === groupId)); },
     async getGroupMemberRole(_groupId: string, _userId: string) {
       const m = _members.find(m => m.groupId === _groupId && m.userId === _userId); return m?.role ?? null;
