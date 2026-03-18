@@ -1,11 +1,10 @@
 import { Router, Request, Response } from "express";
 import logger from "../lib/logger";
 
-type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
-import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle } from "./helpers";
+import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, type AuthReq } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
 /** Wraps an async route handler with standard 500 error handling. */

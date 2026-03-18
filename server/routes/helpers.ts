@@ -6,6 +6,9 @@ import { groups, groupMembers, deuceEntries } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 
+// --- Shared types ---
+export type AuthReq = Request & { user: { id: string } };
+
 // --- Route utilities ---
 
 export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Response, message: string): T | null {
