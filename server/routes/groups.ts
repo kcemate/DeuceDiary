@@ -435,6 +435,8 @@ export function createGroupsRouter(uploadsDir: string): Router {
       storage.getGroupMembers(invite.groupId),
       storage.getGroupEntries(invite.groupId, 3),
     ]);
+    const nameOf = (u: { username?: string | null; firstName?: string | null }) =>
+      u.username || u.firstName || "Anon";
     res.json({
       name: group.name,
       memberCount,
@@ -442,11 +444,11 @@ export function createGroupsRouter(uploadsDir: string): Router {
       currentStreak: streakData.currentStreak,
       longestStreak: streakData.longestStreak,
       members: members.slice(0, 5).map(m => ({
-        username: m.user.username || m.user.firstName || "Anon",
+        username: nameOf(m.user),
         deuceCount: m.user.deuceCount,
       })),
       recentActivity: entries.slice(0, 3).map(e => ({
-        username: e.user.username || e.user.firstName || "Anon",
+        username: nameOf(e.user),
         location: e.location,
         loggedAt: e.loggedAt,
       })),
