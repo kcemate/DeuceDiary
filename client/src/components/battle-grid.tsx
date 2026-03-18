@@ -43,7 +43,7 @@ const SHIP_COLORS: Record<string, string> = {
   battleshit: "bg-red-600",
 };
 
-function cellKey(col: number, row: number) {
+export function cellKey(col: number, row: number) {
   return `${col}-${row}`;
 }
 
