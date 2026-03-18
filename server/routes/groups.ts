@@ -162,7 +162,6 @@ export function createGroupsRouter(uploadsDir: string): Router {
 
     // Don't delete the invite — it should be reusable by multiple people
 
-    track("group_joined", userId);
     track("group_joined", userId, { groupId: invite.groupId });
 
     const group = await storage.getGroupById(invite.groupId);
