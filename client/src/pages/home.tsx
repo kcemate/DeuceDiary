@@ -34,6 +34,7 @@ interface FeedEntry {
   id: string;
   userId: string;
   groupId: string;
+  groupIds?: string[];
   location: string;
   thoughts: string | null;
   ghost: boolean;
@@ -49,6 +50,30 @@ interface FeedEntry {
     userId: string;
     emoji: string;
   }>;
+}
+
+/** Deduplicate multi-squad posts: same user + loggedAt + thoughts → one entry with multiple groupIds */
+function deduplicateFeed(entries: FeedEntry[]): FeedEntry[] {
+  const map = new Map<string, FeedEntry>();
+  for (const entry of entries) {
+    const key = `${entry.userId}|${entry.loggedAt}|${entry.thoughts ?? ""}|${entry.location}`;
+    const existing = map.get(key);
+    if (existing) {
+      if (!existing.groupIds) existing.groupIds = [existing.groupId];
+      if (!existing.groupIds.includes(entry.groupId)) {
+        existing.groupIds.push(entry.groupId);
+      }
+      // Merge reactions
+      for (const r of entry.reactions) {
+        if (!existing.reactions.some(er => er.id === r.id)) {
+          existing.reactions.push(r);
+        }
+      }
+    } else {
+      map.set(key, { ...entry, groupIds: [entry.groupId] });
+    }
+  }
+  return Array.from(map.values());
 }
 
 // ── Pull-to-refresh hook ────────────────────────────────────────────────────
@@ -270,8 +295,9 @@ export default function Home() {
   // Build group name lookup from loaded groups
   const groupNameMap = new Map(groups.map(g => [g.id, g.name]));
 
-  // Group feed entries by date
-  const groupedFeedEntries = feedEntries.reduce((acc, entry) => {
+  // Deduplicate multi-squad posts, then group by date
+  const dedupedEntries = deduplicateFeed(feedEntries);
+  const groupedFeedEntries = dedupedEntries.reduce((acc, entry) => {
     const group = getDateGroup(entry.loggedAt);
     if (!acc[group]) acc[group] = [];
     acc[group].push(entry);
@@ -512,7 +538,7 @@ export default function Home() {
             <p className="font-bold text-foreground mb-1">Couldn't load your feed.</p>
             <p className="text-sm text-muted-foreground">Pull down to refresh.</p>
           </div>
-        ) : feedEntries.length > 0 ? (
+        ) : dedupedEntries.length > 0 ? (
           <div className="space-y-1">
             {Object.entries(groupedFeedEntries).map(([dateLabel, entries]) => (
               <div key={dateLabel}>
@@ -534,12 +560,14 @@ export default function Home() {
                         <span className="text-sm font-medium text-foreground">
                           {entry.ghost ? "Ghost Drop" : (entry.user.username || "Anonymous")}
                         </span>
-                        {groupNameMap.get(entry.groupId) && (
-                          <Link href={`/groups/${entry.groupId}`}>
-                            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
-                              {groupNameMap.get(entry.groupId)}
-                            </Badge>
-                          </Link>
+                        {(entry.groupIds || [entry.groupId]).map((gid) =>
+                          groupNameMap.get(gid) ? (
+                            <Link key={gid} href={`/groups/${gid}`}>
+                              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
+                                {groupNameMap.get(gid)}
+                              </Badge>
+                            </Link>
+                          ) : null
                         )}
                         <span className="text-xs text-muted-foreground ml-auto">
                           {formatTime(entry.loggedAt)}
