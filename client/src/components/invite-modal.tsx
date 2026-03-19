@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { mutationErrorHandler } from "@/lib/authUtils";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
 interface InviteModalProps {
   open: boolean;
@@ -27,7 +26,7 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
   const [inviteLink, setInviteLink] = useState("");
   const { toast } = useToast();
 
-  const createInviteMutation = useMutation({
+  const createInviteMutation = useMutationWithToast({
     mutationFn: () =>
       apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
         method: "POST",
@@ -46,7 +45,7 @@ export function InviteModal({ open, onOpenChange, groupId }: InviteModalProps) {
       setInviteLink(`${window.location.origin}/join/${inviteId}`);
       toast({ title: "Success", description: "Invite link generated successfully!" });
     },
-    onError: mutationErrorHandler(toast, "Failed to generate invite link"),
+    errorMessage: "Failed to generate invite link",
   });
 
   const copyToClipboard = async () => {

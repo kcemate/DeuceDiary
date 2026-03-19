@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -10,10 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { mutationErrorHandler } from "@/lib/authUtils";
 import { Loader2, CheckCircle2, Users } from "lucide-react";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -61,17 +60,16 @@ export function CreateGroupModal({ open, onOpenChange }: CreateGroupModalProps) 
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [nameError, setNameError] = useState("");
   const [createdName, setCreatedName] = useState<string | null>(null);
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const createGroupMutation = useMutation({
+  const createGroupMutation = useMutationWithToast({
     mutationFn: (data: { name: string; description?: string }) =>
       apiRequest("/api/groups", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setCreatedName(vars.name);
     },
-    onError: mutationErrorHandler(toast, "Failed to create group"),
+    errorMessage: "Failed to create group",
   });
 
   const resetForm = () => {

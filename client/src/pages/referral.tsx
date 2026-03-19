@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { mutationErrorHandler } from "@/lib/authUtils";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { Copy, Share2, Users, Award, Clock, RefreshCw } from "lucide-react";
 import { BackHeader } from "@/components/back-header";
 import { useAuth } from "@/hooks/useAuth";
@@ -80,7 +80,7 @@ export default function Referral() {
     queryKey: ["/api/referrals/leaderboard"],
   });
 
-  const applyMutation = useMutation({
+  const applyMutation = useMutationWithToast({
     mutationFn: () =>
       apiRequest<{ referrerUsername: string }>("/api/referral/apply", {
         method: "POST",
@@ -93,7 +93,8 @@ export default function Referral() {
       });
       setApplyCode("");
     },
-    onError: mutationErrorHandler(toast, (e) => e.message || "Something went wrong.", "Couldn't apply code"),
+    errorMessage: (e) => e.message || "Something went wrong.",
+    errorTitle: "Couldn't apply code",
   });
 
   const getShareText = () => {

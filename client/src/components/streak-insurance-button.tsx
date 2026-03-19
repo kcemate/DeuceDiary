@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,12 +12,12 @@ export function StreakInsuranceButton() {
   const isPremium = user?.subscription === "premium";
   const alreadyUsed = !!user?.streakInsuranceUsed;
 
-  const useInsuranceMutation = useMutation({
+  const useInsuranceMutation = useMutationWithToast({
     mutationFn: () =>
-      apiRequest("/api/user/streak-insurance", {
+      apiRequest<{ extended: boolean; message: string }>("/api/user/streak-insurance", {
         method: "PUT",
       }),
-    onSuccess: (data: { extended: boolean; message: string }) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       toast({
@@ -25,13 +25,8 @@ export function StreakInsuranceButton() {
         description: data.message,
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Insurance Failed",
-        description: error.message || "Couldn't activate streak insurance.",
-        variant: "destructive",
-      });
-    },
+    errorMessage: (error) => error.message || "Couldn't activate streak insurance.",
+    errorTitle: "Insurance Failed",
   });
 
   if (!isPremium) {

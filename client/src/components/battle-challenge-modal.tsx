@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
 interface Group {
   id: string;
@@ -36,7 +36,6 @@ interface BattleChallengeModalProps {
 
 export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModalProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
@@ -57,7 +56,7 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
     enabled: open && !!selectedGroupId,
   });
 
-  const challengeMutation = useMutation({
+  const challengeMutation = useMutationWithToast({
     mutationFn: (vars: { groupId: string; opponentId: string; matchType: string }) =>
       apiRequest<{ id: string }>("/api/battle/challenge", {
         method: "POST",
@@ -65,13 +64,12 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/battle/matches"] });
-      toast({ title: "Challenge sent! ⚔️", description: "Your opponent has been challenged to battle." });
       onOpenChange(false);
       setLocation(`/battle/${data.id}`);
     },
-    onError: (err: Error) => {
-      toast({ title: "Challenge failed", description: err.message, variant: "destructive" });
-    },
+    successMessage: "Challenge sent! ⚔️",
+    errorMessage: (err) => err.message,
+    errorTitle: "Challenge failed",
   });
 
   if (!open) return null;

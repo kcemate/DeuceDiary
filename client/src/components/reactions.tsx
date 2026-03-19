@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { getUserDisplayName } from "@/lib/userUtils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -68,7 +69,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
     setTimeout(() => setFloaters(prev => prev.filter(f => f.id !== id)), 800);
   };
 
-  const addReactionMutation = useMutation({
+  const addReactionMutation = useMutationWithToast({
     mutationFn: async (emoji: string) => {
       return await apiRequest(`/api/entries/${entryId}/reactions`, {
         method: 'POST',
@@ -82,9 +83,10 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
       spawnFloater(emoji);
       setTimeout(() => setAnimatingEmoji(null), 350);
     },
+    errorMessage: "Failed to add reaction",
   });
 
-  const removeReactionMutation = useMutation({
+  const removeReactionMutation = useMutationWithToast({
     mutationFn: async (emoji: string) => {
       return await apiRequest(`/api/entries/${entryId}/reactions`, {
         method: 'DELETE',
@@ -94,6 +96,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
     },
+    errorMessage: "Failed to remove reaction",
   });
 
   const handleEmojiClick = (emoji: string) => {

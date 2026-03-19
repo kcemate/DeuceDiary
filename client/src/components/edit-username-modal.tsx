@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateUserSchema, type UpdateUserRequest } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { mutationErrorHandler } from "@/lib/authUtils";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
 import {
   Dialog,
@@ -43,7 +43,7 @@ export function EditUsernameModal({ open, onOpenChange, currentUsername }: EditU
     },
   });
 
-  const updateUsernameMutation = useMutation({
+  const updateUsernameMutation = useMutationWithToast({
     mutationFn: (data: UpdateUserRequest) =>
       apiRequest("/api/auth/user", { method: "PUT", body: JSON.stringify(data) }),
     onSuccess: () => {
@@ -52,10 +52,7 @@ export function EditUsernameModal({ open, onOpenChange, currentUsername }: EditU
       onOpenChange(false);
       form.reset();
     },
-    onError: mutationErrorHandler(
-      toast,
-      (e) => e.message?.includes("Username already taken") ? "Username already taken" : "Failed to update username",
-    ),
+    errorMessage: (e) => e.message?.includes("Username already taken") ? "Username already taken" : "Failed to update username",
   });
 
   const handleSubmit = (data: UpdateUserRequest) => {

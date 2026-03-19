@@ -1,12 +1,12 @@
 import { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth-token";
-import { mutationErrorHandler } from "@/lib/authUtils";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
 interface ProfilePictureUploadProps {
   user: {
@@ -36,11 +36,11 @@ export function ProfilePictureUpload({
     lg: "h-24 w-24"
   };
 
-  const uploadMutation = useMutation({
+  const uploadMutation = useMutationWithToast({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('profilePicture', file);
-      
+
       // For FormData, we need to use fetch directly since apiRequest expects JSON
       const token = await getAuthToken();
       const headers: Record<string, string> = {};
@@ -51,12 +51,12 @@ export function ProfilePictureUpload({
         headers,
         credentials: "include",
       });
-      
+
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`${response.status}: ${error}`);
       }
-      
+
       return await response.json();
     },
     onSuccess: () => {
@@ -67,10 +67,10 @@ export function ProfilePictureUpload({
       });
       setIsUploading(false);
     },
-    onError: (error) => {
-      mutationErrorHandler(toast, "Failed to upload profile picture. Please try again.")(error);
+    onError: () => {
       setIsUploading(false);
     },
+    errorMessage: "Failed to upload profile picture. Please try again.",
   });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
