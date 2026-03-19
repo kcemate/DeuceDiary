@@ -85,7 +85,10 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onOpenChange(false); }}
     >
-      <div className="w-full max-w-md bg-background rounded-t-3xl border-t border-border p-6 pb-8 space-y-5 animate-slide-up max-h-[85vh] flex flex-col">
+      <div className={
+        "w-full max-w-md bg-background rounded-t-3xl border-t border-border " +
+        "p-6 pb-8 space-y-5 animate-slide-up max-h-[85vh] flex flex-col"
+      }>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -157,7 +160,10 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
               placeholder="Search members..."
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={
+                "w-full bg-muted/50 border border-border rounded-xl px-4 py-2 text-sm " +
+                "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              }
             />
 
             {/* Members list */}
@@ -181,7 +187,10 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
                   return (
                     <button
                       key={m.userId}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/40 hover:bg-muted/40 transition-all active:scale-[0.98] text-left"
+                      className={
+                        "w-full flex items-center gap-3 p-3 rounded-xl border border-border " +
+                        "hover:border-primary/40 hover:bg-muted/40 transition-all active:scale-[0.98] text-left"
+                      }
                       onClick={() => {
                         if (!selectedGroupId) return;
                         challengeMutation.mutate({
