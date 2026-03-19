@@ -417,9 +417,6 @@ export function createGroupsRouter(uploadsDir: string): Router {
   // Group preview for invite landing page (public — no auth)
   router.get('/api/groups/preview/:inviteCode', asyncRoute("Failed to fetch group preview", async (req, res) => {
     const { inviteCode } = req.params;
-    if (!INVITE_UUID_RE.test(inviteCode)) {
-      return res.status(404).json({ message: "Invite not found" });
-    }
     const invite = await storage.getInviteById(inviteCode);
     if (!invite || invite.expiresAt < new Date()) {
       return res.status(404).json({ message: "Invite not found" });
