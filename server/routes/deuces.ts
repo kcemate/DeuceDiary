@@ -35,6 +35,8 @@ const syncDeuceSchema = z.object({
 
 type BroadcastFn = (groupId: string, message: unknown) => void;
 
+const STREAK_MILESTONES = [7, 30, 100, 365];
+
 /** Fetch an entry and verify the user belongs to its group. Returns the entry or sends an error response. */
 async function getAuthorizedEntry(entryId: string, userId: string, res: Response) {
   const entry = await storage.getEntryById(entryId);
@@ -324,7 +326,6 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
 
       // Recalculate streaks for all affected groups
-      const STREAK_MILESTONES = [7, 30, 100, 365];
       let maxStreak = 0;
       for (const groupId of targetGroupIds) {
         try {
@@ -475,7 +476,6 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
 
       // Streak milestone tracking
-      const STREAK_MILESTONES = [7, 30, 100, 365];
       const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
       for (const gid of targetGroupIds) {
         const { currentStreak } = streakMap.get(gid) ?? { currentStreak: 0 };
