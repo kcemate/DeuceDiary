@@ -390,8 +390,15 @@ beforeAll(async () => {
   httpServer = await registerRoutes(app);
 });
 
-afterAll(() => {
-  httpServer?.close();
+afterAll(async () => {
+  await new Promise<void>((resolve) => {
+    if (httpServer) {
+      httpServer.closeAllConnections?.();
+      httpServer.close(() => resolve());
+    } else {
+      resolve();
+    }
+  });
 });
 
 beforeEach(() => {
