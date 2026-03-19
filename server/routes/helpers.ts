@@ -244,7 +244,7 @@ export function hashCode(s: string): number {
  */
 export async function recalculateStreak(groupId: string): Promise<void> {
   // Fallback for test environments where db.transaction is not available
-  if (typeof (db as any).transaction !== 'function') {
+  if (typeof (db as { transaction?: unknown }).transaction !== 'function') {
     const today = getTodayUTC();
     const yesterday = getYesterdayUTC();
     const streak = await storage.getGroupStreak(groupId);

@@ -4,7 +4,7 @@ import { WebSocket } from "ws";
 import { storage } from "../storage";
 import { db } from "../db";
 import { deuceEntries, users } from "@shared/schema";
-import type { DeuceEntry } from "@shared/schema";
+import type { DeuceEntry, BattleMatch } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { isAuthenticated } from "../replitAuth";
 import { track } from "../lib/analytics";
@@ -351,7 +351,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const deuceEntryId = entries[0]?.id ?? '';
       try {
         const activeMatches = await storage.getUserActiveMatches(userId);
-        const activeOnly = activeMatches.filter((m: any) => m.status === 'active');
+        const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
         for (const match of activeOnly) {
           await storage.createBattleToken(match.id, userId, deuceEntryId, 'standard');
           // Double flush: 2nd or more log of the day
@@ -492,7 +492,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const bulkEntryId = entries[0]?.id ?? '';
       try {
         const activeMatches = await storage.getUserActiveMatches(userId);
-        const activeOnly = activeMatches.filter((m: any) => m.status === 'active');
+        const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
         for (const match of activeOnly) {
           await storage.createBattleToken(match.id, userId, bulkEntryId, 'standard');
           if (currentCount >= 1) {
@@ -598,7 +598,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           const syncCount = await storage.getUserDailyLogCount(userId, today);
           try {
             const activeMatches = await storage.getUserActiveMatches(userId);
-            const activeOnly = activeMatches.filter((m: any) => m.status === 'active');
+            const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
             for (const match of activeOnly) {
               await storage.createBattleToken(match.id, userId, syncEntryId, 'standard');
               if (syncCount >= 1) {

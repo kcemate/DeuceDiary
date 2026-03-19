@@ -1,7 +1,17 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import logger from "./lib/logger";
-import { createServer, type Server } from "http";
+import { createServer, type Server, type IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+
+/** WebSocket connection that has been authenticated and annotated with per-connection state. */
+interface AuthenticatedWebSocket extends WebSocket {
+  userId: string;
+  missedPongs: number;
+  subscribedGroups: Set<string>;
+}
+
+/** HTTP IncomingMessage augmented with session data injected by session middleware. */
+type SessionRequest = IncomingMessage & { session?: { userId?: string } };
 import { storage } from "./storage";
 import { setupAuth, clerkEnabled, clerk, getSession } from "./replitAuth";
 import { registerClerkWebhook } from "./routes/webhooks";
@@ -58,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const wss = new WebSocketServer({ noServer: true });
   registerWss(wss);
-  const groupConnections = new Map<string, Set<WebSocket>>();
+  const groupConnections = new Map<string, Set<AuthenticatedWebSocket>>();
 
   // Authenticate WebSocket upgrade requests
   const sessionMiddleware = getSession();
@@ -98,11 +108,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
       } else {
-        const res = { end() {}, setHeader() {}, getHeader() {} } as any;
+        const res = { end() {}, setHeader() {}, getHeader() {} } as unknown as Response;
+        const sessionReq = req as SessionRequest;
         await new Promise<void>((resolve) => {
-          sessionMiddleware(req as any, res, () => resolve());
+          sessionMiddleware(sessionReq as unknown as Request, res, () => resolve());
         });
-        userId = (req as any).session?.userId || null;
+        userId = sessionReq.session?.userId || null;
         if (!userId) {
           incWsCounter('failedAuthentications');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
@@ -119,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       wss.handleUpgrade(req, socket, head, (ws) => {
-        (ws as any).userId = userId;
+        (ws as AuthenticatedWebSocket).userId = userId!;
         wss.emit('connection', ws, req);
       });
     } catch (error) {
@@ -134,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const pingInterval = setInterval(() => {
     wss.clients.forEach((ws) => {
-      const client = ws as any;
+      const client = ws as AuthenticatedWebSocket;
       if (client.missedPongs >= MAX_MISSED_PONGS) {
         incWsCounter('forcedDisconnects');
         logger.info(
@@ -164,14 +175,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   wss.on('connection', (ws: WebSocket) => {
-    const userId = (ws as any).userId as string;
+    const authWs = ws as AuthenticatedWebSocket;
+    const userId = authWs.userId;
     incWsCounter('totalConnections');
     logger.info(`WebSocket connection authenticated for user ${userId}`);
 
-    (ws as any).missedPongs = 0;
-    ws.on('pong', () => { (ws as any).missedPongs = 0; });
+    authWs.missedPongs = 0;
+    ws.on('pong', () => { authWs.missedPongs = 0; });
 
-    (ws as any).subscribedGroups = new Set<string>();
+    authWs.subscribedGroups = new Set<string>();
 
     ws.on('message', async (message) => {
       try {
@@ -189,8 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           if (!groupConnections.has(groupId)) groupConnections.set(groupId, new Set());
-          groupConnections.get(groupId)?.add(ws);
-          (ws as any).subscribedGroups.add(groupId);
+          groupConnections.get(groupId)?.add(authWs);
+          authWs.subscribedGroups.add(groupId);
           ws.send(JSON.stringify({ type: 'join_group_ok', groupId }));
         } else if (data.type === 'leave_group') {
           const groupId = data.groupId;
@@ -200,10 +212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           const conns = groupConnections.get(groupId);
           if (conns) {
-            conns.delete(ws);
+            conns.delete(authWs);
             if (conns.size === 0) groupConnections.delete(groupId);
           }
-          (ws as any).subscribedGroups.delete(groupId);
+          authWs.subscribedGroups.delete(groupId);
         }
       } catch (error) {
         logger.error('Error parsing WebSocket message:', error);
@@ -212,11 +224,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('close', () => {
       incWsCounter('gracefulDisconnects');
-      const subscribed: Set<string> = (ws as any).subscribedGroups;
-      for (const groupId of subscribed) {
+      for (const groupId of authWs.subscribedGroups) {
         const conns = groupConnections.get(groupId);
         if (conns) {
-          conns.delete(ws);
+          conns.delete(authWs);
           if (conns.size === 0) groupConnections.delete(groupId);
         }
       }
