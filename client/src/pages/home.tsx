@@ -550,14 +550,14 @@ export default function Home() {
                 <div className="space-y-1 mb-2">
                   {entries.map((entry) => (
                     <div key={entry.id} className="border-l-3 border-primary pl-3 py-1">
-                      <div className="flex items-center mb-0.5">
-                        <Avatar className="w-6 h-6 mr-1.5">
+                      <div className="flex items-center mb-0.5 min-w-0">
+                        <Avatar className="w-6 h-6 mr-1.5 shrink-0">
                           <AvatarImage src={entry.ghost ? undefined : (entry.user.profileImageUrl || undefined)} />
                           <AvatarFallback className="text-[10px]">
                             {entry.ghost ? "👻" : (entry.user.username || "?")[0].toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium text-foreground">
+                        <span className="text-sm font-medium text-foreground truncate max-w-[120px]">
                           {entry.ghost ? "Ghost Drop" : (entry.user.username || "Anonymous")}
                         </span>
                         {(entry.groupIds || [entry.groupId]).map((gid) =>
@@ -569,7 +569,7 @@ export default function Home() {
                             </Link>
                           ) : null
                         )}
-                        <span className="text-xs text-muted-foreground ml-auto">
+                        <span className="text-xs text-muted-foreground ml-auto shrink-0 whitespace-nowrap">
                           {formatTime(entry.loggedAt)}
                         </span>
                       </div>
