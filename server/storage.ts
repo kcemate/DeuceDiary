@@ -236,7 +236,7 @@ export interface IStorage {
   getLocations(): Promise<Location[]>;
   getLocationsForUser(userId: string): Promise<Location[]>;
   createLocation(location: InsertLocation): Promise<Location>;
-  getLocationByName(name: string): Promise<Location | undefined>;
+  getLocationByName(name: string, userId?: string): Promise<Location | undefined>;
   
   // Personal records
   getUserPersonalRecord(userId: string): Promise<{ date: string; count: number } | undefined>;
@@ -828,8 +828,12 @@ export class DatabaseStorage implements IStorage {
     return newLocation;
   }
 
-  async getLocationByName(name: string): Promise<Location | undefined> {
-    const [location] = await db.select().from(locations).where(eq(locations.name, name));
+  async getLocationByName(name: string, userId?: string): Promise<Location | undefined> {
+    const conditions = [eq(locations.name, name)];
+    if (userId) {
+      conditions.push(eq(locations.createdBy, userId));
+    }
+    const [location] = await db.select().from(locations).where(and(...conditions));
     return location;
   }
 

@@ -1,10 +1,9 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 import { getAuthToken } from "@/lib/auth-token";
 import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 
@@ -25,7 +24,6 @@ export function ProfilePictureUpload({
   size = "md",
   showUploadButton = true 
 }: ProfilePictureUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -65,10 +63,6 @@ export function ProfilePictureUpload({
         title: "Success",
         description: "Profile picture updated successfully!",
       });
-      setIsUploading(false);
-    },
-    onError: () => {
-      setIsUploading(false);
     },
     errorMessage: "Failed to upload profile picture. Please try again.",
   });
@@ -97,7 +91,6 @@ export function ProfilePictureUpload({
       return;
     }
 
-    setIsUploading(true);
     uploadMutation.mutate(file);
   };
 
@@ -128,9 +121,9 @@ export function ProfilePictureUpload({
             size="sm"
             className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
             onClick={handleUploadClick}
-            disabled={isUploading}
+            disabled={uploadMutation.isPending}
           >
-            {isUploading ? (
+            {uploadMutation.isPending ? (
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
             ) : (
               <Camera className="h-3 w-3" />
@@ -151,11 +144,11 @@ export function ProfilePictureUpload({
         <Button
           variant="outline"
           onClick={handleUploadClick}
-          disabled={isUploading}
+          disabled={uploadMutation.isPending}
           className="flex items-center space-x-2"
         >
           <Upload className="h-4 w-4" />
-          <span>{isUploading ? "Uploading..." : "Upload Photo"}</span>
+          <span>{uploadMutation.isPending ? "Uploading..." : "Upload Photo"}</span>
         </Button>
       )}
     </div>

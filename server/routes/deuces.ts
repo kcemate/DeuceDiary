@@ -76,8 +76,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: "Location name is required" });
       }
 
-      // Check if location already exists
-      const existing = await storage.getLocationByName(name.trim());
+      // Check if location already exists for this user
+      const existing = await storage.getLocationByName(name.trim(), userId);
       if (existing) {
         return res.status(400).json({ message: "Location already exists" });
       }

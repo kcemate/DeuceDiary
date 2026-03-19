@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useShare } from "@/hooks/use-share";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ export function ShareCardModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { copyToClipboard, share } = useShare();
   const userId = user?.id;
 
   const { data } = useQuery<ShareCardData>({
@@ -59,30 +59,17 @@ export function ShareCardModal({
     ? `${window.location.origin}/api/og/streak/${userId}`
     : "";
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({ title: "Link copied!" });
-    } catch {
-      toast({ title: "Failed to copy", variant: "destructive" });
-    }
-  };
+  const handleCopy = () => copyToClipboard(shareUrl);
 
-  const handleNativeShare = async () => {
-    if (!navigator.share) {
-      handleCopy();
-      return;
-    }
-    try {
-      await navigator.share({
+  const handleNativeShare = () =>
+    share(
+      {
         title: `${data?.username || "I"}'m on a ${data?.currentStreak}-day streak! 🔥`,
         text: `${tagline} — Join me on Deuce Diary`,
         url: shareUrl,
-      });
-    } catch {
-      // user cancelled — no action needed
-    }
-  };
+      },
+      shareUrl,
+    );
 
   const rank = getThroneRank(data?.totalLogs ?? 0);
   const streakTier = getStreakTier(data?.currentStreak ?? 0);

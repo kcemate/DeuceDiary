@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useShare } from "@/hooks/use-share";
 import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStreakTier } from "@/lib/gamification";
@@ -106,7 +106,7 @@ export function WeeklyThroneReport() {
   const { data: report, isLoading } = useQuery<WeeklyReport>({
     queryKey: ["/api/users/me/weekly-report"],
   });
-  const { toast } = useToast();
+  const { share } = useShare();
 
   if (isLoading) {
     return (
@@ -133,7 +133,7 @@ export function WeeklyThroneReport() {
     { emoji: "❤️", value: report.totalReactionsReceived, label: "Reactions Received" },
   ];
 
-  const handleShare = async () => {
+  const handleShare = () => {
     const text = [
       `📊 Weekly Throne Report — ${formatWeekRange(report.weekOf)}`,
       `💩 ${report.totalDeuces} deuces logged`,
@@ -144,16 +144,7 @@ export function WeeklyThroneReport() {
       .filter(Boolean)
       .join("\n");
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "My Weekly Throne Report", text });
-      } catch {
-        // user cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      toast({ title: "Copied to clipboard!" });
-    }
+    share({ title: "My Weekly Throne Report", text });
   };
 
   return (
