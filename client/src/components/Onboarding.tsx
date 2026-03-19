@@ -8,6 +8,14 @@ import { apiRequest } from "@/lib/queryClient";
 
 export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
+export function validateUsername(value: string): string {
+  if (value.length === 0) return "";
+  if (value.length < 3) return "Too short — need at least 3 characters";
+  if (value.length > 20) return "Too long — 20 characters max";
+  if (!USERNAME_REGEX.test(value)) return "Letters, numbers, and underscores only";
+  return "";
+}
+
 const STEP_LABELS = ["Your Name", "Your Base", "First Log"];
 
 interface OnboardingProps {

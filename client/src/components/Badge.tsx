@@ -11,6 +11,10 @@ interface BadgeProps {
   className?: string;
 }
 
+export function isGoldBadge(tier: 'free' | 'premium', id: string): boolean {
+  return tier === 'premium' || id.includes('diamond') || id.includes('throne');
+}
+
 export function AchievementBadge(
   { id, name, description, emoji, unlocked, tier, className }: BadgeProps
 ) {
