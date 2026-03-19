@@ -42,6 +42,12 @@ export function asyncRoute<T extends Request = Request>(
  * API responses visible to other users (e.g. entries in a group feed).
  * Keeps only the fields needed for display purposes.
  */
+export function getUserDisplayName(user: { username?: string | null; firstName?: string | null; lastName?: string | null } | null | undefined): string {
+  return user?.username ||
+    (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
+    'Someone';
+}
+
 export function sanitizeUserForResponse(user: Record<string, unknown>) {
   return {
     id: user.id,

@@ -18,6 +18,7 @@ import {
   getTodayUTC,
   recalculateStreak,
   sanitizeUserForResponse,
+  getUserDisplayName,
 } from "./helpers";
 
 // Simple emoji schema — accepts any non-empty string (original behavior)
@@ -307,9 +308,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const user = await storage.getUser(userId);
 
       // Create display name for notifications
-      const displayName = user?.username ||
-                          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-                          'Someone';
+      const displayName = getUserDisplayName(user);
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
@@ -452,9 +451,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       });
 
       const user = await storage.getUser(userId);
-      const displayName = user?.username ||
-        (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-        'Someone';
+      const displayName = getUserDisplayName(user);
 
       if (!isGhost) {
         const safeUser = user ? sanitizeUserForResponse(user) : null;
@@ -521,9 +518,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
 
       const syncUser = await storage.getUser(userId);
-      const syncDisplayName = syncUser?.username ||
-        (syncUser?.firstName && syncUser?.lastName ? `${syncUser.firstName} ${syncUser.lastName}` : syncUser?.firstName) ||
-        'Someone';
+      const syncDisplayName = getUserDisplayName(syncUser);
 
       for (const entry of parsed.data.entries) {
         try {
