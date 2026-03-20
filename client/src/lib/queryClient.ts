@@ -42,7 +42,7 @@ export async function apiRequest<T = unknown>(
   url: string,
   options?: {
     method?: string;
-    body?: string;
+    body?: string | FormData;
     headers?: Record<string, string>;
     timeoutMs?: number;
   }
@@ -54,11 +54,16 @@ export async function apiRequest<T = unknown>(
     options?.timeoutMs ?? REQUEST_TIMEOUT_MS,
   );
 
+  // Don't set Content-Type for FormData — browser sets it with the multipart boundary
+  const contentTypeHeader = options?.body instanceof FormData
+    ? {}
+    : { "Content-Type": "application/json" };
+
   try {
     const res = await fetch(url, {
       method: options?.method || "GET",
       headers: {
-        "Content-Type": "application/json",
+        ...contentTypeHeader,
         ...auth,
         ...options?.headers,
       },

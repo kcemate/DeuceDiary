@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
-import { getAuthToken } from "@/lib/auth-token";
+import { apiRequest } from "@/lib/queryClient";
 import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { getInitials } from "@/lib/userUtils";
 
@@ -39,24 +39,10 @@ export function ProfilePictureUpload({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('profilePicture', file);
-
-      // For FormData, we need to use fetch directly since apiRequest expects JSON
-      const token = await getAuthToken();
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      const response = await fetch("/api/auth/user/profile-picture", {
+      return apiRequest("/api/auth/user/profile-picture", {
         method: "POST",
         body: formData,
-        headers,
-        credentials: "include",
       });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`${response.status}: ${error}`);
-      }
-
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
