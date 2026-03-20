@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { BattleChallengeModal } from "@/components/battle-challenge-modal";
 
 interface BattleMatch {
@@ -184,25 +185,25 @@ export default function BattleLobby() {
     queryKey: ["/api/groups"],
   });
 
-  const matchmakeMutation = useMutation({
+  const matchmakeMutation = useMutationWithToast({
     mutationFn: (vars: { groupId: string; matchType: string }) =>
       apiRequest<{ id: string }>("/api/battle/matchmake", {
         method: "POST",
         body: JSON.stringify(vars),
       }),
+    errorTitle: "No opponents available",
+    errorMessage: (e: Error) => e.message,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/battle/matches"] });
       toast({ title: "Random opponent found! ⚔️", description: "Battle begins now." });
       setLocation(`/battle/${data.id}`);
     },
-    onError: (err: Error) => {
-      toast({ title: "No opponents available", description: err.message, variant: "destructive" });
-    },
   });
 
-  const forfeitMutation = useMutation({
+  const forfeitMutation = useMutationWithToast({
     mutationFn: (matchId: string) =>
       apiRequest(`/api/battle/match/${matchId}/forfeit`, { method: "POST" }),
+    errorMessage: "Couldn't decline challenge. Try again.",
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/battle/matches"] });
       toast({ title: "Challenge declined" });

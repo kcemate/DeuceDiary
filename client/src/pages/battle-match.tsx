@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { PageSpinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { BattleGrid, GridCell, GridShip, GridAttack } from "@/components/battle-grid";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -73,18 +74,17 @@ function PlacementPhase({
   const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
   const [hoverCell, setHoverCell] = useState<GridCell | null>(null);
 
-  const placeMutation = useMutation({
+  const placeMutation = useMutationWithToast({
     mutationFn: (ships: PlacedShip[]) =>
       apiRequest(`/api/battle/match/${matchId}/place`, {
         method: "POST",
         body: JSON.stringify({ ships }),
       }),
+    errorTitle: "Placement failed",
+    errorMessage: (e: Error) => e.message,
     onSuccess: () => {
       toast({ title: "Ships placed! ⚓", description: "Waiting for battle to begin..." });
       onPlaced();
-    },
-    onError: (err: Error) => {
-      toast({ title: "Placement failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -284,12 +284,14 @@ function BattlePhase({
   const grid = matchType === "standard" ? STANDARD_GRID : QUICK_GRID;
   const { myShips, myAttacks, opponentAttacks, tokenBalance, myPowerups } = data;
 
-  const attackMutation = useMutation({
+  const attackMutation = useMutationWithToast({
     mutationFn: (cell: GridCell) =>
       apiRequest<{ hit: boolean; sunk: boolean; shipType?: string; gameOver: boolean; winner?: string }>(
         `/api/battle/match/${matchId}/attack`,
         { method: "POST", body: JSON.stringify(cell) }
       ),
+    errorTitle: "Can't fire there",
+    errorMessage: (e: Error) => e.message,
     onSuccess: (result) => {
       setLastResult({ hit: result.hit, sunk: result.sunk, shipType: result.shipType });
       onRefresh();
@@ -306,17 +308,16 @@ function BattlePhase({
         onRefresh();
       }
     },
-    onError: (err: Error) => {
-      toast({ title: "Can't fire there", description: err.message, variant: "destructive" });
-    },
   });
 
-  const powerupMutation = useMutation({
+  const powerupMutation = useMutationWithToast({
     mutationFn: (type: string) =>
       apiRequest<{ ok: boolean; revealedCell?: GridCell }>(
         `/api/battle/match/${matchId}/powerup`,
         { method: "POST", body: JSON.stringify({ type }) }
       ),
+    errorTitle: "Power-up failed",
+    errorMessage: (e: Error) => e.message,
     onSuccess: (result, type) => {
       onRefresh();
       if (type === "sonar_ping" && result.revealedCell) {
@@ -327,9 +328,6 @@ function BattlePhase({
       } else {
         toast({ title: "👻 Power-up used!", description: "Let's see what it does..." });
       }
-    },
-    onError: (err: Error) => {
-      toast({ title: "Power-up failed", description: err.message, variant: "destructive" });
     },
   });
 
