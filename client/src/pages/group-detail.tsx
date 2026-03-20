@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Reactions } from "@/components/reactions";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { mutationErrorHandler } from "@/lib/authUtils";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { apiRequest } from "@/lib/queryClient";
 import { getUserDisplayName, getInitials } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
@@ -133,13 +133,15 @@ export default function GroupDetail() {
     enabled: !!groupId && showChallengeHistory,
   });
 
-  const setChallengesMutation = useMutation({
+  const setChallengesMutation = useMutationWithToast({
     mutationFn: async (body: { templateKey?: string; title?: string }) => {
       return apiRequest(`/api/groups/${groupId}/challenge`, {
         method: "POST",
         body: JSON.stringify(body),
       });
     },
+    errorTitle: "Couldn't set challenge",
+    errorMessage: (e: Error) => e.message,
     onSuccess: () => {
       setShowChallengeModal(false);
       setChallengeInput({ templateKey: "", customTitle: "" });
@@ -147,53 +149,48 @@ export default function GroupDetail() {
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/challenge`] });
       toast({ title: "Challenge set! 👑", description: "Your squad has been challenged." });
     },
-    onError: (error: Error) => {
-      toast({ title: "Couldn't set challenge", description: error.message, variant: "destructive" });
-    },
   });
 
-  const completeChallengeMutation = useMutation({
+  const completeChallengeMutation = useMutationWithToast({
     mutationFn: async () => {
       return apiRequest(`/api/groups/${groupId}/challenge/complete`, {
         method: "POST",
       });
     },
+    errorTitle: "Couldn't mark complete",
+    errorMessage: (e: Error) => e.message,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/challenge`] });
       toast({ title: "Challenge complete! 🏆", description: "You crushed it." });
     },
-    onError: (error: Error) => {
-      toast({ title: "Couldn't mark complete", description: error.message, variant: "destructive" });
-    },
   });
 
-  const leaveGroupMutation = useMutation({
+  const leaveGroupMutation = useMutationWithToast({
     mutationFn: () => apiRequest(`/api/groups/${groupId}/leave`, { method: "POST" }),
+    errorTitle: "Couldn't leave",
+    errorMessage: "Something clogged up. Try again.",
     onSuccess: () => {
       toast({ title: "You're out", description: "You left the squad. They'll miss your wisdom." });
       queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       setLocation("/groups");
     },
-    onError: mutationErrorHandler(toast, "Something clogged up. Try again.", "Couldn't leave"),
   });
 
-  const inviteCrewMutation = useMutation({
+  const inviteCrewMutation = useMutationWithToast({
     mutationFn: async () => {
       return apiRequest<{ id: string; inviteLink: string }>(`/api/groups/${groupId}/invite`, {
         method: "POST",
         body: JSON.stringify({}),
       });
     },
+    errorMessage: "Couldn't generate invite. Try again.",
     onSuccess: (response: { id: string }) => {
       const code = response.id;
       if (code) setInviteCode(code);
     },
-    onError: () => {
-      toast({ title: "Error", description: "Couldn't generate invite. Try again.", variant: "destructive" });
-    },
   });
 
-  const uploadAvatarMutation = useMutation({
+  const uploadAvatarMutation = useMutationWithToast({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("avatar", file);
@@ -208,12 +205,11 @@ export default function GroupDetail() {
       }
       return res.json();
     },
+    errorTitle: "Upload failed",
+    errorMessage: (e: Error) => e.message,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId] });
       toast({ title: "Squad photo updated! 📸", description: "Your squad's new look is live." });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
     },
   });
 

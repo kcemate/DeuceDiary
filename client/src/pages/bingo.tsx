@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { Button } from "@/components/ui/button";
 import { Spinner, PageSpinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
@@ -344,8 +345,9 @@ export default function Bingo() {
     retry: false,
   });
 
-  const checkMutation = useMutation({
+  const checkMutation = useMutationWithToast({
     mutationFn: () => apiRequest<CheckResponse>("/api/bingo/check", { method: "POST" }),
+    errorMessage: "Failed to check progress",
     onSuccess: (result) => {
       const newSet = new Set(result.completedSquares);
       const fresh = new Set<number>();
@@ -375,9 +377,6 @@ export default function Bingo() {
 
       queryClient.invalidateQueries({ queryKey: ["/api/bingo/current"] });
       setTimeout(() => setNewlyCompleted(new Set()), 3000);
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to check progress", variant: "destructive" });
     },
   });
 
