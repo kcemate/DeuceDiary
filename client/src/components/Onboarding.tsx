@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { handleAuthError } from "@/lib/authUtils";
 
 export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 
@@ -62,6 +64,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const [celebrating, setCelebrating] = useState(false);
   const [statCount, setStatCount] = useState(0);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const goToStep = (next: number) => {
     setDirection(next > step ? 1 : -1);
@@ -83,7 +86,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       goToStep(2);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      if (handleAuthError(error, toast)) return;
       setUsernameError(error.message || "That username is taken. Try another!");
     },
   });
