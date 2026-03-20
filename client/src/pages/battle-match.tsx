@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { PageSpinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
@@ -641,11 +642,7 @@ export default function BattleMatch() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (error || !data) {
