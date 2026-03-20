@@ -15,6 +15,7 @@ import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { PageSpinner } from "@/components/ui/spinner";
 
 // Route-level code splitting — each page loaded on demand
 const Landing = lazy(() => import("@/pages/landing"));
@@ -37,11 +38,7 @@ const BattleMatch = lazy(() => import("@/pages/battle-match"));
 
 // Lightweight fallback shown while a lazy page chunk loads
 function PageFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-64" role="status" aria-label="Loading page">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true" />
-    </div>
-  );
+  return <PageSpinner />;
 }
 
 function PageTransition({ locationKey, children }: { locationKey: string; children: React.ReactNode }) {
@@ -79,11 +76,7 @@ function AppRoutes({
   error: Error | null;
 }) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96" role="status" aria-label="Loading">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true"></div>
-      </div>
-    );
+    return <PageSpinner minHeight="min-h-96" />;
   }
 
   if (!isAuthenticated) {

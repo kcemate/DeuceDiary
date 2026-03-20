@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Spinner, PageSpinner } from "@/components/ui/spinner";
 import { Progress } from "@/components/ui/progress";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -402,11 +403,7 @@ export default function Bingo() {
     <PlaceholderBingoGrid />
   ) : (
     <div className="pb-24 pt-4">
-      {isLoading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      )}
+      {isLoading && <PageSpinner minHeight="py-20" />}
 
       {!isLoading && error && !isPremiumError && (
         <div className="flex flex-col items-center justify-center py-20 text-center px-4">
@@ -497,7 +494,7 @@ export default function Bingo() {
             >
               {checkMutation.isPending ? (
                 <span className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  <Spinner size="sm" className="border-white" />
                   Checking...
                 </span>
               ) : (

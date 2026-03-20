@@ -5,20 +5,11 @@ type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
-import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle } from "./helpers";
+import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, asyncRoute } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
-/** Wraps an async route handler with standard 500 error handling. */
-function wrap(logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<void>) {
-  return async (req: AuthReq, res: Response) => {
-    try {
-      await fn(req, res);
-    } catch (error) {
-      logger.error({ err: error }, logMsg);
-      res.status(500).json({ message: resMsg });
-    }
-  };
-}
+const wrap = (logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<void>) =>
+  asyncRoute<AuthReq>(logMsg, resMsg, fn);
 
 export function createPremiumRouter(): Router {
   const router = Router();

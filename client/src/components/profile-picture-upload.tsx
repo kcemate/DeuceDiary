@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, Camera } from "lucide-react";
 import { getAuthToken } from "@/lib/auth-token";
 import { useMutationWithToast } from "@/hooks/useMutationWithToast";
+import { getInitials } from "@/lib/userUtils";
 
 interface ProfilePictureUploadProps {
   user: {
@@ -96,15 +97,6 @@ export function ProfilePictureUpload({
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const getInitials = (user: ProfilePictureUploadProps["user"]) => {
-    if (user.username) {
-      return user.username.substring(0, 2).toUpperCase();
-    }
-    const firstName = user.firstName || '';
-    const lastName = user.lastName || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   return (

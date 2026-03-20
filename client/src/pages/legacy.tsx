@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { PageSpinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
 import { useRoute } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -50,11 +51,7 @@ export default function Legacy() {
   };
 
   if (isLoading) {
-    return (
-      <div className="pt-12 pb-24 flex flex-col items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (error || !data) {
