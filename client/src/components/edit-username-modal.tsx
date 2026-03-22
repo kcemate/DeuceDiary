@@ -52,7 +52,8 @@ export function EditUsernameModal({ open, onOpenChange, currentUsername }: EditU
       onOpenChange(false);
       form.reset();
     },
-    errorMessage: (e) => e.message?.includes("Username already taken") ? "Username already taken" : "Failed to update username",
+    errorMessage: (e) =>
+      e.message?.includes("Username already taken") ? "Username already taken" : "Failed to update username",
   });
 
   const handleSubmit = (data: UpdateUserRequest) => {

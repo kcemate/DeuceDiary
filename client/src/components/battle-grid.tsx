@@ -110,7 +110,9 @@ export function BattleGrid({
       "relative flex items-center justify-center text-base select-none transition-all duration-150";
     switch (state) {
       case "fog":
-        return cn(base, "bg-blue-950/60 border border-blue-900/40 cursor-pointer active:scale-95 active:bg-blue-900/80 hover:bg-blue-900/50");
+        return cn(base,
+          "bg-blue-950/60 border border-blue-900/40 cursor-pointer active:scale-95",
+          "active:bg-blue-900/80 hover:bg-blue-900/50");
       case "hit":
         return cn(base, "bg-red-900/80 border border-red-700 cursor-default animate-hit-flash");
       case "miss":
