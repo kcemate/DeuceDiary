@@ -71,10 +71,15 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
 
   const addReactionMutation = useMutationWithToast({
     mutationFn: async (emoji: string) => {
-      return await apiRequest(`/api/entries/${entryId}/reactions`, {
-        method: 'POST',
-        body: JSON.stringify({ emoji }),
-      });
+      try {
+        return await apiRequest(`/api/entries/${entryId}/reactions`, {
+          method: 'POST',
+          body: JSON.stringify({ emoji }),
+        });
+      } catch (err) {
+        console.error("[reactions] add reaction failed", err);
+        throw err;
+      }
     },
     onSuccess: (_, emoji) => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });
@@ -88,10 +93,15 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
 
   const removeReactionMutation = useMutationWithToast({
     mutationFn: async (emoji: string) => {
-      return await apiRequest(`/api/entries/${entryId}/reactions`, {
-        method: 'DELETE',
-        body: JSON.stringify({ emoji }),
-      });
+      try {
+        return await apiRequest(`/api/entries/${entryId}/reactions`, {
+          method: 'DELETE',
+          body: JSON.stringify({ emoji }),
+        });
+      } catch (err) {
+        console.error("[reactions] remove reaction failed", err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/entries', entryId, 'reactions'] });

@@ -12,5 +12,10 @@ export function setTokenGetter(fn: (() => Promise<string | null>) | null) {
 
 export async function getAuthToken(): Promise<string | null> {
   if (!_getToken) return null;
-  return _getToken();
+  try {
+    return await _getToken();
+  } catch (err) {
+    console.error("[auth-token] getAuthToken failed", err);
+    return null;
+  }
 }

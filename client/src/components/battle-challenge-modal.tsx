@@ -51,7 +51,12 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
   const { data: groupDetail, isLoading: loadingMembers } = useQuery<GroupDetail>({
     queryKey: ["/api/groups", selectedGroupId],
     queryFn: async () => {
-      return apiRequest<GroupDetail>(`/api/groups/${selectedGroupId}`);
+      try {
+        return await apiRequest<GroupDetail>(`/api/groups/${selectedGroupId}`);
+      } catch (err) {
+        console.error("[battle-challenge-modal] group detail fetch failed", err);
+        throw err;
+      }
     },
     enabled: open && !!selectedGroupId,
   });

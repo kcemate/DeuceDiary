@@ -40,7 +40,13 @@ function openDB(): Promise<IDBDatabase> {
 export async function addToQueue(
   deuce: Omit<PendingDeuce, 'createdAt' | 'status'>
 ): Promise<void> {
-  const db = await openDB();
+  let db: IDBDatabase;
+  try {
+    db = await openDB();
+  } catch (err) {
+    console.error("[offlineQueue] addToQueue openDB failed", err);
+    throw err;
+  }
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
@@ -53,7 +59,13 @@ export async function addToQueue(
 }
 
 export async function getPendingQueue(): Promise<PendingDeuce[]> {
-  const db = await openDB();
+  let db: IDBDatabase;
+  try {
+    db = await openDB();
+  } catch (err) {
+    console.error("[offlineQueue] getPendingQueue openDB failed", err);
+    throw err;
+  }
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const store = tx.objectStore(STORE_NAME);

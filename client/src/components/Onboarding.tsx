@@ -77,10 +77,15 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   const usernameMutation = useMutation({
     mutationFn: async (username: string) => {
-      return await apiRequest("/api/auth/user", {
-        method: "PUT",
-        body: JSON.stringify({ username }),
-      });
+      try {
+        return await apiRequest("/api/auth/user", {
+          method: "PUT",
+          body: JSON.stringify({ username }),
+        });
+      } catch (err) {
+        console.error("[Onboarding] username mutation failed", err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });

@@ -52,18 +52,23 @@ function useClerkAuthHook() {
   // Custom query function that gets the token DIRECTLY from Clerk
   // This avoids the race condition where the global token getter isn't set yet
   const fetchUser = useCallback(async (): Promise<User> => {
-    const token = await getToken();
-    if (!token) {
-      throw new Error("401: No auth token available");
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("401: No auth token available");
+      }
+      const res = await fetch("/api/auth/user", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text}`);
+      }
+      return res.json();
+    } catch (err) {
+      console.error("[useAuth] fetchUser failed", err);
+      throw err;
     }
-    const res = await fetch("/api/auth/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`${res.status}: ${text}`);
-    }
-    return res.json();
   }, [getToken]);
 
   const { data: user, isLoading: appLoading, error } = useQuery<User>({

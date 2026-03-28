@@ -37,12 +37,17 @@ export function ProfilePictureUpload({
 
   const uploadMutation = useMutationWithToast({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('profilePicture', file);
-      return apiRequest("/api/auth/user/profile-picture", {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        const formData = new FormData();
+        formData.append('profilePicture', file);
+        return await apiRequest("/api/auth/user/profile-picture", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (err) {
+        console.error("[profile-picture-upload] upload failed", err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
