@@ -22,7 +22,6 @@ const loginSchema = z.object({
 
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 
-/** True when Clerk keys are configured and should be used for auth. */
 export let clerkEnabled = !!CLERK_SECRET_KEY;
 
 type ClerkClient = {

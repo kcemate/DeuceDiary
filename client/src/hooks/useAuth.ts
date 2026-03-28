@@ -6,8 +6,6 @@ import type { User } from "@shared/schema";
 
 const CLERK_ENABLED = true;
 
-// ---------- dev mode ----------
-
 function useDevAuth() {
   const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
