@@ -135,6 +135,10 @@ async function getOrCreateCard(groupId: string, memberIds: string[], memberNames
 
 // --- Validation ---
 
+const groupParamsSchema = z.object({
+  groupId: z.string().uuid(),
+});
+
 const submitPredictionsSchema = z.object({
   predictions: z
     .array(
@@ -159,6 +163,11 @@ export function createPredictionsRouter(): Router {
     isAuthenticated,
     requireGroupMember(),
     asyncRoute<AuthReq>("get predictions", "Failed to load predictions", async (req, res) => {
+      const paramsParsed = groupParamsSchema.safeParse(req.params);
+      if (!paramsParsed.success) {
+        return res.status(400).json({ message: paramsParsed.error.issues[0]?.message ?? "Invalid group ID" });
+      }
+
       const { groupId } = req;
       const userId = req.user.id;
 
