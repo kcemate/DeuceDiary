@@ -69,11 +69,9 @@ function PageTransition({ locationKey, children }: { locationKey: string; childr
 function AppRoutes({
   isLoading,
   isAuthenticated,
-  error,
 }: {
   isLoading: boolean;
   isAuthenticated: boolean;
-  error: Error | null;
 }) {
   if (isLoading) {
     return <PageSpinner minHeight="min-h-96" />;
@@ -278,7 +276,6 @@ function Router() {
                 <AppRoutes
                   isLoading={isLoading}
                   isAuthenticated={isAuthenticated}
-                  error={error}
                 />
               </ErrorBoundary>
             </div>

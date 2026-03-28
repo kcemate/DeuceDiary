@@ -221,7 +221,6 @@ export function createPredictionsRouter(): Router {
 
       const { predictions: preds } = parsed.data;
 
-      // Get card
       const weekStart = getCurrentWeekStart();
       const [card] = await db
         .select()
@@ -232,7 +231,6 @@ export function createPredictionsRouter(): Router {
       if (!card) return res.status(404).json({ message: "No active prediction card this week" });
       if (card.status !== "active") return res.status(409).json({ message: "Predictions are closed for this week" });
 
-      // Check if already submitted
       const existing = await db
         .select()
         .from(predictions)
@@ -242,7 +240,6 @@ export function createPredictionsRouter(): Router {
         return res.status(409).json({ message: "You have already submitted predictions this week" });
       }
 
-      // Check SPP balance
       const balance = await ensureSppBalance(userId, groupId);
       const totalWager = preds.reduce((sum, p) => sum + p.wager, 0);
       if (totalWager > balance) {
@@ -251,7 +248,6 @@ export function createPredictionsRouter(): Router {
         });
       }
 
-      // Insert predictions
       await db.insert(predictions).values(
         preds.map((p) => ({
           cardId: card.id,
@@ -262,7 +258,6 @@ export function createPredictionsRouter(): Router {
         })),
       );
 
-      // Deduct SPP
       await db
         .update(squadPoopPoints)
         .set({
