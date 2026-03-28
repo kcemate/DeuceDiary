@@ -304,7 +304,11 @@ function BingoSquareCell({
           <>
             <div className="absolute inset-0 flex items-center justify-center rounded-xl">
               {isOnBingoLine ? (
-                <svg className="w-10 h-10 text-green-700 opacity-30" fill="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-10 h-10 text-green-700 opacity-30"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                 </svg>
               ) : (
