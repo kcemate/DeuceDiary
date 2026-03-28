@@ -34,9 +34,7 @@ const navItems = [
     path: "/",
     label: "Home",
     exact: true,
-    // Outline house
     outlinePath: homeOutlinePath,
-    // Filled house (uses fill)
     filledPath: homeOutlinePath,
     useFill: true,
   },

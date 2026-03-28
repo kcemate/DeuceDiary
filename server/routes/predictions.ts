@@ -395,9 +395,7 @@ export function createPredictionsRouter(): Router {
       const q1Answer =
         Object.entries(logsByUser).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
 
-      // Q3: did [member] log before 10am on [day] — we store both answer possibilities as text
-      // Since q3 involves a random member chosen at card-creation time (unknown now), we skip for resolving
-      // and mark all q3 predictions as null result (no penalty/gain)
+      // Q3 answer is unknowable at resolution time — all Q3 predictions are refunded
 
       const correctAnswers: (string | null)[] = [q0Answer, q1Answer, q2Answer, null, q4Answer];
 
