@@ -127,10 +127,10 @@ const publicProfileLimiter = rateLimit({
   message: { message: "Too many requests, please try again later." },
 });
 app.get("/api/share", publicProfileLimiter);
-app.get("/api/og", publicProfileLimiter);
+app.use("/api/og", publicProfileLimiter);
 app.get("/api/users", publicProfileLimiter);
-app.get("/api/groups/preview", publicProfileLimiter);
-app.get("/api/groups/invite-preview", publicProfileLimiter);
+app.use("/api/groups/preview", publicProfileLimiter);
+app.use("/api/groups/invite-preview", publicProfileLimiter);
 
 // --- Request ID (trace each request through logs & error responses) ---
 app.use((req, res, next) => {
