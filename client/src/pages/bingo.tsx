@@ -121,7 +121,10 @@ function Confetti({ show, blackout }: { show: boolean; blackout?: boolean }) {
           className="absolute top-16 left-0 right-0 flex justify-center"
           style={{ animation: "blackoutBanner 4s ease-in-out forwards" }}
         >
-          <div className="bg-gradient-to-r from-amber-500 to-yellow-400 rounded-2xl px-6 py-3 shadow-2xl shadow-amber-500/50 border-2 border-yellow-300">
+          <div className={cn(
+            "bg-gradient-to-r from-amber-500 to-yellow-400 rounded-2xl",
+            "px-6 py-3 shadow-2xl shadow-amber-500/50 border-2 border-yellow-300"
+          )}>
             <p className="text-white font-black text-2xl tracking-wider text-center drop-shadow">
               🏆 BLACKOUT! 🏆
             </p>
@@ -191,7 +194,8 @@ function PlaceholderBingoGrid() {
               <div
                 key={index}
                 className={cn(
-                  "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center min-h-[64px]",
+                  "relative flex flex-col items-center justify-center",
+                  "rounded-xl border-2 p-1.5 text-center min-h-[64px]",
                   done
                     ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
                     : "border-border bg-card",
@@ -217,10 +221,19 @@ function PlaceholderBingoGrid() {
           })}
         </div>
         {/* Frosted lock overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-background/70 backdrop-blur-[1px]">
+        <div className={cn(
+          "absolute inset-0 flex flex-col items-center justify-center",
+          "rounded-2xl bg-background/70 backdrop-blur-[1px]"
+        )}>
           <div className="flex flex-col items-center gap-2 px-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
-              <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <div className={cn(
+              "w-12 h-12 rounded-full bg-primary/10 border-2 border-primary/30",
+              "flex items-center justify-center"
+            )}>
+              <svg
+                className="w-6 h-6 text-primary"
+                fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+              >
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
@@ -273,7 +286,8 @@ function BingoSquareCell({
       `}</style>
       <div
         className={cn(
-          "relative flex flex-col items-center justify-center rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
+          "relative flex flex-col items-center justify-center",
+          "rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
           "min-h-[64px] cursor-default",
           isOnBingoLine
             ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
