@@ -131,6 +131,7 @@ app.get("/api/og", publicProfileLimiter);
 app.get("/api/users", publicProfileLimiter);
 app.get("/api/groups/preview", publicProfileLimiter);
 app.get("/api/groups/invite-preview", publicProfileLimiter);
+app.get("/api/passport", publicProfileLimiter);
 
 // --- Request ID (trace each request through logs & error responses) ---
 app.use((req, res, next) => {
