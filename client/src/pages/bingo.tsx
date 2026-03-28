@@ -290,7 +290,8 @@ function BingoSquareCell({
           "rounded-xl border-2 p-1.5 text-center transition-all duration-500 select-none",
           "min-h-[64px] cursor-default",
           isOnBingoLine
-            ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
+            ? "border-green-500 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg" +
+              " shadow-green-400/40 ring-2 ring-green-400 ring-offset-1"
             : isCompleted
             ? "border-yellow-400 bg-gradient-to-br from-yellow-300 to-amber-400 shadow-lg shadow-yellow-200/50"
             : index === 12
