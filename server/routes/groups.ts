@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import rateLimit from "express-rate-limit";
 import logger from "../lib/logger";
 import { storage } from "../storage";
 import { insertGroupSchema } from "@shared/schema";
@@ -50,6 +51,15 @@ async function checkSquadLimit(req: Request, res: Response): Promise<boolean> {
 
 const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Promise<void>) =>
   helperAsyncRoute(errMsg, errMsg, handler);
+
+const isTest = process.env.NODE_ENV === "test";
+const invitePreviewLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: isTest ? 10000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+});
 
 export function createGroupsRouter(uploadsDir: string): Router {
   const router = Router();
@@ -412,7 +422,7 @@ export function createGroupsRouter(uploadsDir: string): Router {
   }));
 
   // Group preview for invite landing page (public — no auth)
-  router.get('/api/groups/preview/:inviteCode', asyncRoute("Failed to fetch group preview", async (req, res) => {
+  router.get('/api/groups/preview/:inviteCode', invitePreviewLimiter, asyncRoute("Failed to fetch group preview", async (req, res) => {
     const { inviteCode } = req.params;
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
       return res.status(404).json({ message: "Invite not found" });
@@ -452,6 +462,7 @@ export function createGroupsRouter(uploadsDir: string): Router {
 
   // Rich invite preview (public -- no auth, enhanced for OG)
   router.get('/api/groups/invite-preview/:inviteCode',
+    invitePreviewLimiter,
     asyncRoute("Failed to fetch invite preview",
     async (req, res) => {
     const { inviteCode } = req.params;
@@ -465,7 +476,7 @@ export function createGroupsRouter(uploadsDir: string): Router {
   // OG HTML page for invite links -- crawlers get rich meta tags (public)
   const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const INVITE_NOT_FOUND_HTML = '<html><body><h1>Invite not found or expired</h1></body></html>';
-  router.get('/api/og/invite/:inviteCode', asyncRoute("Failed to render invite OG page", async (req, res) => {
+  router.get('/api/og/invite/:inviteCode', invitePreviewLimiter, asyncRoute("Failed to render invite OG page", async (req, res) => {
     const { inviteCode } = req.params;
     // Validate UUID format before using in HTML href to prevent injection
     if (!INVITE_UUID_RE.test(inviteCode)) {
