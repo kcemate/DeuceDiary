@@ -222,7 +222,11 @@ export default function BattleLobby() {
 
   function handleMatchmake() {
     if (!groups.length) {
-      toast({ title: "Join a squad first!", description: "You need to be in a squad to matchmake.", variant: "destructive" });
+      toast({
+        title: "Join a squad first!",
+        description: "You need to be in a squad to matchmake.",
+        variant: "destructive",
+      });
       return;
     }
     matchmakeMutation.mutate({ groupId: groups[0].id, matchType });
@@ -263,7 +267,8 @@ export default function BattleLobby() {
       {/* Action buttons */}
       <div className="flex gap-3 mb-6">
         <Button
-          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl py-5 shadow-lg shadow-primary/20"
+          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold
+            rounded-2xl py-5 shadow-lg shadow-primary/20"
           onClick={() => setShowChallengeModal(true)}
         >
           ⚔️ Challenge Friend

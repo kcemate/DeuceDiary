@@ -128,7 +128,11 @@ function PlacementPhase({
     if (!selectedType) return;
     const preview = getPreviewCells(col, row);
     if (!isPreviewValid(preview)) {
-      toast({ title: "Can't place there!", description: "Ship goes out of bounds or overlaps.", variant: "destructive" });
+      toast({
+        title: "Can't place there!",
+        description: "Ship goes out of bounds or overlaps.",
+        variant: "destructive",
+      });
       return;
     }
     setPlacedShips((prev) => [...prev.filter((s) => s.type !== selectedType), { type: selectedType, cells: preview }]);
@@ -253,11 +257,16 @@ function PlacementPhase({
 
       {/* Ready button */}
       <Button
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl py-5 shadow-lg shadow-primary/20"
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold
+          rounded-2xl py-5 shadow-lg shadow-primary/20"
         disabled={!allPlaced || placeMutation.isPending}
         onClick={() => placeMutation.mutate(placedShips)}
       >
-        {placeMutation.isPending ? "Deploying..." : allPlaced ? "⚓ Ready for Battle!" : `Place all ships (${placedShips.length}/${shipConfigs.length})`}
+        {placeMutation.isPending
+          ? "Deploying..."
+          : allPlaced
+          ? "⚓ Ready for Battle!"
+          : `Place all ships (${placedShips.length}/${shipConfigs.length})`}
       </Button>
     </div>
   );
@@ -384,7 +393,8 @@ function BattlePhase({
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold border transition-all ${
                 sonarPing.used
                   ? "bg-muted/30 text-muted-foreground border-border opacity-50 cursor-default"
-                  : "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25 active:scale-95"
+                  : "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25
+                    active:scale-95"
               }`}
             >
               📡 Sonar Ping {sonarPing.used ? "(used)" : ""}
@@ -397,7 +407,8 @@ function BattlePhase({
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold border transition-all ${
                 ghostWipe.used
                   ? "bg-muted/30 text-muted-foreground border-border opacity-50 cursor-default"
-                  : "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25 active:scale-95"
+                  : "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25
+                    active:scale-95"
               }`}
             >
               👻 Ghost Wipe {ghostWipe.used ? "(used)" : ""}
@@ -441,7 +452,11 @@ function BattlePhase({
             attacks={myAttacks}
             onCellClick={(col, row) => {
               if (available <= 0) {
-                toast({ title: "No attacks!", description: "Log a deuce to earn attack tokens.", variant: "destructive" });
+                toast({
+                  title: "No attacks!",
+                  description: "Log a deuce to earn attack tokens.",
+                  variant: "destructive",
+                });
                 return;
               }
               attackMutation.mutate({ col, row });
