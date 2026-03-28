@@ -1,9 +1,34 @@
-import express, { type Express, type Request, type Response } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import logger from "../lib/logger";
 import { Webhook } from "svix";
 import { v4 as uuidv4 } from "uuid";
+import rateLimit from "express-rate-limit";
 import { storage } from "../storage";
 import { track, Events } from "../lib/analytics";
+
+const webhookRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === "test" ? 10000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many webhook requests, please try again later." },
+});
+
+/** Middleware that enforces Clerk webhook signature authentication via svix headers. */
+function authenticateClerkWebhook(req: Request, res: Response, next: NextFunction): void {
+  if (!process.env.CLERK_WEBHOOK_SECRET) {
+    res.status(503).json({ message: "Service unavailable" });
+    return;
+  }
+  const svixId = req.headers["svix-id"] as string;
+  const svixTimestamp = req.headers["svix-timestamp"] as string;
+  const svixSignature = req.headers["svix-signature"] as string;
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    res.status(400).json({ message: "Missing svix headers" });
+    return;
+  }
+  next();
+}
 
 async function downgradeToFree(userId: string, eventType: string, status?: string): Promise<void> {
   await storage.updateUserSubscription(userId, "free", new Date());
@@ -18,21 +43,15 @@ async function downgradeToFree(userId: string, eventType: string, status?: strin
 export function registerClerkWebhook(app: Express): void {
   app.post(
     "/api/webhooks/clerk",
+    webhookRateLimit,
+    authenticateClerkWebhook,
     express.raw({ type: "application/json" }),
     async (req: Request, res: Response) => {
-      const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
-      if (!WEBHOOK_SECRET) {
-        logger.error("CLERK_WEBHOOK_SECRET not set — rejecting webhook");
-        return res.status(503).json({ message: "Service unavailable" });
-      }
+      const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET!;
 
       const svixId = req.headers["svix-id"] as string;
       const svixTimestamp = req.headers["svix-timestamp"] as string;
       const svixSignature = req.headers["svix-signature"] as string;
-
-      if (!svixId || !svixTimestamp || !svixSignature) {
-        return res.status(400).json({ message: "Missing svix headers" });
-      }
 
       type ClerkEventData = {
         id?: string; user_id?: string; subscriber_id?: string;
