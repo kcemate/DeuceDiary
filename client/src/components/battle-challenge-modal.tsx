@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logger from "@/lib/logger";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -54,7 +55,7 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
       try {
         return await apiRequest<GroupDetail>(`/api/groups/${selectedGroupId}`);
       } catch (err) {
-        console.error("[battle-challenge-modal] group detail fetch failed", err);
+        logger.error("[battle-challenge-modal] group detail fetch failed", err);
         throw err;
       }
     },

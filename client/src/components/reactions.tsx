@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import logger from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
           body: JSON.stringify({ emoji }),
         });
       } catch (err) {
-        console.error("[reactions] add reaction failed", err);
+        logger.error("[reactions] add reaction failed", err);
         throw err;
       }
     },
@@ -99,7 +100,7 @@ export function Reactions({ entryId, maxVisible = 4 }: ReactionsProps) {
           body: JSON.stringify({ emoji }),
         });
       } catch (err) {
-        console.error("[reactions] remove reaction failed", err);
+        logger.error("[reactions] remove reaction failed", err);
         throw err;
       }
     },

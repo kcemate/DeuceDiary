@@ -3,6 +3,7 @@
  * In Clerk mode, ClerkTokenSync sets the getter; in dev mode it stays null
  * and requests rely on session cookies instead.
  */
+import logger from "@/lib/logger";
 
 let _getToken: (() => Promise<string | null>) | null = null;
 
@@ -15,7 +16,7 @@ export async function getAuthToken(): Promise<string | null> {
   try {
     return await _getToken();
   } catch (err) {
-    console.error("[auth-token] getAuthToken failed", err);
+    logger.error("[auth-token] getAuthToken failed", err);
     return null;
   }
 }

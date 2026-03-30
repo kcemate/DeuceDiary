@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import logger from "@/lib/logger";
 import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useEffect, useRef, useCallback } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
@@ -66,7 +67,7 @@ function useClerkAuthHook() {
       }
       return res.json();
     } catch (err) {
-      console.error("[useAuth] fetchUser failed", err);
+      logger.error("[useAuth] fetchUser failed", err);
       throw err;
     }
   }, [getToken]);

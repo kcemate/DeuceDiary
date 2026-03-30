@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import logger from "@/lib/logger";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -648,7 +649,7 @@ export default function BattleMatch() {
       try {
         return await apiRequest<MatchData>(`/api/battle/match/${matchId}`);
       } catch (err) {
-        console.error("[battle-match] match fetch failed", err);
+        logger.error("[battle-match] match fetch failed", err);
         throw err;
       }
     },

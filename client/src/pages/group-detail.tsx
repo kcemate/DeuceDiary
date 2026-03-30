@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import logger from "@/lib/logger";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -673,9 +674,9 @@ export default function GroupDetail() {
                     const streakLine = streak && streak >= 3 ? ` We're on a ${streak}-day streak.` : "";
                     const text = `Think you can keep up? ${memberCount} of us are logging on Deuce Diary.${streakLine} Join "${groupDetail.group.name}" here: ${link}`;
                     if (navigator.share) {
-                      try { await navigator.share({ title: "Think you can keep up?", text }); } catch (err) { console.error("[share] navigator.share failed:", err); }
+                      try { await navigator.share({ title: "Think you can keep up?", text }); } catch (err) { logger.error("[share] navigator.share failed:", err); }
                     } else {
-                      try { await navigator.clipboard.writeText(text); toast({ title: "Copied!", description: "Share with your crew." }); } catch (err) { console.error("[share] clipboard write failed:", err); }
+                      try { await navigator.clipboard.writeText(text); toast({ title: "Copied!", description: "Share with your crew." }); } catch (err) { logger.error("[share] clipboard write failed:", err); }
                     }
                   }}
                   disabled={inviteCrewMutation.isPending}
@@ -924,7 +925,7 @@ export default function GroupDetail() {
                           const streak = streakData.currentStreak;
                           const message = `🚨 STREAK ALERT 🔥\n\n"${groupName}" is on a ${streak}-day streak — but it's at risk!\n\nLog your deuce TODAY to keep it alive 🚽\n\n👉 ${window.location.origin}`;
                           if (navigator.share) {
-                            try { await navigator.share({ title: "Save Our Streak!", text: message }); } catch (err) { console.error("[share] navigator.share failed:", err); }
+                            try { await navigator.share({ title: "Save Our Streak!", text: message }); } catch (err) { logger.error("[share] navigator.share failed:", err); }
                           } else {
                             try {
                               await navigator.clipboard.writeText(message);

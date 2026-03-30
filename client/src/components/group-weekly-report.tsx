@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import logger from "@/lib/logger";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -214,7 +215,7 @@ export function GroupWeeklyReport({ groupId }: { groupId: string }) {
                   try {
                     await navigator.clipboard.writeText(text);
                   } catch (err) {
-                    console.warn("[share] clipboard write failed", err);
+                    logger.warn("[share] clipboard write failed", err);
                   }
                 }
               }}

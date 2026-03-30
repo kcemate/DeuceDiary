@@ -1,4 +1,5 @@
 // IndexedDB wrapper for storing pending deuce logs when offline
+import logger from "@/lib/logger";
 
 const DB_NAME = 'DeuceDiaryOffline';
 const DB_VERSION = 1;
@@ -44,7 +45,7 @@ export async function addToQueue(
   try {
     db = await openDB();
   } catch (err) {
-    console.error("[offlineQueue] addToQueue openDB failed", err);
+    logger.error("[offlineQueue] addToQueue openDB failed", err);
     throw err;
   }
   return new Promise((resolve, reject) => {
@@ -63,7 +64,7 @@ export async function getPendingQueue(): Promise<PendingDeuce[]> {
   try {
     db = await openDB();
   } catch (err) {
-    console.error("[offlineQueue] getPendingQueue openDB failed", err);
+    logger.error("[offlineQueue] getPendingQueue openDB failed", err);
     throw err;
   }
   return new Promise((resolve, reject) => {

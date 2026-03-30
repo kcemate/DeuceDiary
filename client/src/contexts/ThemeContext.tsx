@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import logger from "@/lib/logger";
 
 export type ThemeName = "default" | "dark" | "cream" | "midnight" | "ocean" | "retro";
 
@@ -68,7 +69,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         ? stored as ThemeName
         : "default";
       setThemeState(fallback);
-      console.warn("[Theme] Failed to save theme:", err);
+      logger.warn("[Theme] Failed to save theme:", err);
     });
   }, []);
 

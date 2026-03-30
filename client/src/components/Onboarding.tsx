@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import logger from "@/lib/logger";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           body: JSON.stringify({ username }),
         });
       } catch (err) {
-        console.error("[Onboarding] username mutation failed", err);
+        logger.error("[Onboarding] username mutation failed", err);
         throw err;
       }
     },

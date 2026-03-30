@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import logger from "@/lib/logger";
 import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ export function ProfilePictureUpload({
           body: formData,
         });
       } catch (err) {
-        console.error("[profile-picture-upload] upload failed", err);
+        logger.error("[profile-picture-upload] upload failed", err);
         throw err;
       }
     },
