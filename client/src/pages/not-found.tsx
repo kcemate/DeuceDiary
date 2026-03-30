@@ -36,7 +36,8 @@ export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4">
       <div
-        className="w-full max-w-sm text-center animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-3xl overflow-hidden relative"
+        className="w-full max-w-sm text-center animate-in fade-in slide-in-from-bottom-4
+          duration-500 rounded-3xl overflow-hidden relative"
         style={{
           background: "linear-gradient(160deg, hsl(38,40%,97%) 0%, hsl(38,28%,93%) 100%)",
           border: "1.5px solid hsl(45, 55%, 72%)",
@@ -66,14 +67,26 @@ export default function NotFound() {
 
         {/* Three floating emojis */}
         <div className="flex justify-center items-end gap-3 mb-4" style={{ height: "80px" }}>
-          <span style={{ fontSize: "2.5rem", animation: "float1 3.1s ease-in-out infinite", display: "inline-block", opacity: 0.7 }}>💩</span>
-          <span style={{ fontSize: "4rem",   animation: "float2 2.7s ease-in-out infinite 0.3s", display: "inline-block" }}>🚽</span>
-          <span style={{ fontSize: "2rem",   animation: "float3 3.5s ease-in-out infinite 0.6s", display: "inline-block", opacity: 0.65 }}>🧻</span>
+          <span style={{
+            fontSize: "2.5rem", animation: "float1 3.1s ease-in-out infinite",
+            display: "inline-block", opacity: 0.7,
+          }}>💩</span>
+          <span style={{
+            fontSize: "4rem", animation: "float2 2.7s ease-in-out infinite 0.3s",
+            display: "inline-block",
+          }}>🚽</span>
+          <span style={{
+            fontSize: "2rem", animation: "float3 3.5s ease-in-out infinite 0.6s",
+            display: "inline-block", opacity: 0.65,
+          }}>🧻</span>
         </div>
 
         {/* Error code with flavor */}
         <div className="mb-2">
-          <h1 className="text-6xl font-black text-foreground leading-none" style={{ fontVariantNumeric: "tabular-nums" }}>
+          <h1
+            className="text-6xl font-black text-foreground leading-none"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
             404
           </h1>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
@@ -109,7 +122,8 @@ export default function NotFound() {
         <div className="flex flex-col gap-2">
           <Button
             onClick={handleGoHome}
-            className="btn-shimmer text-white font-bold rounded-2xl px-8 py-4 text-lg shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+            className="btn-shimmer text-white font-bold rounded-2xl px-8 py-4 text-lg
+              shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
           >
             {isAuthenticated ? "Back to the Throne Room" : "Log In"}
           </Button>

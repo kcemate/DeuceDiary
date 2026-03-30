@@ -242,7 +242,11 @@ export default function Settings() {
                 onClick={() => handleThemeSelect(t)}
                 role="radio"
                 aria-checked={theme === t.id}
-                aria-label={`${t.name} theme${t.premium && !isPremium ? " (Premium)" : ""}${theme === t.id ? ", selected" : ""}`}
+                aria-label={[
+                  `${t.name} theme`,
+                  t.premium && !isPremium ? " (Premium)" : "",
+                  theme === t.id ? ", selected" : "",
+                ].join("")}
                 className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                   theme === t.id
                     ? "ring-2 ring-primary ring-offset-2 ring-offset-background border-primary"
@@ -299,7 +303,11 @@ export default function Settings() {
           <select
             value={userTimezone}
             onChange={(e) => handleTimezoneChange(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className={[
+              "w-full px-3 py-2 rounded-lg border border-border",
+              "bg-background text-foreground text-sm",
+              "focus:outline-none focus:ring-2 focus:ring-primary",
+            ].join(" ")}
           >
             {Intl.supportedValuesOf("timeZone").map((tz) => (
               <option key={tz} value={tz}>
@@ -455,7 +463,11 @@ export default function Settings() {
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
             placeholder="Type DELETE"
-            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-destructive"
+            className={[
+              "w-full px-3 py-2 rounded-lg border border-border",
+              "bg-background text-foreground text-sm font-mono",
+              "focus:outline-none focus:ring-2 focus:ring-destructive",
+            ].join(" ")}
             autoComplete="off"
           />
           <AlertDialogFooter>

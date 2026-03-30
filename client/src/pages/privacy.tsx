@@ -18,13 +18,16 @@ export default function Privacy() {
             <ul className="list-disc pl-6 mt-2 space-y-1">
               <li><strong>Username</strong> &mdash; the display name you choose when signing up.</li>
               <li><strong>Log timestamps</strong> &mdash; the date and time you record a deuce.</li>
-              <li><strong>Thoughts</strong> &mdash; the text you type while on the throne (up to 500 characters of pure wisdom).</li>
-              <li><strong>Location labels</strong> &mdash; the name you assign to a location (e.g. "Home Base", "Office").</li>
+              <li><strong>Thoughts</strong> &mdash; the text you type while on the throne
+                (up to 500 characters of pure wisdom).</li>
+              <li><strong>Location labels</strong> &mdash; the name you assign to a location
+                (e.g. "Home Base", "Office").</li>
               <li><strong>Group membership</strong> &mdash; which groups you create or join.</li>
               <li><strong>Reactions</strong> &mdash; emoji reactions to other members' logs.</li>
             </ul>
             <p className="mt-2">
-              We do <strong>not</strong> collect GPS coordinates, IP-based geolocation, contacts, photos, or any biometric data.
+              We do <strong>not</strong> collect GPS coordinates, IP-based geolocation, contacts,
+              photos, or any biometric data.
               We don't want to know <em>that</em> much about your bathroom habits.
             </p>
           </section>
@@ -36,20 +39,25 @@ export default function Privacy() {
               <li>Calculate streaks, leaderboards, and analytics within your groups.</li>
               <li>Send in-app notifications when squad members log a deuce (if enabled).</li>
             </ul>
-            <p className="mt-2">We will never sell your data, serve ads based on your bathroom schedule, or train AI models on your throne thoughts.</p>
+            <p className="mt-2">
+              We will never sell your data, serve ads based on your bathroom schedule,
+              or train AI models on your throne thoughts.
+            </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">3. Data Sharing</h2>
             <p>
-              Your logs are visible <strong>only</strong> to members of the groups you post to. We do not share your data with third-party advertisers, analytics firms, or anyone outside the app.
+              Your logs are visible <strong>only</strong> to members of the groups you post to.
+              We do not share your data with third-party advertisers, analytics firms, or anyone outside the app.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">4. Data Storage &amp; Security</h2>
             <p>
-              Your data is stored on secure servers. Session data is encrypted in transit. We retain your account data for as long as your account is active.
+              Your data is stored on secure servers. Session data is encrypted in transit.
+              We retain your account data for as long as your account is active.
             </p>
           </section>
 
@@ -66,21 +74,24 @@ export default function Privacy() {
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">6. Children&apos;s Privacy</h2>
             <p>
-              Deuce Diary is not intended for users under 13. We do not knowingly collect data from children. If you believe a child has created an account, please contact us so we can remove it.
+              Deuce Diary is not intended for users under 13. We do not knowingly collect data from children.
+              If you believe a child has created an account, please contact us so we can remove it.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">7. Changes to This Policy</h2>
             <p>
-              We may update this policy from time to time. We&apos;ll notify users of material changes within the app. Continued use after changes constitutes acceptance.
+              We may update this policy from time to time. We&apos;ll notify users of material changes within the app.
+              Continued use after changes constitutes acceptance.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">8. Contact</h2>
             <p>
-              Questions or concerns? Reach out at <strong>giovannilabs@icloud.com</strong>. We promise to read your email — even if we're on the throne.
+              Questions or concerns? Reach out at <strong>giovannilabs@icloud.com</strong>.
+              We promise to read your email — even if we're on the throne.
             </p>
           </section>
         </div>

@@ -56,7 +56,10 @@ function MilestoneBadge({
       }`}
     >
       <span className="text-2xl" aria-hidden="true">{milestone.emoji}</span>
-      <span className="text-[10px] font-black uppercase tracking-wider text-center leading-tight text-foreground" aria-hidden="true">
+      <span
+        className="text-[10px] font-black uppercase tracking-wider text-center leading-tight text-foreground"
+        aria-hidden="true"
+      >
         {milestone.label}
       </span>
       <span className="text-[9px] text-muted-foreground font-medium" aria-hidden="true">
@@ -107,7 +110,16 @@ export default function Profile() {
             currentStreak={maxStreak}
             className="ring-[3px] ring-primary ring-offset-2 ring-offset-background rounded-full"
           >
-            <ProfilePictureUpload user={user as { id: string; firstName?: string | null; lastName?: string | null; username?: string | null; profileImageUrl?: string | null }} size="lg" />
+            <ProfilePictureUpload
+              user={user as {
+                id: string;
+                firstName?: string | null;
+                lastName?: string | null;
+                username?: string | null;
+                profileImageUrl?: string | null;
+              }}
+              size="lg"
+            />
           </StreakFrame>
         </div>
         <h2 className="text-2xl font-extrabold text-foreground flex items-center justify-center gap-2">
@@ -144,7 +156,9 @@ export default function Profile() {
             <div className="mt-3 space-y-2">
               <div className="flex items-center justify-center gap-1.5">
                 <span className="text-sm">{rank.icon}</span>
-                <span className="bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                <span
+                  className="bg-accent/20 text-accent px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                >
                   Lvl {level} — {rank.title}
                 </span>
               </div>
@@ -159,7 +173,10 @@ export default function Profile() {
                     className="h-1.5 bg-muted rounded-full overflow-hidden"
                   >
                     <div
-                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+                      className={[
+                        "h-full bg-gradient-to-r from-primary to-accent",
+                        "rounded-full transition-all duration-500",
+                      ].join(" ")}
                       style={{ width: `${progressToNext}%` }}
                     />
                   </div>
@@ -335,7 +352,11 @@ export default function Profile() {
       {/* ── Share Your Profile ──────────────────────────────────── */}
       <button
         onClick={() => setShareOpen(true)}
-        className="w-full mb-6 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 p-4 text-left transition-all active:scale-[0.98]"
+        className={[
+          "w-full mb-6 rounded-2xl border border-primary/20",
+          "bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5",
+          "p-4 text-left transition-all active:scale-[0.98]",
+        ].join(" ")}
         aria-label="Share your streak card"
       >
         <div className="flex items-center gap-3">
@@ -356,7 +377,11 @@ export default function Profile() {
       {(user?.referralCount ?? 0) < 3 && (
         <button
           onClick={() => setLocation("/referral")}
-          className="w-full mb-6 rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/5 via-accent/10 to-accent/5 p-4 text-left transition-all active:scale-[0.98]"
+          className={[
+            "w-full mb-6 rounded-2xl border border-accent/20",
+            "bg-gradient-to-r from-accent/5 via-accent/10 to-accent/5",
+            "p-4 text-left transition-all active:scale-[0.98]",
+          ].join(" ")}
           aria-label="Invite friends and earn Premium"
         >
           <div className="flex items-center gap-3">
@@ -365,7 +390,8 @@ export default function Profile() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground">
-                Invite {3 - (user?.referralCount ?? 0)} friend{3 - (user?.referralCount ?? 0) === 1 ? "" : "s"}, get Premium free
+                Invite {3 - (user?.referralCount ?? 0)}{" "}
+                friend{3 - (user?.referralCount ?? 0) === 1 ? "" : "s"}, get Premium free
               </p>
               <p className="text-[11px] text-muted-foreground">
                 Share the movement. Earn 30 days of Porcelain Premium.
@@ -449,7 +475,10 @@ export default function Profile() {
                 <button
                   key={group.id}
                   onClick={() => setLocation(`/groups/${group.id}`)}
-                  className="flex items-center gap-3 w-full rounded-xl p-2 -mx-2 transition-colors hover:bg-muted/50 active:bg-muted text-left"
+                  className={[
+                    "flex items-center gap-3 w-full rounded-xl p-2 -mx-2",
+                    "transition-colors hover:bg-muted/50 active:bg-muted text-left",
+                  ].join(" ")}
                 >
                   <div className="w-8 h-8 shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                     <span className="text-base">{tier.icon}</span>
@@ -541,7 +570,10 @@ export default function Profile() {
       {/* ── Settings ─────────────────────────────────────────────── */}
       <button
         onClick={() => setLocation("/settings")}
-        className="w-full bg-card border border-border rounded-2xl overflow-hidden mb-6 transition-colors hover:bg-muted/50 active:bg-muted"
+        className={[
+          "w-full bg-card border border-border rounded-2xl overflow-hidden mb-6",
+          "transition-colors hover:bg-muted/50 active:bg-muted",
+        ].join(" ")}
       >
         <div className="flex items-center gap-3 px-5 py-4">
           <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">

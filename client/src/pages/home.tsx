@@ -76,7 +76,7 @@ function deduplicateFeed(entries: FeedEntry[]): FeedEntry[] {
   return Array.from(map.values());
 }
 
-// ── Pull-to-refresh hook ────────────────────────────────────────────────────
+// ── Pull-to-refresh hook ─────────────────────────────────────────────────
 function usePullToRefresh(onRefresh: () => Promise<void>) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -135,7 +135,7 @@ function usePullToRefresh(onRefresh: () => Promise<void>) {
   return { isPulling, pullDistance, isRefreshing };
 }
 
-// ── Skeleton for group cards ────────────────────────────────────────────────
+// ── Skeleton for group cards ──────────────────────────────────────────────
 function GroupCardSkeleton() {
   return (
     <div className="bg-card border border-border rounded-2xl p-4">
@@ -154,7 +154,7 @@ function GroupCardSkeleton() {
   );
 }
 
-// ── Empty state ─────────────────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────
 function EmptyFeedState() {
   return (
     <div className="bg-card border border-border rounded-2xl p-10 text-center">
@@ -173,7 +173,7 @@ function EmptyFeedState() {
   );
 }
 
-// ── Feed entry skeleton ──────────────────────────────────────────────────
+// ── Feed entry skeleton ────────────────────────────────────────────────
 function FeedEntrySkeleton() {
   return (
     <div className="border-l-4 border-muted pl-3 py-2">
@@ -250,7 +250,7 @@ export default function Home() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  // ── New user onboarding ──────────────────────────────────────────────────
+  // ── New user onboarding ─────────────────────────────────────────────────
   if (!user?.username) {
     return (
       <>
@@ -304,7 +304,7 @@ export default function Home() {
     return acc;
   }, {} as Record<string, FeedEntry[]>);
 
-  // ── Free tier ───────────────────────────────────────────────────────────
+  // ── Free tier ─────────────────────────────────────────────────────────
   if (isFree) {
     return (
       <div className="pt-6 pb-24">
@@ -326,7 +326,12 @@ export default function Home() {
           <NextBadgeTeaser deuceCount={user?.deuceCount ?? 0} />
           {/* Bingo teaser for free users */}
           <Link href="/premium">
-            <div className="rounded-2xl border border-border p-3 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.99] bg-card">
+            <div
+              className={[
+                "rounded-2xl border border-border p-3 cursor-pointer",
+                "hover:border-primary/30 transition-all active:scale-[0.99] bg-card",
+              ].join(" ")}
+            >
               <div className="flex items-center gap-3">
                 <div className="shrink-0 grid grid-cols-5 gap-[2px] w-8 h-8 opacity-40">
                   {Array.from({ length: 25 }, (_, i) => (
@@ -343,7 +348,9 @@ export default function Home() {
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm">🎯</span>
                     <span className="text-xs font-bold text-foreground">Deuce Bingo</span>
-                    <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full ml-auto">
+                    <span
+                      className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full ml-auto"
+                    >
                       Premium
                     </span>
                   </div>
@@ -360,7 +367,11 @@ export default function Home() {
         <div className="w-full mb-6">
           <Button
             onClick={() => setShowLogModal(true)}
-            className="btn-shimmer w-full text-white py-6 text-xl font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+            className={[
+              "btn-shimmer w-full text-white py-6 text-xl font-bold rounded-2xl",
+              "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
+              "transition-all active:scale-[0.98]",
+            ].join(" ")}
             aria-label="Log a new deuce"
           >
             <span className="text-3xl mr-3">🚽</span>
@@ -369,7 +380,12 @@ export default function Home() {
         </div>
 
         {/* Total Deuces */}
-        <div className="w-full relative overflow-hidden bg-gradient-to-br from-card to-muted p-6 rounded-2xl mb-6 border border-border">
+        <div
+          className={[
+            "w-full relative overflow-hidden bg-gradient-to-br from-card to-muted",
+            "p-6 rounded-2xl mb-6 border border-border",
+          ].join(" ")}
+        >
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">
@@ -383,7 +399,9 @@ export default function Home() {
               <span className="text-3xl">💩</span>
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div
+            className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2"
+          />
         </div>
 
         {/* Premium upsell */}
@@ -419,7 +437,7 @@ export default function Home() {
     );
   }
 
-  // ── Premium tier: full home ─────────────────────────────────────────────
+  // ── Premium tier: full home ───────────────────────────────────────────
   return (
     <div className="pt-6 pb-24">
       {/* Pull-to-refresh indicator */}
@@ -466,7 +484,11 @@ export default function Home() {
       <div className="mb-6">
         <Button
           onClick={() => setShowLogModal(true)}
-          className="btn-shimmer w-full text-white py-5 text-lg font-bold rounded-2xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          className={[
+            "btn-shimmer w-full text-white py-5 text-lg font-bold rounded-2xl",
+            "shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30",
+            "transition-all active:scale-[0.98]",
+          ].join(" ")}
           aria-label="Log a new deuce"
         >
           <span className="text-2xl mr-3">🚽</span>
@@ -503,13 +525,21 @@ export default function Home() {
             { href: "/settings", emoji: "⚙️", label: "Settings" },
           ].map(({ href, emoji, label, highlight }) => (
             <Link key={label} href={href}>
-              <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 whitespace-nowrap cursor-pointer active:scale-[0.97] transition-all ${
-                highlight
-                  ? "bg-primary/10 border border-primary/30 hover:border-primary/50"
-                  : "bg-card border border-border hover:border-primary/30"
-              }`}>
+              <div
+                className={[
+                  "flex items-center gap-1.5 rounded-full px-3 py-1.5",
+                  "whitespace-nowrap cursor-pointer active:scale-[0.97] transition-all",
+                  highlight
+                    ? "bg-primary/10 border border-primary/30 hover:border-primary/50"
+                    : "bg-card border border-border hover:border-primary/30",
+                ].join(" ")}
+              >
                 <span className="text-sm">{emoji}</span>
-                <span className={`text-xs font-semibold ${highlight ? "text-primary" : "text-foreground"}`}>{label}</span>
+                <span
+                  className={`text-xs font-semibold ${highlight ? "text-primary" : "text-foreground"}`}
+                >
+                  {label}
+                </span>
               </div>
             </Link>
           ))}
@@ -563,7 +593,10 @@ export default function Home() {
                         {(entry.groupIds || [entry.groupId]).map((gid) =>
                           groupNameMap.get(gid) ? (
                             <Link key={gid} href={`/groups/${gid}`}>
-                              <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80">
+                              <Badge
+                                variant="secondary"
+                                className="ml-1 text-[10px] px-1.5 py-0 rounded-full cursor-pointer hover:bg-muted/80"
+                              >
                                 {groupNameMap.get(gid)}
                               </Badge>
                             </Link>
@@ -625,7 +658,10 @@ export default function Home() {
             {groups.map((group, idx) => (
               <Link key={group.id} href={`/groups/${group.id}`}>
                 <div
-                  className="feed-entry bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all cursor-pointer active:scale-[0.99]"
+                  className={[
+                    "feed-entry bg-card border border-border rounded-2xl p-4",
+                    "hover:border-primary/30 transition-all cursor-pointer active:scale-[0.99]",
+                  ].join(" ")}
                   style={{ animationDelay: `${idx * 60}ms` }}
                 >
                   <div className="flex items-center justify-between gap-3">

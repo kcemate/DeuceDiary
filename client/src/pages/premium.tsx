@@ -146,7 +146,8 @@ export default function Premium() {
         <button
           onClick={() => handleUpgrade("monthly")}
           disabled={!!upgrading}
-          className="w-full bg-card border-2 border-border hover:border-primary rounded-2xl p-5 text-left transition-all"
+          className="w-full bg-card border-2 border-border hover:border-primary
+            rounded-2xl p-5 text-left transition-all"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -164,9 +165,11 @@ export default function Premium() {
         <button
           onClick={() => handleUpgrade("annual")}
           disabled={!!upgrading}
-          className="w-full bg-primary/10 border-2 border-primary rounded-2xl p-5 text-left transition-all relative overflow-hidden"
+          className="w-full bg-primary/10 border-2 border-primary rounded-2xl p-5 text-left
+            transition-all relative overflow-hidden"
         >
-          <span className="absolute top-2 right-3 text-[10px] font-bold uppercase tracking-wider text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
+          <span className="absolute top-2 right-3 text-[10px] font-bold uppercase tracking-wider
+            text-primary-foreground bg-primary px-2 py-0.5 rounded-full">
             Save 37%
           </span>
           <div className="flex items-center justify-between">

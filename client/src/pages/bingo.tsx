@@ -309,7 +309,8 @@ function BingoSquareCell({
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77
+                    L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                 </svg>
               ) : (
                 <svg
@@ -385,7 +386,9 @@ export default function Bingo() {
 
       if (result.newlyCompleted > 0) {
         toast({
-          title: result.hasBingo ? "BINGO!" : `${result.newlyCompleted} square${result.newlyCompleted > 1 ? "s" : ""} completed!`,
+          title: result.hasBingo
+            ? "BINGO!"
+            : `${result.newlyCompleted} square${result.newlyCompleted > 1 ? "s" : ""} completed!`,
           description: result.hasBlackout
             ? "BLACKOUT! You completed all 25 squares!"
             : `${result.completedCount} / 25 squares done`,
@@ -447,12 +450,14 @@ export default function Bingo() {
                 <p className="stat-number text-2xl text-foreground">{data.completedCount}/25</p>
                 <div className="flex gap-1">
                   {data.hasBingo && (
-                    <span className="text-[10px] font-black text-yellow-700 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded-full tracking-wide">
+                    <span className="text-[10px] font-black text-yellow-700 bg-yellow-100
+                      border border-yellow-300 px-2 py-0.5 rounded-full tracking-wide">
                       BINGO!
                     </span>
                   )}
                   {data.hasBlackout && (
-                    <span className="text-[10px] font-black text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full tracking-wide">
+                    <span className="text-[10px] font-black text-amber-800 bg-amber-100
+                      border border-amber-300 px-2 py-0.5 rounded-full tracking-wide">
                       BLACKOUT!
                     </span>
                   )}
@@ -568,7 +573,8 @@ export default function Bingo() {
                             className="w-7 h-7 rounded-full object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center
+                            justify-center flex-shrink-0">
                             <span className="text-xs font-bold text-primary">
                               {(entry.username || "?")[0].toUpperCase()}
                             </span>
@@ -582,7 +588,10 @@ export default function Bingo() {
                         </span>
                         <div className="w-14">
                           <div className="h-2 rounded-full bg-muted overflow-hidden">
-                            <div className={cn("h-full rounded-full transition-all", barColor)} style={{ width: `${pct}%` }} />
+                            <div
+                              className={cn("h-full rounded-full transition-all", barColor)}
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
                         </div>
                       </div>

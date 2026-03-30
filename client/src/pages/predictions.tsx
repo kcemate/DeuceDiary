@@ -63,7 +63,9 @@ function formatWeek(iso: string) {
   const d = new Date(iso);
   const end = new Date(d);
   end.setUTCDate(end.getUTCDate() + 6);
-  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  const startStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endStr = end.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${startStr} – ${endStr}`;
 }
 
 // --- Sub-components ---
@@ -272,7 +274,11 @@ function LeaderboardView({ groupId, currentUserId }: LeaderboardViewProps) {
 
   if (isLoading) return <PageSpinner minHeight="min-h-32" />;
   if (!data?.leaderboard.length) {
-    return <p className="text-center text-muted-foreground py-8">No SPP data yet. Submit predictions to get started!</p>;
+    return (
+      <p className="text-center text-muted-foreground py-8">
+        No SPP data yet. Submit predictions to get started!
+      </p>
+    );
   }
 
   return (

@@ -166,7 +166,9 @@ export default function Referral() {
         const progress = Math.min(count / goal, 1);
         const unlocked = count >= goal;
         return (
-          <div className={`border rounded-2xl p-5 mb-6 ${unlocked ? "bg-accent/15 border-accent/50" : "bg-accent/5 border-accent/20"}`}>
+          <div className={`border rounded-2xl p-5 mb-6 ${
+            unlocked ? "bg-accent/15 border-accent/50" : "bg-accent/5 border-accent/20"
+          }`}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-bold text-foreground">
                 {unlocked ? "🎉 Premium Unlocked!" : "Unlock Porcelain Premium"}
@@ -206,7 +208,10 @@ export default function Referral() {
             <p className="text-xs text-muted-foreground text-center mt-2">
               {unlocked
                 ? "You earned 30 days of Porcelain Premium. Keep sharing to stay golden!"
-                : `Invite ${goal - count} more friend${goal - count === 1 ? "" : "s"} to earn 30 days of Porcelain Premium`}
+                : `Invite ${goal - count} more friend${
+                    goal - count === 1 ? "" : "s"
+                  } to earn 30 days of Porcelain Premium`
+              }
             </p>
           </div>
         );
@@ -324,14 +329,23 @@ export default function Referral() {
               return (
                 <div
                   key={i}
-                  className={`flex items-center gap-3 ${isCurrentUser ? "bg-primary/5 -mx-2 px-2 py-1 rounded-xl ring-1 ring-primary/20" : ""}`}
+                  className={`flex items-center gap-3 ${
+                    isCurrentUser ? "bg-primary/5 -mx-2 px-2 py-1 rounded-xl ring-1 ring-primary/20" : ""
+                  }`}
                 >
-                  <span className={`text-sm font-extrabold w-6 text-center ${i < 3 ? "text-accent" : "text-muted-foreground"}`}>
+                  <span className={`text-sm font-extrabold w-6 text-center ${
+                    i < 3 ? "text-accent" : "text-muted-foreground"
+                  }`}>
                     {i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : `${i + 1}`}
                   </span>
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center
+                    overflow-hidden shrink-0">
                     {entry.profileImageUrl ? (
-                      <img src={entry.profileImageUrl} alt={`${entry.username || "User"}'s avatar`} className="w-full h-full object-cover" />
+                      <img
+                        src={entry.profileImageUrl}
+                        alt={`${entry.username || "User"}'s avatar`}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <span className="text-xs font-bold text-muted-foreground">
                         {(entry.username ?? "?")[0]?.toUpperCase()}

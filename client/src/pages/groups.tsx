@@ -63,7 +63,9 @@ export default function Groups() {
       <div className="mb-6">
         <Button
           onClick={() => setShowCreateModal(true)}
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-base
+            font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30
+            transition-all active:scale-[0.98]"
           aria-label="Start a new squad"
         >
           <span className="mr-2">+</span> Start a Squad
@@ -101,7 +103,8 @@ export default function Groups() {
           {groups.map((group, idx) => (
             <Link key={group.id} href={`/groups/${group.id}`}>
               <div
-                className="feed-entry bg-card border border-border rounded-2xl p-4 hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
+                className="feed-entry bg-card border border-border rounded-2xl p-4
+                  hover:border-primary/30 transition-all active:scale-[0.98] cursor-pointer"
                 style={{ animationDelay: `${idx * 60}ms` }}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -116,7 +119,10 @@ export default function Groups() {
                         <span aria-hidden="true">🔥 {group.currentStreak}d</span>
                       </Badge>
                     )}
-                    <Badge variant={group.lastActivity ? "default" : "secondary"} className="rounded-full text-xs font-bold">
+                    <Badge
+                      variant={group.lastActivity ? "default" : "secondary"}
+                      className="rounded-full text-xs font-bold"
+                    >
                       {group.lastActivity ? "Active" : "Quiet"}
                     </Badge>
                   </div>
@@ -131,7 +137,8 @@ export default function Groups() {
                       </Avatar>
                     ))}
                     {group.memberCount > 3 && (
-                      <div className="w-7 h-7 bg-muted rounded-full border-2 border-background flex items-center justify-center">
+                      <div className="w-7 h-7 bg-muted rounded-full border-2 border-background
+                        flex items-center justify-center">
                         <span className="text-[10px] font-bold text-muted-foreground">+{group.memberCount - 3}</span>
                       </div>
                     )}
