@@ -95,6 +95,13 @@ app.post("/api/push/unregister", pushLimiter);
 const groupCreateLimiter = limit(10, "Too many group creation requests, please try again later.");
 app.post("/api/groups", groupCreateLimiter);
 
+// Battle — prevent match spam and rapid-fire attacks
+const battleChallengeLimiter = limit(10, "Too many battle requests, please try again later.");
+app.post("/api/battle/challenge", battleChallengeLimiter);
+app.post("/api/battle/matchmake", battleChallengeLimiter);
+const battleActionLimiter = limit(120, "Too many battle actions, please try again later.");
+app.post("/api/battle/match*", battleActionLimiter);
+
 // Reactions — prevent emoji spam
 const reactionLimiter = rateLimit({
   max: isTest ? 10000 : 60,

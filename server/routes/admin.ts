@@ -26,6 +26,16 @@ function safeKeyCompare(provided: string | undefined, expected: string | undefin
   }
 }
 
+/** Verify the x-admin-key header. Sends 401 and returns false if invalid. */
+function requireAdminKey(req: Request, res: Response): boolean {
+  const key = req.headers['x-admin-key'] as string | undefined;
+  if (!process.env.ADMIN_KEY || !safeKeyCompare(key, process.env.ADMIN_KEY)) {
+    Errors.unauthorized(res);
+    return false;
+  }
+  return true;
+}
+
 /** Verify the x-internal-key header. Sends 401 and returns false if invalid. */
 function requireInternalKey(req: Request, res: Response): boolean {
   const key = req.headers['x-internal-key'] as string | undefined;
@@ -62,10 +72,7 @@ export function createAdminRouter(): Router {
 
   // Admin stats endpoint
   router.get('/api/admin/stats', async (req, res) => {
-    const key = req.headers['x-admin-key'] as string | undefined;
-    if (!process.env.ADMIN_KEY || !safeKeyCompare(key, process.env.ADMIN_KEY)) {
-      return Errors.unauthorized(res);
-    }
+    if (!requireAdminKey(req, res)) return;
     try {
       const stats = await storage.getAdminStats();
       res.json(stats);
