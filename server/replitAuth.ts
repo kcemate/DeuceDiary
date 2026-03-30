@@ -59,11 +59,11 @@ export function getSession() {
     tableName: "sessions",
   });
   const sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret && process.env.NODE_ENV === "production") {
-    logger.warn("[AUTH] WARNING: SESSION_SECRET is not set in production — using insecure default");
+  if (!sessionSecret) {
+    throw new Error("SESSION_SECRET environment variable is required");
   }
   return session({
-    secret: sessionSecret || "local-dev-secret",
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

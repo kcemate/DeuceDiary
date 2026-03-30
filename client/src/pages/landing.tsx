@@ -7,7 +7,7 @@ import { Link } from "wouter";
 import { SignInButton } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
 
-// ── Demo feed data — realistic sample of the core loop ─────────────────────
+// ── Demo feed data — realistic sample of the core loop ──
 const DEMO_ENTRIES = [
   {
     username: "FlushKing99",
@@ -82,7 +82,10 @@ function DemoGroupFeed() {
         {/* Fake phone frame */}
         <div className="max-w-sm mx-auto">
           {/* Group header */}
-          <div className="bg-card border border-border rounded-t-2xl px-4 py-3 flex items-center justify-between border-b-0">
+          <div className={[
+            "bg-card border border-border rounded-t-2xl px-4 py-3",
+            "flex items-center justify-between border-b-0",
+          ].join(" ")}>
             <div className="flex items-center gap-2">
               <span className="text-xl">🚽</span>
               <div>
@@ -109,14 +112,20 @@ function DemoGroupFeed() {
                 }`}
               >
                 <div className="flex gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base flex-shrink-0">
+                  <div className={[
+                    "w-8 h-8 rounded-full bg-muted",
+                    "flex items-center justify-center text-base flex-shrink-0",
+                  ].join(" ")}>
                     {entry.avatar}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-bold text-foreground">{entry.username}</span>
                       {i === 0 && highlightNew && (
-                        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] px-1.5 py-0 font-semibold">
+                        <Badge className={[
+                          "bg-green-100 text-green-700 border-green-200",
+                          "text-[10px] px-1.5 py-0 font-semibold",
+                        ].join(" ")}>
                           NEW
                         </Badge>
                       )}
@@ -132,7 +141,10 @@ function DemoGroupFeed() {
                       {entry.reactions.map((r, ri) => (
                         <span
                           key={ri}
-                          className="inline-flex items-center gap-0.5 bg-muted rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                          className={[
+                            "inline-flex items-center gap-0.5 bg-muted rounded-full",
+                            "px-2 py-0.5 text-[11px] font-medium text-muted-foreground",
+                          ].join(" ")}
                         >
                           {r.emoji} {r.count}
                         </span>
@@ -248,7 +260,10 @@ export default function Landing() {
             </Button>
             <a
               href="#how-it-works"
-              className="inline-flex items-center justify-center py-5 px-8 text-lg font-semibold rounded-2xl border border-border bg-card hover:bg-muted transition-colors"
+              className={[
+                "inline-flex items-center justify-center py-5 px-8 text-lg font-semibold",
+                "rounded-2xl border border-border bg-card hover:bg-muted transition-colors",
+              ].join(" ")}
             >
               How It Works
             </a>
@@ -295,7 +310,10 @@ export default function Landing() {
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           {/* Feature 1: Streaks */}
-          <div className="bg-card border border-border border-l-4 border-l-primary rounded-2xl p-6 hover:shadow-lg transition-shadow">
+          <div className={[
+            "bg-card border border-border border-l-4 border-l-primary",
+            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
+          ].join(" ")}>
             <div className="flex items-start space-x-4">
               <span className="text-4xl mt-1">🔥</span>
               <div>
@@ -309,7 +327,10 @@ export default function Landing() {
           </div>
 
           {/* Feature 2: Squads */}
-          <div className="bg-card border border-border border-l-4 border-l-blue-500 rounded-2xl p-6 hover:shadow-lg transition-shadow">
+          <div className={[
+            "bg-card border border-border border-l-4 border-l-blue-500",
+            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
+          ].join(" ")}>
             <div className="flex items-start space-x-4">
               <span className="text-4xl mt-1">👥</span>
               <div>
@@ -323,7 +344,10 @@ export default function Landing() {
           </div>
 
           {/* Feature 3: Leaderboards */}
-          <div className="bg-card border border-border border-l-4 border-l-amber-500 rounded-2xl p-6 hover:shadow-lg transition-shadow">
+          <div className={[
+            "bg-card border border-border border-l-4 border-l-amber-500",
+            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
+          ].join(" ")}>
             <div className="flex items-start space-x-4">
               <span className="text-4xl mt-1">🏆</span>
               <div>
@@ -337,7 +361,10 @@ export default function Landing() {
           </div>
 
           {/* Feature 4: Quick Logging */}
-          <div className="bg-card border border-border border-l-4 border-l-green-500 rounded-2xl p-6 hover:shadow-lg transition-shadow">
+          <div className={[
+            "bg-card border border-border border-l-4 border-l-green-500",
+            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
+          ].join(" ")}>
             <div className="flex items-start space-x-4">
               <span className="text-4xl mt-1">⚡</span>
               <div>
@@ -385,7 +412,10 @@ export default function Landing() {
               },
             ].map((item) => (
               <div key={item.step} className="flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center text-2xl font-extrabold text-primary mb-4">
+                <div className={[
+                  "w-14 h-14 rounded-full bg-primary/10 border-2 border-primary",
+                  "flex items-center justify-center text-2xl font-extrabold text-primary mb-4",
+                ].join(" ")}>
                   {item.step}
                 </div>
                 <span className="text-4xl mb-3">{item.emoji}</span>
@@ -508,19 +538,23 @@ export default function Landing() {
           {[
             {
               q: "Is this actually a poop tracking app?",
-              a: "Yes. And it's glorious. Think of it as Duolingo meets Strava — but for your bowel movements. We made it social, competitive, and genuinely fun.",
+              a: "Yes. And it's glorious. Think of it as Duolingo meets Strava — but for your bowel movements."
+                + " We made it social, competitive, and genuinely fun.",
             },
             {
               q: "Is my data private?",
-              a: "Your logs are only visible to squads you choose to join. We don't sell your data. What happens on the throne stays on the throne.",
+              a: "Your logs are only visible to squads you choose to join. We don't sell your data."
+                + " What happens on the throne stays on the throne.",
             },
             {
               q: "Is it really free?",
-              a: "The core experience — logging, streaks, squads, leaderboards — is 100% free. Porcelain Premium adds power features for the truly dedicated.",
+              a: "The core experience — logging, streaks, squads, leaderboards — is 100% free."
+                + " Porcelain Premium adds power features for the truly dedicated.",
             },
             {
               q: "Will my friends judge me?",
-              a: "They'll be too busy protecting their own streaks. Besides, everyone poops — now you can finally prove you're the best at it.",
+              a: "They'll be too busy protecting their own streaks."
+                + " Besides, everyone poops — now you can finally prove you're the best at it.",
             },
           ].map((faq) => (
             <div key={faq.q} className="bg-card border border-border rounded-xl p-5">
@@ -546,7 +580,10 @@ export default function Landing() {
         {/* Login Form */}
         {!isAuthenticated ? (
           <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25">
+            <Button className={[
+              "btn-shimmer w-full text-white font-bold",
+              "py-4 text-lg rounded-2xl shadow-lg shadow-primary/25",
+            ].join(" ")}>
               Enter the Throne Room
             </Button>
           </SignInButton>
@@ -566,7 +603,10 @@ export default function Landing() {
               <Button
                 type="submit"
                 disabled={loading || !username.trim()}
-                className="btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none"
+                className={[
+                  "btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl",
+                  "shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none",
+                ].join(" ")}
               >
                 {loading ? "Signing in…" : "Enter the Throne Room"}
               </Button>
@@ -581,7 +621,10 @@ export default function Landing() {
 
       {/* ── Footer ── */}
       <footer className="border-t border-border">
-        <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className={[
+          "max-w-4xl mx-auto px-4 py-8 flex flex-col md:flex-row",
+          "items-center justify-between gap-4 text-sm text-muted-foreground",
+        ].join(" ")}>
           <div className="flex items-center gap-2">
             <span className="text-lg">🚽</span>
             <span className="font-bold text-foreground">Deuce Diary</span>
@@ -601,9 +644,15 @@ export default function Landing() {
 
       {/* ── Sticky Mobile CTA ── */}
       {!isAuthenticated && showStickyCta && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom">
+        <div className={[
+          "fixed bottom-0 left-0 right-0 z-50 md:hidden",
+          "bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom",
+        ].join(" ")}>
           <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className="btn-shimmer w-full text-white font-bold py-3 text-base rounded-xl shadow-lg shadow-primary/25">
+            <Button className={[
+              "btn-shimmer w-full text-white font-bold",
+              "py-3 text-base rounded-xl shadow-lg shadow-primary/25",
+            ].join(" ")}>
               Start Your Streak — Free
             </Button>
           </SignInButton>

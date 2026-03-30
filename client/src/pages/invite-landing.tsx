@@ -198,9 +198,10 @@ export default function InviteLanding() {
           return;
         }
         queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        const alreadyMember = data.message === "Already a member of this group";
         toast({
-          title: data.message === "Already a member of this group" ? "Already in!" : "You're in! 🚽",
-          description: `${data.message === "Already a member of this group" ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
+          title: alreadyMember ? "Already in!" : "You're in! 🚽",
+          description: `${alreadyMember ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
         });
         setLocation("/");
       } catch {
@@ -267,9 +268,10 @@ export default function InviteLanding() {
       const data = await res.json();
       await queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
 
+      const alreadyMember = data.message === "Already a member of this group";
       toast({
-        title: data.message === "Already a member of this group" ? "Already in!" : "You're in! 🚽",
-        description: `${data.message === "Already a member of this group" ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
+        title: alreadyMember ? "Already in!" : "You're in! 🚽",
+        description: `${alreadyMember ? "You're already a member of" : "Joined"} "${data.group?.name}"`,
       });
       setLocation("/");
     } catch {
@@ -279,10 +281,13 @@ export default function InviteLanding() {
     }
   }
 
-  // ── 404 state ────────────────────────────────────────────────────────────
+  // ── 404 state ──
   if (previewError || (!previewLoading && !preview)) {
     return (
-      <div className="min-h-screen bg-[#FBF6EF] text-[#2C1A0E] flex flex-col items-center justify-center p-4" data-theme="cream">
+      <div
+        className="min-h-screen bg-[#FBF6EF] text-[#2C1A0E] flex flex-col items-center justify-center p-4"
+        data-theme="cream"
+      >
         <div className="max-w-sm w-full text-center space-y-5">
           <div className="text-7xl animate-bounce">🚽</div>
           <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-6 space-y-3">
@@ -312,7 +317,7 @@ export default function InviteLanding() {
     <div className="min-h-screen bg-[#FBF6EF] text-[#2C1A0E]" data-theme="cream">
       <div className="max-w-md mx-auto px-4 py-8 pb-28 space-y-5">
 
-        {/* ── Header ────────────────────────────────────────────────── */}
+        {/* ── Header ── */}
         <div className="text-center pt-4">
           <div className="text-6xl mb-3">🚽</div>
           {previewLoading ? (
@@ -326,7 +331,8 @@ export default function InviteLanding() {
                 <span className="text-green-700">{preview.name}</span> wants you in. 🎯
               </h1>
               <p className="text-[#8B7355] text-sm mt-1.5">
-                {preview.memberCount} {preview.memberCount === 1 ? "person is" : "people are"} already logging — join the squad.
+                {preview.memberCount}{" "}
+                {preview.memberCount === 1 ? "person is" : "people are"} already logging — join the squad.
               </p>
             </>
           ) : (
@@ -344,7 +350,7 @@ export default function InviteLanding() {
           </p>
         </div>
 
-        {/* ── Social Proof Stats Bar ─────────────────────────────────── */}
+        {/* ── Social Proof Stats Bar ── */}
         {preview && (
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -365,7 +371,7 @@ export default function InviteLanding() {
           </div>
         )}
 
-        {/* ── Group Preview Card ─────────────────────────────────────── */}
+        {/* ── Group Preview Card ── */}
         {previewLoading ? (
           <div className="bg-white rounded-2xl border border-[#E8DFD0] p-6 animate-pulse space-y-3">
             <div className="h-5 bg-[#F0E8DC] rounded w-2/3" />
@@ -373,7 +379,10 @@ export default function InviteLanding() {
             <div className="h-4 bg-[#F0E8DC] rounded w-1/3" />
           </div>
         ) : preview ? (
-          <div className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
+          <div className={[
+            "bg-white rounded-2xl border border-[#E8DFD0] shadow-sm overflow-hidden",
+            "animate-in fade-in slide-in-from-bottom-3 duration-500",
+          ].join(" ")}>
             {/* Group name + streak banner */}
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-4 border-b border-[#F0E8DC]">
               <div className="flex items-start justify-between">
@@ -408,7 +417,10 @@ export default function InviteLanding() {
                           key={i}
                           title={`${m.username} · ${m.deuceCount} 💩`}
                           style={{ backgroundColor: bg, color: text, zIndex: 5 - i }}
-                          className="relative w-9 h-9 rounded-full border-2 border-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm"
+                          className={[
+                            "relative w-9 h-9 rounded-full border-2 border-white",
+                            "flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm",
+                          ].join(" ")}
                         >
                           {m.username[0].toUpperCase()}
                         </div>
@@ -416,7 +428,10 @@ export default function InviteLanding() {
                     })}
                     {preview.members.length > 5 && (
                       <div
-                        className="relative w-9 h-9 rounded-full border-2 border-white bg-[#F0E8DC] flex items-center justify-center text-[10px] font-bold text-[#8B7355] flex-shrink-0"
+                        className={[
+                          "relative w-9 h-9 rounded-full border-2 border-white bg-[#F0E8DC]",
+                          "flex items-center justify-center text-[10px] font-bold text-[#8B7355] flex-shrink-0",
+                        ].join(" ")}
                         style={{ zIndex: 0 }}
                       >
                         +{preview.members.length - 5}
@@ -447,9 +462,14 @@ export default function InviteLanding() {
                   {preview.recentActivity.map((entry, i) => (
                     <div
                       key={i}
-                      className={`flex gap-2 transition-all duration-300 ${i < visibleActivity ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
+                      className={`flex gap-2 transition-all duration-300 ${
+                        i < visibleActivity ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+                      }`}
                     >
-                      <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-sm flex-shrink-0">
+                      <div className={[
+                        "w-7 h-7 rounded-full bg-green-100",
+                        "flex items-center justify-center text-sm flex-shrink-0",
+                      ].join(" ")}>
                         {["🚽", "💪", "🔥", "🏆", "✨"][i % 5]}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -474,7 +494,7 @@ export default function InviteLanding() {
           </div>
         ) : null}
 
-        {/* ── App Preview (Demo) ─────────────────────────────────────── */}
+        {/* ── App Preview (Demo) ── */}
         {/* Show by default; auto-dismiss once real group activity is visible */}
         {showDemo && (
           <div className="space-y-2">
@@ -502,7 +522,7 @@ export default function InviteLanding() {
           </button>
         )}
 
-        {/* ── Value strip ───────────────────────────────────────────── */}
+        {/* ── Value strip ── */}
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
             { icon: "🔥", label: "Daily streak" },
@@ -516,7 +536,7 @@ export default function InviteLanding() {
           ))}
         </div>
 
-        {/* ── Action area ───────────────────────────────────────────── */}
+        {/* ── Action area ── */}
         <div id="cta-form" className="bg-white rounded-2xl border border-[#E8DFD0] shadow-sm p-5 space-y-4">
           <p className="text-center text-sm font-semibold text-[#2C1A0E]">
             Ready to take a seat? 👇
@@ -532,7 +552,10 @@ export default function InviteLanding() {
               <Button
                 onClick={handleJoinAuthenticated}
                 disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50"
+                className={[
+                  "w-full bg-green-600 hover:bg-green-700 text-white font-bold",
+                  "py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50",
+                ].join(" ")}
               >
                 {loading ? "Joining..." : "🚽 Take a Seat"}
               </Button>
@@ -547,7 +570,10 @@ export default function InviteLanding() {
                 mode="redirect"
                 forceRedirectUrl={`/invite/${code}`}
               >
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20">
+                <Button className={[
+                  "w-full bg-green-600 hover:bg-green-700 text-white font-bold",
+                  "py-4 text-base rounded-full shadow-md shadow-green-600/20",
+                ].join(" ")}>
                   🚽 Take a Seat — It's Free
                 </Button>
               </SignUpButton>
@@ -555,7 +581,10 @@ export default function InviteLanding() {
                 mode="redirect"
                 forceRedirectUrl={`/invite/${code}`}
               >
-                <Button variant="outline" className="w-full border-[#E8DFD0] text-[#2C1A0E] font-bold py-4 text-base rounded-full">
+                <Button
+                  variant="outline"
+                  className="w-full border-[#E8DFD0] text-[#2C1A0E] font-bold py-4 text-base rounded-full"
+                >
                   🔑 I Already Have an Account
                 </Button>
               </SignInButton>
@@ -573,7 +602,9 @@ export default function InviteLanding() {
                   aria-selected={ctaTab === "new"}
                   aria-controls="tab-panel-new"
                   onClick={() => { setCtaTab("new"); setError(""); setUsername(""); }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "new" ? "bg-white text-green-700 shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    ctaTab === "new" ? "bg-white text-green-700 shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"
+                  }`}
                 >
                   I'm New Here
                 </button>
@@ -582,7 +613,9 @@ export default function InviteLanding() {
                   aria-selected={ctaTab === "existing"}
                   aria-controls="tab-panel-existing"
                   onClick={() => { setCtaTab("existing"); setError(""); setUsername(""); }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${ctaTab === "existing" ? "bg-white text-[#2C1A0E] shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"}`}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    ctaTab === "existing" ? "bg-white text-[#2C1A0E] shadow-sm" : "text-[#8B7355] hover:text-[#5C4A35]"
+                  }`}
                 >
                   I Have an Account
                 </button>
@@ -598,13 +631,19 @@ export default function InviteLanding() {
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     autoFocus
-                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                    className={[
+                      "rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base",
+                      "placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500",
+                    ].join(" ")}
                   />
                   {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
                   <Button
                     type="submit"
                     disabled={loading || !username.trim()}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50"
+                    className={[
+                      "w-full bg-green-600 hover:bg-green-700 text-white font-bold",
+                      "py-4 text-base rounded-full shadow-md shadow-green-600/20 disabled:opacity-50",
+                    ].join(" ")}
                   >
                     {loading ? "Creating account..." : "🚽 Take a Seat — It's Free"}
                   </Button>
@@ -621,13 +660,19 @@ export default function InviteLanding() {
                     onChange={(e) => setUsername(e.target.value)}
                     disabled={loading}
                     autoFocus
-                    className="rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500"
+                    className={[
+                      "rounded-xl border-[#E8DFD0] bg-[#FBF6EF] text-[#2C1A0E] py-3 text-base",
+                      "placeholder:text-[#C4B49A] focus:border-green-500 focus:ring-green-500",
+                    ].join(" ")}
                   />
                   {error && <p className="text-sm text-red-600 font-medium">{error}</p>}
                   <Button
                     type="submit"
                     disabled={loading || !username.trim()}
-                    className="w-full bg-[#2C1A0E] hover:bg-[#3D2616] text-white font-bold py-4 text-base rounded-full shadow-md disabled:opacity-50"
+                    className={[
+                      "w-full bg-[#2C1A0E] hover:bg-[#3D2616] text-white font-bold",
+                      "py-4 text-base rounded-full shadow-md disabled:opacity-50",
+                    ].join(" ")}
                   >
                     {loading ? "Signing in..." : "🔑 Sign In & Join"}
                   </Button>
@@ -641,9 +686,12 @@ export default function InviteLanding() {
         </div>
       </div>
 
-      {/* ── Sticky Bottom CTA bar (mobile) ────────────────────────── */}
+      {/* ── Sticky Bottom CTA bar (mobile) ── */}
       {!authLoading && !isAuthenticated && preview && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-[#E8DFD0] px-4 py-3 safe-area-pb">
+        <div className={[
+          "fixed bottom-0 left-0 right-0 z-50",
+          "bg-white/95 backdrop-blur-sm border-t border-[#E8DFD0] px-4 py-3 safe-area-pb",
+        ].join(" ")}>
           <div className="max-w-md mx-auto space-y-1.5">
             <p className="text-center text-[10px] text-[#A89070] font-semibold">
               {preview.currentStreak >= 3
@@ -656,7 +704,10 @@ export default function InviteLanding() {
                 const input = document.getElementById("username-input") as HTMLInputElement;
                 input?.focus();
               }}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 text-base rounded-full shadow-lg shadow-green-600/30"
+              className={[
+                "w-full bg-green-600 hover:bg-green-700 text-white font-bold",
+                "py-3.5 text-base rounded-full shadow-lg shadow-green-600/30",
+              ].join(" ")}
             >
               🚽 Join {preview.name} — Take a Seat
             </Button>

@@ -461,7 +461,9 @@ export interface IStorage {
   getGroupMatches(groupId: string, limit: number): Promise<BattleMatch[]>;
   updateBattleMatchStatus(matchId: string, status: string, winnerId?: string): Promise<void>;
 
-  placeShips(matchId: string, userId: string, ships: { shipType: string; cells: { col: number; row: number }[] }[]): Promise<void>;
+  placeShips(
+    matchId: string, userId: string, ships: { shipType: string; cells: { col: number; row: number }[] }[],
+  ): Promise<void>;
   getShips(matchId: string, userId: string): Promise<BattleShip[]>;
 
   createAttack(matchId: string, attackerId: string, col: number, row: number, isHit: boolean): Promise<BattleAttack>;
@@ -478,8 +480,12 @@ export interface IStorage {
 
   awardBadge(userId: string, badgeType: string, matchId?: string, expiresAt?: Date): Promise<void>;
   getUserBattleBadges(userId: string): Promise<BattleBadge[]>;
-  getBattleLeaderboard(groupId: string, seasonStart: Date): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; wins: number }[]>;
-  getBattleStats(userId: string): Promise<{ wins: number; losses: number; totalMatches: number; hitRate: number; tokensEarned: number }>;
+  getBattleLeaderboard(
+    groupId: string, seasonStart: Date,
+  ): Promise<{ userId: string; username: string | null; profileImageUrl: string | null; wins: number }[]>;
+  getBattleStats(userId: string): Promise<{
+    wins: number; losses: number; totalMatches: number; hitRate: number; tokensEarned: number;
+  }>;
 
   // Bingo operations
   getBingoCard(userId: string, month: string): Promise<BingoCard | undefined>;

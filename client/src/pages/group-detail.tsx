@@ -103,18 +103,30 @@ export default function GroupDetail() {
   });
 
   interface KingData {
-    king: { userId: string; username: string | null; profileImageUrl: string | null; logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string } | null;
-    challenge: { id: number; title: string; templateKey: string | null; periodStart: string; periodEnd: string; completionCount: number; isAutoSelected: boolean } | null;
+    king: {
+      userId: string; username: string | null; profileImageUrl: string | null;
+      logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string;
+    } | null;
+    challenge: {
+      id: number; title: string; templateKey: string | null;
+      periodStart: string; periodEnd: string; completionCount: number; isAutoSelected: boolean;
+    } | null;
     templates: { key: string; title: string; description: string }[];
   }
   interface ChallengeProgressData {
-    challenge: { id: number; title: string; templateKey: string | null; kingId: string; periodStart: string; periodEnd: string; isAutoSelected: boolean } | null;
+    challenge: {
+      id: number; title: string; templateKey: string | null;
+      kingId: string; periodStart: string; periodEnd: string; isAutoSelected: boolean;
+    } | null;
     completionCount: number;
     memberCount: number;
     userCompleted: boolean;
   }
   interface ChallengeHistoryItem {
-    king: { userId: string; username: string | null; profileImageUrl: string | null; logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string };
+    king: {
+      userId: string; username: string | null; profileImageUrl: string | null;
+      logCount: number; consecutiveWins: number; periodStart: string; periodEnd: string;
+    };
     challenge: { id: number; title: string; templateKey: string | null; isAutoSelected: boolean } | null;
     completionCount: number;
   }
@@ -353,7 +365,10 @@ export default function GroupDetail() {
             onClick={() => leaveGroupMutation.mutate()}
             disabled={leaveGroupMutation.isPending}
             aria-label={`Leave ${groupDetail?.group.name ?? "this squad"}`}
-            className="text-destructive border-destructive/40 hover:bg-destructive hover:text-destructive-foreground text-xs"
+            className={
+              "text-destructive border-destructive/40 hover:bg-destructive " +
+              "hover:text-destructive-foreground text-xs"
+            }
           >
             Dip Out
           </Button>
@@ -361,9 +376,16 @@ export default function GroupDetail() {
 
         {/* Squad identity */}
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl shrink-0 border border-primary/20 overflow-hidden">
+          <div className={
+            "w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center " +
+            "text-2xl shrink-0 border border-primary/20 overflow-hidden"
+          }>
             {groupDetail.group.avatarUrl ? (
-              <img src={groupDetail.group.avatarUrl} alt={groupDetail.group.name} className="w-full h-full object-cover" />
+              <img
+                src={groupDetail.group.avatarUrl}
+                alt={groupDetail.group.name}
+                className="w-full h-full object-cover"
+              />
             ) : (
               squadEmoji
             )}
@@ -380,14 +402,23 @@ export default function GroupDetail() {
 
         {/* Stats chips */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className={
+            "inline-flex items-center gap-1 rounded-full bg-muted " +
+            "px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+          }>
             👥 {groupDetail.members.length} member{groupDetail.members.length !== 1 ? "s" : ""}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+          <span className={
+            "inline-flex items-center gap-1 rounded-full bg-muted " +
+            "px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+          }>
             💩 {groupDetail.entries.length} drop{groupDetail.entries.length !== 1 ? "s" : ""}
           </span>
           {streakData && streakData.currentStreak > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-950/40 px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-400">
+            <span className={
+              "inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-950/40 " +
+              "px-2.5 py-0.5 text-xs font-bold text-orange-700 dark:text-orange-400"
+            }>
               🔥 {streakData.currentStreak}d streak
             </span>
           )}
@@ -396,7 +427,10 @@ export default function GroupDetail() {
 
       {/* ── DEUCE KING BANNER ── */}
       {kingData?.king && (
-        <Card className="shadow-sm mb-3 border-yellow-300 dark:border-yellow-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20">
+        <Card className={
+          "shadow-sm mb-3 border-yellow-300 dark:border-yellow-700 " +
+          "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/20 dark:to-amber-950/20"
+        }>
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
               {/* King avatar with crown overlay */}
@@ -415,7 +449,10 @@ export default function GroupDetail() {
                     {kingData.king.username ?? "Anonymous"} is Deuce King
                   </span>
                   {kingData.king.consecutiveWins >= 3 && (
-                    <span className="text-xs font-bold text-yellow-700 dark:text-yellow-400 bg-yellow-200 dark:bg-yellow-900/40 px-1.5 py-0.5 rounded-full">Dynasty 👑👑👑</span>
+                    <span className={
+                      "text-xs font-bold text-yellow-700 dark:text-yellow-400 " +
+                      "bg-yellow-200 dark:bg-yellow-900/40 px-1.5 py-0.5 rounded-full"
+                    }>Dynasty 👑👑👑</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -461,7 +498,11 @@ export default function GroupDetail() {
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-green-500 rounded-full transition-all"
-                      style={{ width: `${challengeProgress.memberCount > 0 ? Math.round((challengeProgress.completionCount / challengeProgress.memberCount) * 100) : 0}%` }}
+                      style={{
+                        width: `${challengeProgress.memberCount > 0
+                          ? Math.round((challengeProgress.completionCount / challengeProgress.memberCount) * 100)
+                          : 0}%`,
+                      }}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -475,7 +516,10 @@ export default function GroupDetail() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 text-xs rounded-lg border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 font-bold"
+                      className={
+                        "h-7 text-xs rounded-lg border-green-400 text-green-700 " +
+                        "dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 font-bold"
+                      }
                       disabled={completeChallengeMutation.isPending}
                       onClick={() => completeChallengeMutation.mutate()}
                     >
@@ -520,7 +564,9 @@ export default function GroupDetail() {
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={`ml-1 text-xs ${activeTab === tab.id ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                <span className={`ml-1 text-xs ${
+                  activeTab === tab.id ? "text-primary font-bold" : "text-muted-foreground"
+                }`}>
                   {tab.count}
                 </span>
               )}
@@ -541,7 +587,9 @@ export default function GroupDetail() {
                 <div key={dateLabel}>
                   {/* Date divider */}
                   <div className="flex items-center gap-2 py-2 px-1">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{dateLabel}</span>
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      {dateLabel}
+                    </span>
                     <div className="flex-1 h-px bg-border" />
                     <span className="text-xs text-muted-foreground">{entries.length}</span>
                   </div>
@@ -584,10 +632,32 @@ export default function GroupDetail() {
                           {/* Location pill + Reactions footer */}
                           <div className="flex items-center justify-between">
                             {entry.location ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                                <svg className="w-3 h-3 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <span className={
+                                "inline-flex items-center gap-1 text-xs " +
+                                "text-muted-foreground bg-muted rounded-full px-2 py-0.5"
+                              }>
+                                <svg
+                                  className="w-3 h-3 shrink-0"
+                                  aria-hidden="true"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d={
+                                      "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0" +
+                                      "l-4.244-4.243a8 8 0 1111.314 0z"
+                                    }
+                                  />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                  />
                                 </svg>
                                 {entry.location}
                               </span>
@@ -658,7 +728,11 @@ export default function GroupDetail() {
                     copySuccess ? "border-green-500 text-green-600 bg-green-50" : ""
                   }`}
                 >
-                  {copySuccess ? "✅ Link Copied!" : inviteCrewMutation.isPending ? "Generating..." : "📋 Copy Invite Link"}
+                  {copySuccess
+                    ? "✅ Link Copied!"
+                    : inviteCrewMutation.isPending
+                    ? "Generating..."
+                    : "📋 Copy Invite Link"}
                 </Button>
                 <Button
                   onClick={async () => {
@@ -672,11 +746,18 @@ export default function GroupDetail() {
                     const memberCount = groupDetail.members.length;
                     const streak = streakData?.currentStreak;
                     const streakLine = streak && streak >= 3 ? ` We're on a ${streak}-day streak.` : "";
-                    const text = `Think you can keep up? ${memberCount} of us are logging on Deuce Diary.${streakLine} Join "${groupDetail.group.name}" here: ${link}`;
+                    const text =
+                      `Think you can keep up? ${memberCount} of us are logging on Deuce Diary.` +
+                      `${streakLine} Join "${groupDetail.group.name}" here: ${link}`;
                     if (navigator.share) {
-                      try { await navigator.share({ title: "Think you can keep up?", text }); } catch (err) { logger.error("[share] navigator.share failed:", err); }
+                      try {
+                        await navigator.share({ title: "Think you can keep up?", text });
+                      } catch (err) { logger.error("[share] navigator.share failed:", err); }
                     } else {
-                      try { await navigator.clipboard.writeText(text); toast({ title: "Copied!", description: "Share with your crew." }); } catch (err) { logger.error("[share] clipboard write failed:", err); }
+                      try {
+                        await navigator.clipboard.writeText(text);
+                        toast({ title: "Copied!", description: "Share with your crew." });
+                      } catch (err) { logger.error("[share] clipboard write failed:", err); }
                     }
                   }}
                   disabled={inviteCrewMutation.isPending}
@@ -708,7 +789,12 @@ export default function GroupDetail() {
                     e.target.value = "";
                   }}
                 />
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+                <div className={
+                  "flex items-center justify-center gap-2 rounded-xl border border-amber-300 " +
+                  "dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs " +
+                  "font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-100 " +
+                  "dark:hover:bg-amber-950/40 transition-colors"
+                }>
                   {uploadAvatarMutation.isPending ? "Uploading..." : "📸 Upload Squad Photo"}
                 </div>
               </label>
@@ -719,7 +805,9 @@ export default function GroupDetail() {
           <div className="space-y-2">
             {(() => {
               const maxDeuces = Math.max(...groupDetail.members.map(m => m.user.deuceCount || 0), 1);
-              const sortedMembers = [...groupDetail.members].sort((a, b) => (b.user.deuceCount || 0) - (a.user.deuceCount || 0));
+              const sortedMembers = [...groupDetail.members].sort(
+                (a, b) => (b.user.deuceCount || 0) - (a.user.deuceCount || 0)
+              );
               return sortedMembers.map((member, index) => {
                 const count = member.user.deuceCount || 0;
                 const pct = Math.round((count / maxDeuces) * 100);
@@ -752,9 +840,9 @@ export default function GroupDetail() {
                           </StreakFrame>
                           {/* Today's check-in dot */}
                           <span
-                            className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-background flex items-center justify-center text-[8px] ${
-                              loggedToday ? "bg-green-500" : "bg-muted"
-                            }`}
+                            className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full ` +
+                              `border-2 border-background flex items-center justify-center ` +
+                              `text-[8px] ${loggedToday ? "bg-green-500" : "bg-muted"}`}
                             title={loggedToday ? "Logged today ✅" : "Not yet logged today"}
                           />
                         </div>
@@ -762,9 +850,13 @@ export default function GroupDetail() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1">
-                            <p className={`font-semibold truncate text-sm ${isCurrentUser ? "text-primary" : "text-foreground"}`}>
+                            <p className={`font-semibold truncate text-sm ${
+                              isCurrentUser ? "text-primary" : "text-foreground"
+                            }`}>
                               {getUserDisplayName(member.user)}
-                              {isCurrentUser && <span className="text-muted-foreground font-normal ml-1 text-xs">(you)</span>}
+                              {isCurrentUser && (
+                                <span className="text-muted-foreground font-normal ml-1 text-xs">(you)</span>
+                              )}
                             </p>
                             <GoldCrownBadge
                               subscription={member.user.subscription}
@@ -790,7 +882,10 @@ export default function GroupDetail() {
                             <Badge variant="default" className="text-[10px] px-1.5 py-0">Admin</Badge>
                           )}
                           {member.user.id === kingData?.king?.userId && (
-                            <Badge className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 border-0">👑 King</Badge>
+                            <Badge className={
+                              "text-[10px] px-1.5 py-0 bg-amber-100 text-amber-800 " +
+                              "dark:bg-amber-900/40 dark:text-amber-200 border-0"
+                            }>👑 King</Badge>
                           )}
                           <span className="text-sm" title={loggedToday ? "Logged today" : "Not logged today"}>
                             {loggedToday ? "✅" : "⏳"}
@@ -883,10 +978,18 @@ export default function GroupDetail() {
                 {streakData.currentStreak < 30 && (
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span className={streakData.currentStreak >= 3 ? "text-foreground font-semibold" : ""}>🥉 3</span>
-                      <span className={streakData.currentStreak >= 7 ? "text-foreground font-semibold" : ""}>🥈 7</span>
-                      <span className={streakData.currentStreak >= 14 ? "text-foreground font-semibold" : ""}>🥇 14</span>
-                      <span className={streakData.currentStreak >= 30 ? "text-foreground font-semibold" : ""}>💎 30</span>
+                      <span className={
+                        streakData.currentStreak >= 3 ? "text-foreground font-semibold" : ""
+                      }>🥉 3</span>
+                      <span className={
+                        streakData.currentStreak >= 7 ? "text-foreground font-semibold" : ""
+                      }>🥈 7</span>
+                      <span className={
+                        streakData.currentStreak >= 14 ? "text-foreground font-semibold" : ""
+                      }>🥇 14</span>
+                      <span className={
+                        streakData.currentStreak >= 30 ? "text-foreground font-semibold" : ""
+                      }>💎 30</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
@@ -906,14 +1009,21 @@ export default function GroupDetail() {
                 {/* Streak rescue */}
                 {streakData.currentStreak > 0 && streakData.logsToday.some(m => !m.hasLogged) && (
                   <div className="border-t pt-3 mt-3">
-                    <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 space-y-2">
+                    <div className={
+                      "rounded-xl bg-red-50 dark:bg-red-950/20 border " +
+                      "border-red-200 dark:border-red-900 p-3 space-y-2"
+                    }>
                       <div className="flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         <div>
-                          <p className="text-sm font-bold text-red-700 dark:text-red-400 leading-tight">Streak at risk!</p>
+                          <p className="text-sm font-bold text-red-700 dark:text-red-400 leading-tight">
+                            Streak at risk!
+                          </p>
                           <p className="text-xs text-red-500 leading-tight">
                             {streakData.logsToday.filter(m => !m.hasLogged).map(m => m.username).join(", ")}
-                            {" "}still need{streakData.logsToday.filter(m => !m.hasLogged).length === 1 ? "s" : ""} to log.
+                            {" "}still need{
+                              streakData.logsToday.filter(m => !m.hasLogged).length === 1 ? "s" : ""
+                            } to log.
                           </p>
                         </div>
                       </div>
@@ -923,13 +1033,21 @@ export default function GroupDetail() {
                         onClick={async () => {
                           const groupName = groupDetail?.group.name ?? "our squad";
                           const streak = streakData.currentStreak;
-                          const message = `🚨 STREAK ALERT 🔥\n\n"${groupName}" is on a ${streak}-day streak — but it's at risk!\n\nLog your deuce TODAY to keep it alive 🚽\n\n👉 ${window.location.origin}`;
+                          const message =
+                            `🚨 STREAK ALERT 🔥\n\n"${groupName}" is on a ${streak}-day streak` +
+                            ` — but it's at risk!\n\nLog your deuce TODAY to keep it alive 🚽` +
+                            `\n\n👉 ${window.location.origin}`;
                           if (navigator.share) {
-                            try { await navigator.share({ title: "Save Our Streak!", text: message }); } catch (err) { logger.error("[share] navigator.share failed:", err); }
+                            try {
+                              await navigator.share({ title: "Save Our Streak!", text: message });
+                            } catch (err) { logger.error("[share] navigator.share failed:", err); }
                           } else {
                             try {
                               await navigator.clipboard.writeText(message);
-                              toast({ title: "Rescue message copied! 📋", description: "Paste it in your group chat." });
+                              toast({
+                                title: "Rescue message copied! 📋",
+                                description: "Paste it in your group chat.",
+                              });
                             } catch {
                               toast({ title: "Share this:", description: message });
                             }
@@ -988,8 +1106,12 @@ export default function GroupDetail() {
                           <p className="text-xs text-muted-foreground italic">No challenge set</p>
                         )}
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(item.king.periodStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} –{" "}
-                          {new Date(item.king.periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {new Date(item.king.periodStart).toLocaleDateString("en-US", {
+                            month: "short", day: "numeric",
+                          })} –{" "}
+                          {new Date(item.king.periodEnd).toLocaleDateString("en-US", {
+                            month: "short", day: "numeric",
+                          })}
                         </p>
                       </div>
                     ))
@@ -1028,7 +1150,9 @@ export default function GroupDetail() {
                     }`}
                   >
                     <span className="font-semibold text-sm leading-tight block">{t.title}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">{t.description}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight block mt-0.5">
+                      {t.description}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1055,7 +1179,10 @@ export default function GroupDetail() {
           <div className="px-4 pb-4 pt-2 shrink-0 border-t">
             <Button
               className="w-full font-bold"
-              disabled={!challengeInput.templateKey && !challengeInput.customTitle.trim() || setChallengesMutation.isPending}
+              disabled={
+                (!challengeInput.templateKey && !challengeInput.customTitle.trim()) ||
+                setChallengesMutation.isPending
+              }
               onClick={() => {
                 if (challengeInput.templateKey) {
                   setChallengesMutation.mutate({ templateKey: challengeInput.templateKey });

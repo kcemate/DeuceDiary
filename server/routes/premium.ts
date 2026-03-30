@@ -5,7 +5,9 @@ type AuthReq = Request & { user: { id: string } };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
-import { getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, asyncRoute } from "./helpers";
+import {
+  getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, asyncRoute,
+} from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
 const wrap = (logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<void>) =>

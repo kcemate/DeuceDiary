@@ -228,7 +228,11 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const today = getTodayUTC();
       const currentCount = await storage.getUserDailyLogCount(userId, today);
       if (currentCount >= MAX_LOGS_PER_DAY) {
-        return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.', code: 'RATE_LIMIT_EXCEEDED', status: 429 });
+        return res.status(429).json({
+          message: 'Throne limit reached for today. Come back tomorrow.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          status: 429,
+        });
       }
 
       const parsed = createDeuceSchema.safeParse(req.body);
@@ -306,8 +310,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       // Create display name for notifications
       const displayName = user?.username ||
-                          (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-                          'Someone';
+        (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
+        'Someone';
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
@@ -378,7 +382,11 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const today = getTodayUTC();
       const currentCount = await storage.getUserDailyLogCount(userId, today);
       if (currentCount >= MAX_LOGS_PER_DAY) {
-        return res.status(429).json({ message: 'Throne limit reached for today. Come back tomorrow.', code: 'RATE_LIMIT_EXCEEDED', status: 429 });
+        return res.status(429).json({
+          message: 'Throne limit reached for today. Come back tomorrow.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          status: 429,
+        });
       }
 
       const parsed = createDeuceSchema.safeParse(req.body);
@@ -394,7 +402,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         return res.status(400).json({ message: "At least one group must be selected" });
       }
       if (targetGroupIds.length === 1) {
-        return res.status(400).json({ message: "Use /api/deuces for single group logging. Bulk requires multiple groups." });
+        return res.status(400).json({
+          message: "Use /api/deuces for single group logging. Bulk requires multiple groups.",
+        });
       }
 
       if (bristolScore !== undefined && (bristolScore < 1 || bristolScore > 7)) {
@@ -410,7 +420,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       if (entryData.loggedAt) {
         const parsedDate = new Date(entryData.loggedAt);
         if (isNaN(parsedDate.getTime())) return res.status(400).json({ message: "Invalid loggedAt date" });
-        if (parsedDate.getTime() > Date.now() + 60_000) return res.status(400).json({ message: "Cannot log a deuce in the future" });
+        if (parsedDate.getTime() > Date.now() + 60_000)
+          return res.status(400).json({ message: "Cannot log a deuce in the future" });
         loggedAt = parsedDate;
       } else {
         loggedAt = new Date();
@@ -522,7 +533,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
 
       const syncUser = await storage.getUser(userId);
       const syncDisplayName = syncUser?.username ||
-        (syncUser?.firstName && syncUser?.lastName ? `${syncUser.firstName} ${syncUser.lastName}` : syncUser?.firstName) ||
+        (syncUser?.firstName && syncUser?.lastName
+          ? `${syncUser.firstName} ${syncUser.lastName}`
+          : syncUser?.firstName) ||
         'Someone';
 
       for (const entry of parsed.data.entries) {
