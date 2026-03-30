@@ -1,34 +1,28 @@
 ---
-children_hash: fa74fd2d00dd0a6458745c306b8ccbf583a76321fb43cb04ad336d1b2631bdae
-compression_ratio: 0.8871527777777778
+children_hash: 1b9a188f6e665927f390d051139d8a7bd4edfbfddbbc56f36073d9dffb37a6e5
+compression_ratio: 0.3742384682332463
 condensation_order: 3
-covers: [monetization/_index.md]
-covers_token_total: 576
+covers: [development/_index.md, monetization/_index.md, operations/_index.md]
+covers_token_total: 1149
 summary_level: d3
-token_count: 511
+token_count: 430
 type: summary
 ---
-# Monetization: Structural Summary (Level D3)
+# Structural Summary: System Knowledge (Level D3)
 
-## Domain Architecture and Scope
-The **monetization** domain manages revenue generation and feature gating, specifically focusing on subscription models and premium value propositions. It defines the boundary between core accessible functionality and gated premium enhancements, excluding low-level payment processing and billing history (**monetization/context.md**).
+## 1. Development: Ratchet Execution Framework
+The Ratchet framework manages linting and formatting within the `autoresearch/runner.sh` workflow.
+* **Architectural Shift:** Replaced brittle, column-based regex patterns with robust, single-pass parsing to ensure execution stability.
+* **Standardization:** Future linting tasks must utilize AST-based or single-pass parsing to prevent regex-related fragility.
+* **Drill-down:** [ratchet_sweep_improvements.md]
 
-## Squads Monetization Framework
-The architectural strategy for Squads has shifted to a "Free Core, Premium Enhancements" model. This transition prioritizes user acquisition and ecosystem growth by removing functional friction from the primary user lifecycle (**monetization/squads/_index.md**).
+## 2. Monetization: Squads Strategy
+The domain has moved to a "Free Core, Premium Enhancements" model to optimize user growth.
+* **Lifecycle Liberalization:** Removed premium requirements for core squad management, including invite creation and multi-member joins.
+* **Gating Decommissioning:** Abolished the 3-squad creation limit for free accounts. Premium gating is now reserved for advanced value-add features: Squad Spy, Weekly Throne Reports, Bingo, and Analytics.
+* **Key References:** [context.md], [squads/context.md], and [squads/squads_monetization_policy.md].
 
-### Core Lifecycle Liberalization
-Key architectural decisions (documented in commit `f3d6b36d`) have decommissioned previous access-based restrictions to facilitate multi-member growth (**monetization/squads/squads_monetization_policy.md**):
-*   **Access Routes**: Removed `requiresPremiumFor` constraints on squad creation, member invitations, and joining paths.
-*   **Capacity**: Abolished the 3-squad limit for free accounts, allowing unrestricted squad management.
-
-### Tiered Feature Distribution
-Value capture has migrated from lifecycle gating to advanced utility and analytics (**monetization/squads/context.md**):
-*   **Free Tier (Core)**: Unrestricted squad creation, invitations, and joining capabilities.
-*   **Premium Tier (Gated)**: Includes **Squad Spy**, **Weekly Throne Reports**, **Bingo**, **Analytics**, and data export functionality.
-
-## Reference Hierarchy
-*   **monetization/context.md**: Domain purpose and scope definitions.
-*   **monetization/squads/context.md**: High-level gating strategy and tier definitions.
-*   **monetization/squads/squads_monetization_policy.md**: Technical rules and specific gate removal locations.
-*   **monetization/_index.md**: Level D2 structural summary of the monetization domain.
-*   **monetization/squads/_index.md**: Level D1 summary of squad-specific implementation.
+## 3. Operations: Error and Delivery Management
+This domain tracks system-level constraints and messaging configurations.
+* **Gateway Error Handling:** OpenClaw gateway experiences transient draining errors during scheduled restart windows (20:00-21:00 ET). Manual intervention is strictly prohibited; errors recover automatically in subsequent cycles. Reference: [openclaw_gateway_draining_errors.md].
+* **Telegram Cron Delivery:** Automated delivery requires numeric Telegram user IDs (regex: `^\d+$`) to avoid resolution failures. Example target ID: `5625253093` for `deuce-king-crown-transfer`. Reference: [cron_delivery_issues.md].
