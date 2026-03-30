@@ -1,4 +1,4 @@
-import { Router, Request } from "express";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import logger from "../lib/logger";
@@ -129,6 +129,20 @@ function getWeekBounds(matchType: "standard" | "quick"): { weekStart: Date; week
   return { weekStart, weekEnd };
 }
 
+/** Load a match and verify the user is a participant. Returns the match or sends 404/403 and returns null. */
+async function requireMatchParticipant(matchId: string, userId: string, res: Response) {
+  const match = await storage.getBattleMatch(matchId);
+  if (!match) {
+    res.status(404).json({ message: "Match not found" });
+    return null;
+  }
+  if (match.challengerId !== userId && match.opponentId !== userId) {
+    res.status(403).json({ message: "Not a participant" });
+    return null;
+  }
+  return match;
+}
+
 export function createBattleRouter(): Router {
   const router = Router();
 
@@ -206,13 +220,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-
-      // Must be a participant
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
 
       const opponentId = match.challengerId === userId ? match.opponentId : match.challengerId;
 
@@ -256,11 +265,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
       if (!["pending", "placement"].includes(match.status)) {
         return res.status(409).json({ message: "Ship placement phase is over" });
       }
@@ -316,11 +322,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
       if (match.status !== "active") {
         return res.status(409).json({ message: "Match is not active" });
       }
@@ -420,11 +423,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
 
       const balance = await storage.getTokenBalance(matchId, userId);
       res.json({ ...balance, available: balance.earned - balance.spent });
@@ -440,11 +440,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
       if (match.status !== "active") {
         return res.status(409).json({ message: "Match is not active" });
       }
@@ -604,11 +601,8 @@ export function createBattleRouter(): Router {
       const userId = req.user.id;
       const { matchId } = req.params;
 
-      const match = await storage.getBattleMatch(matchId);
-      if (!match) return res.status(404).json({ message: "Match not found" });
-      if (match.challengerId !== userId && match.opponentId !== userId) {
-        return res.status(403).json({ message: "Not a participant" });
-      }
+      const match = await requireMatchParticipant(matchId, userId, res);
+      if (!match) return;
       if (["completed", "forfeited", "voided"].includes(match.status)) {
         return res.status(409).json({ message: "Match already ended" });
       }

@@ -18,6 +18,8 @@ import {
   getTodayUTC,
   recalculateStreak,
   sanitizeUserForResponse,
+  buildDisplayName,
+  validateLoggedAt,
 } from "./helpers";
 
 // Simple emoji schema — accepts any non-empty string (original behavior)
@@ -48,6 +50,33 @@ async function getAuthorizedEntry(entryId: string, userId: string, res: Response
     return null;
   }
   return entry;
+}
+
+/** Check daily rate limit. Returns current count or sends 429 + returns null. */
+async function checkDailyRateLimit(userId: string, res: Response): Promise<number | null> {
+  const today = getTodayUTC();
+  const currentCount = await storage.getUserDailyLogCount(userId, today);
+  if (currentCount >= MAX_LOGS_PER_DAY) {
+    res.status(429).json({
+      message: 'Throne limit reached for today. Come back tomorrow.',
+      code: 'RATE_LIMIT_EXCEEDED',
+      status: 429,
+    });
+    return null;
+  }
+  return currentCount;
+}
+
+/** Generate battle tokens for all active matches after a deuce is logged. */
+async function generateBattleTokens(userId: string, entryId: string, currentCount: number): Promise<void> {
+  const activeMatches = await storage.getUserActiveMatches(userId);
+  const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
+  for (const match of activeOnly) {
+    await storage.createBattleToken(match.id, userId, entryId, 'standard');
+    if (currentCount >= 1) {
+      await storage.createBattleToken(match.id, userId, entryId, 'double_flush');
+    }
+  }
 }
 
 export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
@@ -225,15 +254,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const userId = req.user.id;
 
       // Per-user daily rate limit (10 logs per UTC day)
-      const today = getTodayUTC();
-      const currentCount = await storage.getUserDailyLogCount(userId, today);
-      if (currentCount >= MAX_LOGS_PER_DAY) {
-        return res.status(429).json({
-          message: 'Throne limit reached for today. Come back tomorrow.',
-          code: 'RATE_LIMIT_EXCEEDED',
-          status: 429,
-        });
-      }
+      const currentCount = await checkDailyRateLimit(userId, res);
+      if (currentCount === null) return;
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -259,20 +281,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       }
 
       // Validate loggedAt if provided; fall back to now for missing/invalid dates
-      let loggedAt: Date;
-      if (entryData.loggedAt) {
-        const parsed = new Date(entryData.loggedAt);
-        if (isNaN(parsed.getTime())) {
-          return res.status(400).json({ message: "Invalid loggedAt date" });
-        }
-        // Reject future dates (allow up to 1 minute of clock skew)
-        if (parsed.getTime() > Date.now() + 60_000) {
-          return res.status(400).json({ message: "Cannot log a deuce in the future" });
-        }
-        loggedAt = parsed;
-      } else {
-        loggedAt = new Date();
-      }
+      const loggedAtResult = validateLoggedAt(entryData.loggedAt);
+      if ('error' in loggedAtResult) return res.status(400).json({ message: loggedAtResult.error });
+      const loggedAt = loggedAtResult.date;
       const isGhost = !!entryData.ghost;
 
       // bristolScore validated by zod (1-7 int), but double-check for safety
@@ -308,10 +319,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       // Get user info for WebSocket notification
       const user = await storage.getUser(userId);
 
-      // Create display name for notifications
-      const displayName = user?.username ||
-        (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-        'Someone';
+      const displayName = buildDisplayName(user);
 
       // Send WebSocket notification to all groups (skip for ghost logs)
       if (!isGhost) {
@@ -354,15 +362,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       // Generate Battle Shits tokens for active matches
       const deuceEntryId = entries[0]?.id ?? '';
       try {
-        const activeMatches = await storage.getUserActiveMatches(userId);
-        const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
-        for (const match of activeOnly) {
-          await storage.createBattleToken(match.id, userId, deuceEntryId, 'standard');
-          // Double flush: 2nd or more log of the day
-          if (currentCount >= 1) {
-            await storage.createBattleToken(match.id, userId, deuceEntryId, 'double_flush');
-          }
-        }
+        await generateBattleTokens(userId, deuceEntryId, currentCount);
       } catch (err) {
         logger.error({ err }, "Error generating battle tokens");
       }
@@ -379,15 +379,8 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     try {
       const userId = req.user.id;
 
-      const today = getTodayUTC();
-      const currentCount = await storage.getUserDailyLogCount(userId, today);
-      if (currentCount >= MAX_LOGS_PER_DAY) {
-        return res.status(429).json({
-          message: 'Throne limit reached for today. Come back tomorrow.',
-          code: 'RATE_LIMIT_EXCEEDED',
-          status: 429,
-        });
-      }
+      const currentCount = await checkDailyRateLimit(userId, res);
+      if (currentCount === null) return;
 
       const parsed = createDeuceSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -416,16 +409,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         if (!bulkMemberGroupIds.has(gid)) return res.status(403).json({ message: `Not authorized for group ${gid}` });
       }
 
-      let loggedAt: Date;
-      if (entryData.loggedAt) {
-        const parsedDate = new Date(entryData.loggedAt);
-        if (isNaN(parsedDate.getTime())) return res.status(400).json({ message: "Invalid loggedAt date" });
-        if (parsedDate.getTime() > Date.now() + 60_000)
-          return res.status(400).json({ message: "Cannot log a deuce in the future" });
-        loggedAt = parsedDate;
-      } else {
-        loggedAt = new Date();
-      }
+      const loggedAtBulkResult = validateLoggedAt(entryData.loggedAt);
+      if ('error' in loggedAtBulkResult) return res.status(400).json({ message: loggedAtBulkResult.error });
+      const loggedAt = loggedAtBulkResult.date;
       const isGhost = !!entryData.ghost;
 
       const entries: DeuceEntry[] = [];
@@ -462,9 +448,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       });
 
       const user = await storage.getUser(userId);
-      const displayName = user?.username ||
-        (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
-        'Someone';
+      const displayName = buildDisplayName(user);
 
       if (!isGhost) {
         const safeUser = user ? sanitizeUserForResponse(user) : null;
@@ -502,14 +486,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       // Battle tokens for active matches
       const bulkEntryId = entries[0]?.id ?? '';
       try {
-        const activeMatches = await storage.getUserActiveMatches(userId);
-        const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
-        for (const match of activeOnly) {
-          await storage.createBattleToken(match.id, userId, bulkEntryId, 'standard');
-          if (currentCount >= 1) {
-            await storage.createBattleToken(match.id, userId, bulkEntryId, 'double_flush');
-          }
-        }
+        await generateBattleTokens(userId, bulkEntryId, currentCount);
       } catch (err) {
         logger.error({ err }, "Error generating battle tokens");
       }
@@ -532,11 +509,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
 
       const syncUser = await storage.getUser(userId);
-      const syncDisplayName = syncUser?.username ||
-        (syncUser?.firstName && syncUser?.lastName
-          ? `${syncUser.firstName} ${syncUser.lastName}`
-          : syncUser?.firstName) ||
-        'Someone';
+      const syncDisplayName = buildDisplayName(syncUser);
 
       for (const entry of parsed.data.entries) {
         try {
@@ -559,21 +532,12 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           }
           if (!authorized) continue;
 
-          let loggedAt: Date;
-          if (entry.loggedAt) {
-            const parsedDate = new Date(entry.loggedAt);
-            if (isNaN(parsedDate.getTime())) {
-              results.push({ id: entry.id, status: 'error', reason: 'Invalid loggedAt date' });
-              continue;
-            }
-            if (parsedDate.getTime() > Date.now() + 60_000) {
-              results.push({ id: entry.id, status: 'error', reason: 'Cannot log a deuce in the future' });
-              continue;
-            }
-            loggedAt = parsedDate;
-          } else {
-            loggedAt = new Date();
+          const loggedAtSyncResult = validateLoggedAt(entry.loggedAt);
+          if ('error' in loggedAtSyncResult) {
+            results.push({ id: entry.id, status: 'error', reason: loggedAtSyncResult.error });
+            continue;
           }
+          const loggedAt = loggedAtSyncResult.date;
 
           const syncEntries: DeuceEntry[] = [];
           for (const gid of validGroups) {
@@ -610,14 +574,7 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           const syncEntryId = syncEntries[0]?.id ?? '';
           const syncCount = await storage.getUserDailyLogCount(userId, today);
           try {
-            const activeMatches = await storage.getUserActiveMatches(userId);
-            const activeOnly = activeMatches.filter((m: BattleMatch) => m.status === 'active');
-            for (const match of activeOnly) {
-              await storage.createBattleToken(match.id, userId, syncEntryId, 'standard');
-              if (syncCount >= 1) {
-                await storage.createBattleToken(match.id, userId, syncEntryId, 'double_flush');
-              }
-            }
+            await generateBattleTokens(userId, syncEntryId, syncCount);
           } catch (err) {
             logger.error({ err }, '[sync] Error generating battle tokens');
           }

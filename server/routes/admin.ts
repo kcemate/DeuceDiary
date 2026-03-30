@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { timingSafeEqual } from "crypto";
 import logger from "../lib/logger";
 import { pool } from "../db";
@@ -24,6 +24,16 @@ function safeKeyCompare(provided: string | undefined, expected: string | undefin
   } catch {
     return false;
   }
+}
+
+/** Verify the x-internal-key header. Sends 401 and returns false if invalid. */
+function requireInternalKey(req: Request, res: Response): boolean {
+  const key = req.headers['x-internal-key'] as string | undefined;
+  if (!process.env.INTERNAL_API_KEY || !safeKeyCompare(key, process.env.INTERNAL_API_KEY)) {
+    Errors.unauthorized(res);
+    return false;
+  }
+  return true;
 }
 
 export function createAdminRouter(): Router {
@@ -67,10 +77,7 @@ export function createAdminRouter(): Router {
 
   // Internal streak check endpoint (cron / manual trigger)
   router.post('/api/internal/streak-check', async (req, res) => {
-    const key = req.headers['x-internal-key'] as string | undefined;
-    if (!process.env.INTERNAL_API_KEY || !safeKeyCompare(key, process.env.INTERNAL_API_KEY)) {
-      return Errors.unauthorized(res);
-    }
+    if (!requireInternalKey(req, res)) return;
     try {
       const summary = await checkAllGroupStreaksAndNotify();
       res.json(summary);
@@ -82,10 +89,7 @@ export function createAdminRouter(): Router {
 
   // Crown transfer: calculate weekly kings and transfer crowns
   router.post('/api/internal/crown-transfer', async (req, res) => {
-    const key = req.headers['x-internal-key'] as string | undefined;
-    if (!process.env.INTERNAL_API_KEY || !safeKeyCompare(key, process.env.INTERNAL_API_KEY)) {
-      return Errors.unauthorized(res);
-    }
+    if (!requireInternalKey(req, res)) return;
 
     const results: { groupId: string; winner: string | null; error?: string }[] = [];
 
@@ -185,10 +189,7 @@ export function createAdminRouter(): Router {
 
   // Error log endpoint (internal)
   router.get('/api/internal/errors', (req, res) => {
-    const key = req.headers['x-internal-key'] as string | undefined;
-    if (!process.env.INTERNAL_API_KEY || !safeKeyCompare(key, process.env.INTERNAL_API_KEY)) {
-      return Errors.unauthorized(res);
-    }
+    if (!requireInternalKey(req, res)) return;
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const errors = getRecentErrors(limit);
     res.json({ errors, count: errors.length });
@@ -196,10 +197,7 @@ export function createAdminRouter(): Router {
 
   // Detailed health endpoint (internal)
   router.get('/api/internal/health/detailed', async (req, res) => {
-    const key = req.headers['x-internal-key'] as string | undefined;
-    if (!process.env.INTERNAL_API_KEY || !safeKeyCompare(key, process.env.INTERNAL_API_KEY)) {
-      return Errors.unauthorized(res);
-    }
+    if (!requireInternalKey(req, res)) return;
     try {
       await pool.query('SELECT 1');
       res.json(buildDetailedHealth(pool));

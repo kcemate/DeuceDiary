@@ -384,3 +384,25 @@ export function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/** Build a display name from a user object, falling back to 'Someone'. */
+export function buildDisplayName(
+  user: { username?: string | null; firstName?: string | null; lastName?: string | null } | null | undefined,
+): string {
+  return (
+    user?.username ||
+    (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) ||
+    'Someone'
+  );
+}
+
+/** Validate and parse a loggedAt timestamp string.
+ * Returns `{ date }` on success, or `{ error }` on validation failure.
+ */
+export function validateLoggedAt(dateStr: string | null | undefined): { date: Date } | { error: string } {
+  if (!dateStr) return { date: new Date() };
+  const parsed = new Date(dateStr);
+  if (isNaN(parsed.getTime())) return { error: 'Invalid loggedAt date' };
+  if (parsed.getTime() > Date.now() + 60_000) return { error: 'Cannot log a deuce in the future' };
+  return { date: parsed };
+}

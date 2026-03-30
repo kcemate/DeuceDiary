@@ -84,6 +84,8 @@ app.post("/api/webhooks", authLimiter);
 
 const logLimiter = limit(60, "Too many log requests, please try again later.");
 app.post("/api/deuces", logLimiter);
+app.post("/api/deuces/bulk", logLimiter);
+app.post("/api/deuces/sync", limit(30, "Too many sync requests, please try again later."));
 
 const pushLimiter = limit(10, "Too many push token requests, please try again later.");
 app.post("/api/notifications/register", pushLimiter);
