@@ -248,7 +248,8 @@ export function createBattleRouter(): Router {
   }));
 
   // POST /api/battle/match/:matchId/place — ship placement
-  router.post("/api/battle/match/:matchId/place", isAuthenticated, asyncRoute("Failed to place ships", async (req, res) => {
+  router.post("/api/battle/match/:matchId/place", isAuthenticated,
+    asyncRoute("Failed to place ships", async (req, res) => {
     const userId = req.user.id;
     const { matchId } = req.params;
 
@@ -300,7 +301,8 @@ export function createBattleRouter(): Router {
   }));
 
   // POST /api/battle/match/:matchId/attack — fire at a cell
-  router.post("/api/battle/match/:matchId/attack", isAuthenticated, asyncRoute("Failed to process attack", async (req, res) => {
+  router.post("/api/battle/match/:matchId/attack", isAuthenticated,
+    asyncRoute("Failed to process attack", async (req, res) => {
     const userId = req.user.id;
     const { matchId } = req.params;
 
@@ -396,7 +398,8 @@ export function createBattleRouter(): Router {
   }));
 
   // GET /api/battle/match/:matchId/tokens — token balance
-  router.get("/api/battle/match/:matchId/tokens", isAuthenticated, asyncRoute("Failed to fetch token balance", async (req, res) => {
+  router.get("/api/battle/match/:matchId/tokens", isAuthenticated,
+    asyncRoute("Failed to fetch token balance", async (req, res) => {
     const userId = req.user.id;
     const { matchId } = req.params;
 
@@ -408,7 +411,8 @@ export function createBattleRouter(): Router {
   }));
 
   // POST /api/battle/match/:matchId/powerup — use a power-up
-  router.post("/api/battle/match/:matchId/powerup", isAuthenticated, asyncRoute("Failed to use power-up", async (req, res) => {
+  router.post("/api/battle/match/:matchId/powerup", isAuthenticated,
+    asyncRoute("Failed to use power-up", async (req, res) => {
     const userId = req.user.id;
     const { matchId } = req.params;
 
@@ -525,7 +529,8 @@ export function createBattleRouter(): Router {
   }));
 
   // GET /api/battle/leaderboard/:groupId — season wins leaderboard
-  router.get("/api/battle/leaderboard/:groupId", isAuthenticated, asyncRoute("Failed to fetch leaderboard", async (req, res) => {
+  router.get("/api/battle/leaderboard/:groupId", isAuthenticated,
+    asyncRoute("Failed to fetch leaderboard", async (req, res) => {
     const userId = req.user.id;
     const { groupId } = req.params;
 
@@ -549,7 +554,8 @@ export function createBattleRouter(): Router {
   }));
 
   // POST /api/battle/match/:matchId/forfeit — forfeit a match
-  router.post("/api/battle/match/:matchId/forfeit", isAuthenticated, asyncRoute("Failed to forfeit match", async (req, res) => {
+  router.post("/api/battle/match/:matchId/forfeit", isAuthenticated,
+    asyncRoute("Failed to forfeit match", async (req, res) => {
     const userId = req.user.id;
     const { matchId } = req.params;
 
