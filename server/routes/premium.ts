@@ -27,7 +27,7 @@ export function createPremiumRouter(): Router {
     res.json({
       code: user.referralCode,
       referralCount: user.referralCount ?? 0,
-      referralLink: `https://deuce-diary-web-production.up.railway.app/join?ref=${user.referralCode}`,
+      referralLink: `${process.env.APP_URL}/join?ref=${user.referralCode}`,
     });
   }));
 

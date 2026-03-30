@@ -500,7 +500,7 @@ export function createGroupsRouter(uploadsDir: string): Router {
       if (memberList) descParts.push(`Members: ${memberList}`);
       const description = descParts.join(' · ');
 
-      const appUrl = 'https://deuce-diary-web-production.up.railway.app';
+      const appUrl = process.env.APP_URL ?? '';
       const ogImageUrl = `${appUrl}/og-banner.png`;
 
       const html = `<!DOCTYPE html>

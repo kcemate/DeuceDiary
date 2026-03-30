@@ -49,10 +49,9 @@ app.use(
 );
 
 // --- CORS ---
+const extraOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(",").map(s => s.trim()) : [];
 const ALLOWED_ORIGINS = [
-  "https://deucediary.com",
-  "https://www.deucediary.com",
-  "https://deuce-diary-web-production.up.railway.app",
+  ...extraOrigins,
   "http://localhost:5000",
   "http://localhost:5001",
   "http://localhost:3000",
