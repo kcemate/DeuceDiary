@@ -224,7 +224,6 @@ export function getYesterdayInZone(tz: string): string {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(d);
   } catch {
-    d.setUTCDate(d.getUTCDate());
     return d.toISOString().slice(0, 10);
   }
 }
