@@ -107,7 +107,10 @@ export default function Passport() {
     if (navigator.share) {
       try {
         await navigator.share({ title: "My Poop Passport", text: shareText, url: shareUrl });
-      } catch { /* user cancelled */ }
+      } catch (error) {
+        console.error('Share failed:', error);
+        toast({ title: 'Share failed', variant: 'destructive' });
+      }
     } else {
       try {
         await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
