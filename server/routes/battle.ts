@@ -132,6 +132,54 @@ function getWeekBounds(matchType: "standard" | "quick"): { weekStart: Date; week
   return { weekStart, weekEnd };
 }
 
+type ShipRecord = { id: string; shipType: string; isSunk: boolean; cells: unknown };
+type AttackRecord = { col: number; row: number };
+
+/** Find which unsunk ship (if any) occupies cell (col, row). */
+function findHitShip(
+  opponentShips: ShipRecord[],
+  col: number,
+  row: number,
+): { isHit: boolean; hitShip: ShipRecord | null } {
+  for (const ship of opponentShips) {
+    if (ship.isSunk) continue;
+    const hitCell = (ship.cells as { col: number; row: number }[]).find(
+      (c) => c.col === col && c.row === row,
+    );
+    if (hitCell) return { isHit: true, hitShip: ship };
+  }
+  return { isHit: false, hitShip: null };
+}
+
+/** After recording an attack, determine sunk/gameOver/winner and persist side-effects. */
+async function resolveAttackOutcome(
+  attackCtx: { isHit: boolean; hitShip: ShipRecord | null; myAttacks: AttackRecord[]; attack: AttackRecord },
+  matchCtx: { matchId: string; opponentId: string; userId: string },
+): Promise<{ sunk: boolean; gameOver: boolean; winner: string | null }> {
+  const { isHit, hitShip, myAttacks, attack } = attackCtx;
+  const { matchId, opponentId, userId } = matchCtx;
+
+  if (!isHit || !hitShip) return { sunk: false, gameOver: false, winner: null };
+
+  const updatedAttacks = [...myAttacks, attack];
+  const allCellsHit = (hitShip.cells as { col: number; row: number }[]).every((c) =>
+    updatedAttacks.some((a) => a.col === c.col && a.row === c.row),
+  );
+  if (!allCellsHit) return { sunk: false, gameOver: false, winner: null };
+
+  await storage.markShipSunk(hitShip.id);
+
+  const freshOpponentShips = await storage.getShips(matchId, opponentId);
+  if (!freshOpponentShips.every((s) => s.isSunk)) return { sunk: true, gameOver: false, winner: null };
+
+  await storage.updateBattleMatchStatus(matchId, "completed", userId);
+  await storage.awardBadge(userId, "battle_winner", matchId);
+  const stats = await storage.getBattleStats(userId);
+  if (stats.wins >= 3) await storage.awardBadge(userId, "admiral", matchId);
+
+  return { sunk: true, gameOver: true, winner: userId };
+}
+
 /** Load a match and verify the user is a participant. Returns the match or sends 404/403 and returns null. */
 async function requireMatchParticipant(matchId: string, userId: string, res: Response) {
   const match = await storage.getBattleMatch(matchId);
@@ -318,19 +366,16 @@ export function createBattleRouter(): Router {
     }
     const { col, row } = parsed.data;
 
-    // Validate cell within grid
     const grid = match.matchType === "standard" ? STANDARD_GRID : QUICK_GRID;
     if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) {
       return res.status(400).json({ message: "Cell out of bounds" });
     }
 
-    // Check token balance
     const balance = await storage.getTokenBalance(matchId, userId);
     if (balance.earned <= balance.spent) {
       return res.status(409).json({ message: "No attack tokens available" });
     }
 
-    // Check cell not already attacked
     const myAttacks = await storage.getAttacksByUser(matchId, userId);
     if (myAttacks.some((a) => a.col === col && a.row === row)) {
       return res.status(409).json({ message: "Cell already attacked" });
@@ -339,62 +384,15 @@ export function createBattleRouter(): Router {
     const opponentId = match.challengerId === userId ? match.opponentId : match.challengerId;
     const opponentShips = await storage.getShips(matchId, opponentId);
 
-    // Check hit
-    let isHit = false;
-    let hitShip = null;
-    for (const ship of opponentShips) {
-      if (ship.isSunk) continue;
-      const hitCell = (ship.cells as { col: number; row: number }[]).find(
-        (c) => c.col === col && c.row === row,
-      );
-      if (hitCell) {
-        isHit = true;
-        hitShip = ship;
-        break;
-      }
-    }
-
+    const { isHit, hitShip } = findHitShip(opponentShips, col, row);
     const attack = await storage.createAttack(matchId, userId, col, row, isHit);
 
-    let sunk = false;
-    let gameOver = false;
-    let winner = null;
+    const { sunk, gameOver, winner } = await resolveAttackOutcome(
+      { isHit, hitShip, myAttacks, attack },
+      { matchId, opponentId, userId },
+    );
 
-    if (isHit && hitShip) {
-      // Check if ship is sunk (all cells hit)
-      const updatedAttacks = [...myAttacks, attack];
-      const allCellsHit = (hitShip.cells as { col: number; row: number }[]).every((c) =>
-        updatedAttacks.some((a) => a.col === c.col && a.row === c.row),
-      );
-
-      if (allCellsHit) {
-        sunk = true;
-        await storage.markShipSunk(hitShip.id);
-
-        // Check if all ships sunk
-        const freshOpponentShips = await storage.getShips(matchId, opponentId);
-        const allSunk = freshOpponentShips.every((s) => s.isSunk);
-        if (allSunk) {
-          gameOver = true;
-          winner = userId;
-          await storage.updateBattleMatchStatus(matchId, "completed", userId);
-          await storage.awardBadge(userId, "battle_winner", matchId);
-          // Check admiral badge (3+ wins)
-          const stats = await storage.getBattleStats(userId);
-          if (stats.wins >= 3) {
-            await storage.awardBadge(userId, "admiral", matchId);
-          }
-        }
-      }
-    }
-
-    res.json({
-      hit: isHit,
-      sunk,
-      shipType: hitShip?.shipType ?? null,
-      gameOver,
-      winner,
-    });
+    res.json({ hit: isHit, sunk, shipType: hitShip?.shipType ?? null, gameOver, winner });
   }));
 
   // GET /api/battle/match/:matchId/tokens — token balance

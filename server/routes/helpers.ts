@@ -237,6 +237,40 @@ export function hashCode(s: string): number {
   return hash;
 }
 
+/** Compute next streak value given current state, today, and yesterday strings. */
+function computeNextStreak(
+  currentStreak: number,
+  lastStreakDate: string | null | undefined,
+  today: string,
+  yesterday: string,
+): number {
+  if (!lastStreakDate || (lastStreakDate !== yesterday && lastStreakDate !== today)) return 1;
+  return currentStreak + 1;
+}
+
+/** Streak update path used in test environments (no db.transaction). */
+async function recalculateStreakFallback(groupId: string): Promise<void> {
+  const today = getTodayUTC();
+  const yesterday = getYesterdayUTC();
+  const streak = await storage.getGroupStreak(groupId);
+
+  if (streak.lastStreakDate === today) return;
+
+  const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
+  const allLoggedToday = memberStatuses.length > 0 && memberStatuses.every(m => m.hasLogged);
+
+  if (!allLoggedToday) {
+    if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
+      await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
+    }
+    return;
+  }
+
+  const newStreak = computeNextStreak(streak.currentStreak, streak.lastStreakDate, today, yesterday);
+  const newLongest = Math.max(newStreak, streak.longestStreak);
+  await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
+}
+
 /**
  * After a deuce is logged, check if all group members have logged today.
  * If yes, advance the streak. If a day was missed, reset first.
@@ -244,34 +278,7 @@ export function hashCode(s: string): number {
 export async function recalculateStreak(groupId: string): Promise<void> {
   // Fallback for test environments where db.transaction is not available
   if (typeof (db as { transaction?: unknown }).transaction !== 'function') {
-    const today = getTodayUTC();
-    const yesterday = getYesterdayUTC();
-    const streak = await storage.getGroupStreak(groupId);
-
-    // Idempotency: already counted today — skip
-    if (streak.lastStreakDate === today) return;
-
-    const memberStatuses = await storage.getMembersLogStatusToday(groupId, today);
-    const allLoggedToday = memberStatuses.length > 0 && memberStatuses.every(m => m.hasLogged);
-
-    if (!allLoggedToday) {
-      // Reset streak if a day was missed (not today, not yesterday)
-      if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
-        await storage.updateGroupStreak(groupId, 0, streak.longestStreak, streak.lastStreakDate);
-      }
-      return;
-    }
-
-    // Everyone logged today — advance streak
-    let newStreak: number;
-    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-      newStreak = 1;
-    } else {
-      newStreak = streak.currentStreak + 1;
-    }
-    const newLongest = Math.max(newStreak, streak.longestStreak);
-    await storage.updateGroupStreak(groupId, newStreak, newLongest, today);
-    return;
+    return recalculateStreakFallback(groupId);
   }
 
   await db.transaction(async (tx) => {
@@ -279,7 +286,6 @@ export async function recalculateStreak(groupId: string): Promise<void> {
     const lockKey = Math.abs(hashCode(groupId));
     await tx.execute(sql`SELECT pg_advisory_xact_lock(${lockKey})`);
 
-    // Read streak state + group timezone within the same transaction
     const [streak] = await tx
       .select({
         currentStreak: groups.currentStreak,
@@ -296,10 +302,8 @@ export async function recalculateStreak(groupId: string): Promise<void> {
     const today = getTodayInZone(tz);
     const yesterday = getYesterdayInZone(tz);
 
-    // Idempotency: already counted today — skip
     if (streak.lastStreakDate === today) return;
 
-    // Check who has logged today within the same transaction (using group timezone)
     const members = await tx
       .select({ userId: groupMembers.userId })
       .from(groupMembers)
@@ -320,7 +324,6 @@ export async function recalculateStreak(groupId: string): Promise<void> {
     const allLoggedToday = members.every(m => loggedUserIds.has(m.userId));
 
     if (!allLoggedToday) {
-      // Not everyone has logged today yet — but check if streak needs resetting
       if (streak.lastStreakDate && streak.lastStreakDate !== today && streak.lastStreakDate !== yesterday) {
         await tx
           .update(groups)
@@ -330,14 +333,7 @@ export async function recalculateStreak(groupId: string): Promise<void> {
       return;
     }
 
-    // Everyone logged today — advance streak
-    let newStreak: number;
-    if (!streak.lastStreakDate || (streak.lastStreakDate !== yesterday && streak.lastStreakDate !== today)) {
-      newStreak = 1;
-    } else {
-      newStreak = streak.currentStreak + 1;
-    }
-
+    const newStreak = computeNextStreak(streak.currentStreak, streak.lastStreakDate, today, yesterday);
     const newLongest = Math.max(newStreak, streak.longestStreak);
     await tx
       .update(groups)
