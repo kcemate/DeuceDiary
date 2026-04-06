@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import logger from "@/lib/logger";
 import { PremiumGate } from "@/components/premium-gate";
 import { Button } from "@/components/ui/button";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -108,7 +109,7 @@ export default function Passport() {
       try {
         await navigator.share({ title: "My Poop Passport", text: shareText, url: shareUrl });
       } catch (error) {
-        console.error('Share failed:', error);
+        logger.error('Share failed:', error);
         toast({ title: 'Share failed', variant: 'destructive' });
       }
     } else {
