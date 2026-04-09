@@ -52,6 +52,91 @@ async function checkSquadLimit(req: Request, res: Response): Promise<boolean> {
 const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Promise<void>) =>
   helperAsyncRoute(errMsg, errMsg, handler);
 
+/** Build the full HTML page for OG invite link previews. */
+function buildInviteOgHtml(
+  preview: { name: string; description?: string | null; memberCount: number; currentStreak: number; deuceCount: number; memberNames: string[] },
+  inviteCode: string,
+): string {
+  const title = `Join ${preview.name} on Deuce Diary`;
+  const topMembers = preview.memberNames.slice(0, 5);
+  const extra = preview.memberNames.length > 5
+    ? ` and ${preview.memberNames.length - 5} more` : '';
+  const memberList = topMembers.join(', ') + extra;
+
+  const descParts: string[] = [
+    `${preview.memberCount} member${preview.memberCount !== 1 ? 's' : ''}`,
+  ];
+  if (preview.currentStreak > 0) descParts.push(`${preview.currentStreak}-day streak`);
+  descParts.push(`${preview.deuceCount} total deuces`);
+  if (memberList) descParts.push(`Members: ${memberList}`);
+  const description = descParts.join(' \u00B7 ');
+
+  const appUrl = process.env.APP_URL ?? '';
+  const ogImageUrl = `${appUrl}/og-banner.png`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${ogImageUrl}" />
+  <meta property="og:url" content="${appUrl}/invite/${inviteCode}" />
+  <meta property="og:site_name" content="Deuce Diary" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${ogImageUrl}" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(38, 40%, 96%); color: hsl(25, 30%, 8%);
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .card {
+      background: hsl(38, 30%, 94%); border: 1px solid hsl(38, 18%, 83%);
+      border-radius: 24px; padding: 48px 40px; max-width: 420px; width: 100%; text-align: center;
+    }
+    .icon { font-size: 48px; line-height: 1; margin-bottom: 12px; }
+    .group-name { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
+    .description { font-size: 14px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
+    .stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
+    .stat-value { font-size: 24px; font-weight: 900; }
+    .stat-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: hsl(25, 12%, 42%);
+    }
+    .members { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
+    .cta {
+      display: inline-block; background: hsl(45, 88%, 48%); color: #000;
+      font-size: 16px; font-weight: 700; padding: 14px 32px;
+      border-radius: 14px; text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">&#x1F6BD;</div>
+    <div class="group-name">${escapeHtml(preview.name)}</div>
+    ${preview.description ? `<div class="description">${escapeHtml(preview.description)}</div>` : ''}
+    <div class="stats">
+      <div><div class="stat-value">${preview.memberCount}</div><div class="stat-label">Members</div></div>
+      ${preview.currentStreak > 0
+        ? `<div><div class="stat-value">${preview.currentStreak}</div><div class="stat-label">Streak</div></div>`
+        : ''}
+      <div><div class="stat-value">${preview.deuceCount}</div><div class="stat-label">Deuces</div></div>
+    </div>
+    ${memberList ? `<div class="members">Squad: ${escapeHtml(memberList)}</div>` : ''}
+    <a class="cta" href="/invite/${inviteCode}">Join the Squad</a>
+  </div>
+</body>
+</html>`;
+}
+
 const isTest = process.env.NODE_ENV === "test";
 const invitePreviewLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -478,104 +563,16 @@ export function createGroupsRouter(uploadsDir: string): Router {
   const INVITE_NOT_FOUND_HTML = '<html><body><h1>Invite not found or expired</h1></body></html>';
   router.get('/api/og/invite/:inviteCode', invitePreviewLimiter, asyncRoute("Failed to render invite OG page", async (req, res) => {
     const { inviteCode } = req.params;
-    // Validate UUID format before using in HTML href to prevent injection
     if (!INVITE_UUID_RE.test(inviteCode)) {
       return res.status(404).send(INVITE_NOT_FOUND_HTML);
     }
     const preview = await storage.getGroupInvitePreview(inviteCode);
-
-      if (!preview) {
-        return res.status(404).send(INVITE_NOT_FOUND_HTML);
-      }
-
-      const title = `Join ${preview.name} on Deuce Diary`;
-      const topMembers = preview.memberNames.slice(0, 5);
-      const extra = preview.memberNames.length > 5 ? ` and ${preview.memberNames.length - 5} more` : '';
-      const memberList = topMembers.join(', ') + extra;
-      const descParts: string[] = [
-        `${preview.memberCount} member${preview.memberCount !== 1 ? 's' : ''}`,
-      ];
-      if (preview.currentStreak > 0) descParts.push(`${preview.currentStreak}-day streak`);
-      descParts.push(`${preview.deuceCount} total deuces`);
-      if (memberList) descParts.push(`Members: ${memberList}`);
-      const description = descParts.join(' · ');
-
-      const appUrl = process.env.APP_URL ?? '';
-      const ogImageUrl = `${appUrl}/og-banner.png`;
-
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)}</title>
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="${escapeHtml(title)}" />
-  <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${ogImageUrl}" />
-  <meta property="og:url" content="${appUrl}/invite/${inviteCode}" />
-  <meta property="og:site_name" content="Deuce Diary" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${escapeHtml(title)}" />
-  <meta name="twitter:description" content="${escapeHtml(description)}" />
-  <meta name="twitter:image" content="${ogImageUrl}" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: hsl(38, 40%, 96%);
-      color: hsl(25, 30%, 8%);
-      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    if (!preview) {
+      return res.status(404).send(INVITE_NOT_FOUND_HTML);
     }
-    .card {
-      background: hsl(38, 30%, 94%);
-      border: 1px solid hsl(38, 18%, 83%);
-      border-radius: 24px;
-      padding: 48px 40px;
-      max-width: 420px; width: 100%; text-align: center;
-    }
-    .icon { font-size: 48px; line-height: 1; margin-bottom: 12px; }
-    .group-name { font-size: 26px; font-weight: 900; margin-bottom: 8px; }
-    .description { font-size: 14px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
-    .stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
-    .stat-value { font-size: 24px; font-weight: 900; }
-    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; color: hsl(25, 12%, 42%); }
-    .members { font-size: 13px; color: hsl(25, 12%, 42%); margin-bottom: 24px; }
-    .cta {
-      display: inline-block; background: hsl(45, 88%, 48%); color: #000;
-      font-size: 16px; font-weight: 700; padding: 14px 32px; border-radius: 14px; text-decoration: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">&#x1F6BD;</div>
-    <div class="group-name">${escapeHtml(preview.name)}</div>
-    ${preview.description ? `<div class="description">${escapeHtml(preview.description)}</div>` : ''}
-    <div class="stats">
-      <div>
-        <div class="stat-value">${preview.memberCount}</div>
-        <div class="stat-label">Members</div>
-      </div>
-      ${preview.currentStreak > 0 ? `
-      <div>
-        <div class="stat-value">${preview.currentStreak}</div>
-        <div class="stat-label">Streak</div>
-      </div>` : ''}
-      <div>
-        <div class="stat-value">${preview.deuceCount}</div>
-        <div class="stat-label">Deuces</div>
-      </div>
-    </div>
-    ${memberList ? `<div class="members">Squad: ${escapeHtml(memberList)}</div>` : ''}
-    <a class="cta" href="/invite/${inviteCode}">Join the Squad</a>
-  </div>
-</body>
-</html>`;
-
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(html);
+    const html = buildInviteOgHtml(preview, inviteCode);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
   }));
 
   return router;

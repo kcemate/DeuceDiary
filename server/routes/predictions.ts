@@ -152,6 +152,108 @@ const submitPredictionsSchema = z.object({
     .max(5),
 });
 
+// --- Resolution helpers ---
+
+type WeekLog = { userId: string; loggedAt: Date };
+
+/** Compute correct answers for each of the 5 weekly prediction questions. */
+async function computeWeeklyAnswers(
+  groupId: string,
+  weekStart: Date,
+): Promise<(string | null)[]> {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+  const weekLogs: WeekLog[] = await db
+    .select({ userId: deuceEntries.userId, loggedAt: deuceEntries.loggedAt })
+    .from(deuceEntries)
+    .innerJoin(groupMembers, eq(groupMembers.userId, deuceEntries.userId))
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        gte(deuceEntries.loggedAt, weekStart),
+        lt(deuceEntries.loggedAt, weekEnd),
+      ),
+    );
+
+  // Q0: who logged first
+  const firstLog = weekLogs.sort((a, b) => a.loggedAt.getTime() - b.loggedAt.getTime())[0];
+  const q0Answer = firstLog?.userId ?? null;
+
+  // Q1 (longest streak by Friday): approximate — user with most logs Mon–Fri
+  const friday = new Date(weekStart);
+  friday.setUTCDate(friday.getUTCDate() + 4);
+  friday.setUTCHours(23, 59, 59, 999);
+  const logsByUser: Record<string, number> = {};
+  for (const log of weekLogs) {
+    if (log.loggedAt <= friday) {
+      logsByUser[log.userId] = (logsByUser[log.userId] ?? 0) + 1;
+    }
+  }
+  const q1Answer =
+    Object.entries(logsByUser).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
+
+  // Q2: total logs
+  const q2Answer = String(weekLogs.length);
+
+  // Q3: unknowable at resolution time — all Q3 predictions are refunded
+  const q3Answer = null;
+
+  // Q4: most logs in a single day
+  const logsByUserDay: Record<string, number> = {};
+  for (const log of weekLogs) {
+    const day = log.loggedAt.toISOString().slice(0, 10);
+    const key = `${log.userId}|${day}`;
+    logsByUserDay[key] = (logsByUserDay[key] ?? 0) + 1;
+  }
+  const q4Answer = String(Math.max(0, ...Object.values(logsByUserDay)));
+
+  return [q0Answer, q1Answer, q2Answer, q3Answer, q4Answer];
+}
+
+/** Score each prediction, update result/payout, and credit SPP balances. */
+async function scorePredictions(
+  allPredictions: Array<{ id: string; userId: string; questionIndex: number; answer: string; wager: number }>,
+  correctAnswers: (string | null)[],
+  groupId: string,
+): Promise<void> {
+  for (const pred of allPredictions) {
+    const correctAnswer = correctAnswers[pred.questionIndex];
+    if (correctAnswer === null) {
+      // Unresolvable (Q3) — refund wager
+      await db.update(predictions).set({ result: "correct", payout: pred.wager }).where(eq(predictions.id, pred.id));
+      await creditSpp(pred.userId, groupId, pred.wager);
+      continue;
+    }
+
+    const isNumeric = pred.questionIndex === 2 || pred.questionIndex === 4;
+    let isCorrect: boolean;
+    if (isNumeric) {
+      const correctNum = parseFloat(correctAnswer);
+      const predNum = parseFloat(pred.answer);
+      isCorrect = !isNaN(predNum) && !isNaN(correctNum) && Math.abs(predNum - correctNum) <= 1;
+    } else {
+      isCorrect = pred.answer === correctAnswer;
+    }
+
+    const payout = isCorrect ? pred.wager * 2 : 0;
+    await db.update(predictions).set({ result: isCorrect ? "correct" : "wrong", payout }).where(eq(predictions.id, pred.id));
+    if (isCorrect) await creditSpp(pred.userId, groupId, payout);
+  }
+}
+
+/** Credit SPP balance and lifetime earnings for a user in a group. */
+async function creditSpp(userId: string, groupId: string, amount: number): Promise<void> {
+  await db
+    .update(squadPoopPoints)
+    .set({
+      balance: sql`${squadPoopPoints.balance} + ${amount}`,
+      lifetimeEarned: sql`${squadPoopPoints.lifetimeEarned} + ${amount}`,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(squadPoopPoints.userId, userId), eq(squadPoopPoints.groupId, groupId)));
+}
+
 // --- Router ---
 
 export function createPredictionsRouter(): Router {
@@ -350,58 +452,7 @@ export function createPredictionsRouter(): Router {
       if (!card) return res.status(404).json({ message: "No prediction card found for this week" });
       if (card.status === "resolved") return res.status(409).json({ message: "Already resolved" });
 
-      // Resolve each question with computed answers
-      const weekEnd = new Date(weekStart);
-      weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-      // Get all group members' logs this week
-      const weekLogs = await db
-        .select({
-          userId: deuceEntries.userId,
-          loggedAt: deuceEntries.loggedAt,
-        })
-        .from(deuceEntries)
-        .innerJoin(groupMembers, eq(groupMembers.userId, deuceEntries.userId))
-        .where(
-          and(
-            eq(groupMembers.groupId, groupId),
-            gte(deuceEntries.loggedAt, weekStart),
-            lt(deuceEntries.loggedAt, weekEnd),
-          ),
-        );
-
-      // Q0: who logged first
-      const firstLog = weekLogs.sort((a, b) => a.loggedAt.getTime() - b.loggedAt.getTime())[0];
-      const q0Answer = firstLog?.userId ?? null;
-
-      // Q2: total logs
-      const q2Answer = String(weekLogs.length);
-
-      // Q4: most logs in a single day
-      const logsByUserDay: Record<string, number> = {};
-      for (const log of weekLogs) {
-        const day = log.loggedAt.toISOString().slice(0, 10);
-        const key = `${log.userId}|${day}`;
-        logsByUserDay[key] = (logsByUserDay[key] ?? 0) + 1;
-      }
-      const q4Answer = String(Math.max(0, ...Object.values(logsByUserDay)));
-
-      // Q1 (longest streak by Friday): approximate — user with most logs Mon–Fri
-      const friday = new Date(weekStart);
-      friday.setUTCDate(friday.getUTCDate() + 4);
-      friday.setUTCHours(23, 59, 59, 999);
-      const logsByUser: Record<string, number> = {};
-      for (const log of weekLogs) {
-        if (log.loggedAt <= friday) {
-          logsByUser[log.userId] = (logsByUser[log.userId] ?? 0) + 1;
-        }
-      }
-      const q1Answer =
-        Object.entries(logsByUser).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
-
-      // Q3 answer is unknowable at resolution time — all Q3 predictions are refunded
-
-      const correctAnswers: (string | null)[] = [q0Answer, q1Answer, q2Answer, null, q4Answer];
+      const correctAnswers = await computeWeeklyAnswers(groupId, weekStart);
 
       // Get all predictions for this card
       const allPredictions = await db
@@ -409,56 +460,8 @@ export function createPredictionsRouter(): Router {
         .from(predictions)
         .where(eq(predictions.cardId, card.id));
 
-      // Update each prediction
-      for (const pred of allPredictions) {
-        const correctAnswer = correctAnswers[pred.questionIndex];
-        if (correctAnswer === null) {
-          // Unresolvable (Q3) — refund wager
-          await db
-            .update(predictions)
-            .set({ result: "correct", payout: pred.wager })
-            .where(eq(predictions.id, pred.id));
-
-          await db
-            .update(squadPoopPoints)
-            .set({
-              balance: sql`${squadPoopPoints.balance} + ${pred.wager}`,
-              lifetimeEarned: sql`${squadPoopPoints.lifetimeEarned} + ${pred.wager}`,
-              updatedAt: new Date(),
-            })
-            .where(and(eq(squadPoopPoints.userId, pred.userId), eq(squadPoopPoints.groupId, groupId)));
-        } else {
-          // For numeric answers (Q2, Q4) we use closest-wins logic
-          const isNumeric = pred.questionIndex === 2 || pred.questionIndex === 4;
-          let isCorrect: boolean;
-
-          if (isNumeric) {
-            // Closest answer among all predictors wins
-            const correctNum = parseFloat(correctAnswer);
-            const predNum = parseFloat(pred.answer);
-            isCorrect = !isNaN(predNum) && !isNaN(correctNum) && Math.abs(predNum - correctNum) <= 1;
-          } else {
-            isCorrect = pred.answer === correctAnswer;
-          }
-
-          const payout = isCorrect ? pred.wager * 2 : 0;
-          await db
-            .update(predictions)
-            .set({ result: isCorrect ? "correct" : "wrong", payout })
-            .where(eq(predictions.id, pred.id));
-
-          if (isCorrect) {
-            await db
-              .update(squadPoopPoints)
-              .set({
-                balance: sql`${squadPoopPoints.balance} + ${payout}`,
-                lifetimeEarned: sql`${squadPoopPoints.lifetimeEarned} + ${payout}`,
-                updatedAt: new Date(),
-              })
-              .where(and(eq(squadPoopPoints.userId, pred.userId), eq(squadPoopPoints.groupId, groupId)));
-          }
-        }
-      }
+      // Score and pay out each prediction
+      await scorePredictions(allPredictions, correctAnswers, groupId);
 
       // Mark card as resolved
       await db
