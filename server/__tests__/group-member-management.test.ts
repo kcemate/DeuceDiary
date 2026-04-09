@@ -1,3 +1,4 @@
+import { TEST_SESSION_SECRET } from "./test-constants";
 import { vi, describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -270,9 +271,9 @@ vi.mock("../replitAuth", async () => {
   return {
     clerkEnabled: false,
     clerk: null,
-    getSession: () => session({ secret: "test-secret", resave: false, saveUninitialized: false }),
+    getSession: () => session({ secret: TEST_SESSION_SECRET, resave: false, saveUninitialized: false }),
     setupAuth: async (app: any) => {
-      app.use(session({ secret: "test-secret", resave: false, saveUninitialized: false }));
+      app.use(session({ secret: TEST_SESSION_SECRET, resave: false, saveUninitialized: false }));
 
       app.post("/api/login", async (req: any, res: any) => {
         const { username } = req.body;

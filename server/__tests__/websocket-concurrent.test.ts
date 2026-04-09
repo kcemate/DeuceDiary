@@ -1,3 +1,4 @@
+import { TEST_SESSION_SECRET } from "./test-constants";
 /**
  * Click 4: WebSocket event tests and concurrent operations
  */
@@ -132,7 +133,7 @@ vi.mock("@clerk/clerk-sdk-node", () => ({ createClerkClient: () => null }));
 vi.mock("../replitAuth", async () => {
   const sessionMod = await import("express-session");
   const session = sessionMod.default;
-  const sessionMiddleware = session({ secret: "test-secret", resave: false, saveUninitialized: false });
+  const sessionMiddleware = session({ secret: TEST_SESSION_SECRET, resave: false, saveUninitialized: false });
 
   return {
     clerkEnabled: false,

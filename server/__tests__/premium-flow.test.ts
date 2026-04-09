@@ -1,3 +1,4 @@
+import { TEST_SESSION_SECRET, TEST_ADMIN_KEY, TEST_INTERNAL_KEY, TEST_WEBHOOK_SECRET } from "./test-constants";
 import { vi, describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import type { Express } from "express";
 import type { Server } from "http";
@@ -478,12 +479,12 @@ vi.mock("../replitAuth", async () => {
   return {
     clerkEnabled: false,
     clerk: null,
-    getSession: () => session({ secret: "test-secret", resave: false, saveUninitialized: false }),
+    getSession: () => session({ secret: TEST_SESSION_SECRET, resave: false, saveUninitialized: false }),
 
     setupAuth: async (app: any) => {
       app.use(
         session({
-          secret: "test-secret",
+          secret: TEST_SESSION_SECRET,
           resave: false,
           saveUninitialized: false,
         }),
@@ -558,7 +559,7 @@ let server: Server;
 
 beforeAll(async () => {
   // Set CLERK_WEBHOOK_SECRET so the webhook handler doesn't reject with 503
-  process.env.CLERK_WEBHOOK_SECRET = "test-webhook-secret";
+  process.env.CLERK_WEBHOOK_SECRET = TEST_WEBHOOK_SECRET;
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));

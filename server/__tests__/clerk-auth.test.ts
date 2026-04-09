@@ -1,3 +1,4 @@
+import { TEST_SESSION_SECRET, TEST_ADMIN_KEY, TEST_INTERNAL_KEY, TEST_WEBHOOK_SECRET } from "./test-constants";
 /**
  * clerk-auth.test.ts
  *
@@ -312,7 +313,7 @@ vi.mock("../replitAuth", async () => {
       // In Clerk mode, setupAuth just mounts the session (no dev login routes)
       const sessionMod = await import("express-session");
       const session = sessionMod.default;
-      app.use(session({ secret: "test-secret", resave: false, saveUninitialized: false }));
+      app.use(session({ secret: TEST_SESSION_SECRET, resave: false, saveUninitialized: false }));
     },
 
     isAuthenticated: async (req: any, res: any, next: any) => {
@@ -372,8 +373,8 @@ let app: Express;
 let server: Server;
 
 beforeAll(async () => {
-  process.env.ADMIN_KEY = "test-admin-key";
-  process.env.INTERNAL_API_KEY = "test-internal-key";
+  process.env.ADMIN_KEY = TEST_ADMIN_KEY;
+  process.env.INTERNAL_API_KEY = TEST_INTERNAL_KEY;
   app = express();
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
