@@ -4,7 +4,7 @@ type AuthReq = Request & { user: { id: string }; groupId: string };
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requireGroupMember } from "../groupAuth";
-import { isPremiumUser, asyncRoute as helperAsyncRoute } from "./helpers";
+import { isPremiumUser, asyncRoute as helperAsyncRoute, parseOrFail } from "./helpers";
 import { CHALLENGE_TEMPLATES, getTemplateByKey } from "../challengeTemplates";
 import { z } from "zod";
 
@@ -152,12 +152,10 @@ export function createKingRouter(): Router {
         return res.status(409).json({ message: "Challenge already set for this period" });
       }
 
-      const parsed = setChallengeSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-      }
+      const parsed = parseOrFail(setChallengeSchema, req.body, res);
+      if (!parsed) return;
 
-      const { title, templateKey } = parsed.data;
+      const { title, templateKey } = parsed;
 
       // Free text challenges require premium
       if (title && !templateKey) {

@@ -8,10 +8,10 @@ import { storage } from "../storage";
 
 // --- Route utilities ---
 
-export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Response, message: string): T | null {
+export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Response, message?: string): T | null {
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    res.status(400).json({ message });
+    res.status(400).json({ message: message ?? parsed.error.issues[0]?.message ?? "Invalid input" });
     return null;
   }
   return parsed.data;

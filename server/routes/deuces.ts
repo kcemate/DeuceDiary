@@ -79,6 +79,67 @@ async function generateBattleTokens(userId: string, entryId: string, currentCoun
   }
 }
 
+/** Shared side effects after creating deuce entries: broadcast, streaks, passport, battle tokens. */
+async function postDeuceSideEffects(opts: {
+  entries: DeuceEntry[];
+  userId: string;
+  targetGroupIds: string[];
+  isGhost: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  currentCount: number;
+  broadcastToGroup: BroadcastFn;
+}): Promise<{ maxStreak: number }> {
+  const { entries, userId, targetGroupIds, isGhost, latitude, longitude, currentCount, broadcastToGroup } = opts;
+
+  // WebSocket broadcast (skip ghost logs)
+  const user = await storage.getUser(userId);
+  if (!isGhost) {
+    const displayName = buildDisplayName(user);
+    const safeUser = user ? sanitizeUserForResponse(user) : null;
+    for (const groupId of targetGroupIds) {
+      const groupEntry = entries.find(e => e.groupId === groupId);
+      broadcastToGroup(groupId, {
+        type: 'deuce_logged',
+        message: `${displayName} logged a new deuce`,
+        entry: { ...groupEntry, user: safeUser },
+        userId,
+      });
+    }
+  }
+
+  // Recalculate streaks
+  const STREAK_MILESTONES = [7, 30, 100, 365];
+  for (const groupId of targetGroupIds) {
+    try { await recalculateStreak(groupId); } catch (err) {
+      logger.error({ err, groupId }, "Error recalculating streak for group");
+    }
+  }
+  const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
+  let maxStreak = 0;
+  for (const groupId of targetGroupIds) {
+    const { currentStreak } = streakMap.get(groupId) ?? { currentStreak: 0 };
+    if (currentStreak > maxStreak) maxStreak = currentStreak;
+    if (STREAK_MILESTONES.includes(currentStreak)) {
+      track("streak_milestone", userId, { groupId, streak: currentStreak });
+    }
+  }
+
+  // Passport stamp (fire-and-forget)
+  triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
+    storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
+
+  // Battle tokens
+  const entryId = entries[0]?.id ?? '';
+  try {
+    await generateBattleTokens(userId, entryId, currentCount);
+  } catch (err) {
+    logger.error({ err }, "Error generating battle tokens");
+  }
+
+  return { maxStreak };
+}
+
 export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   const router = Router();
 
@@ -316,56 +377,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       track("log_created", userId, { has_notes: !!entryData.thoughts });
       track("deuce_logged", userId, { groupCount: targetGroupIds.length, has_notes: !!entryData.thoughts });
 
-      // Get user info for WebSocket notification
-      const user = await storage.getUser(userId);
-
-      const displayName = buildDisplayName(user);
-
-      // Send WebSocket notification to all groups (skip for ghost logs)
-      if (!isGhost) {
-        const safeUser = user ? sanitizeUserForResponse(user) : null;
-        for (const groupId of targetGroupIds) {
-          const groupEntry = entries.find(e => e.groupId === groupId);
-          broadcastToGroup(groupId, {
-            type: 'deuce_logged',
-            message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user: safeUser },
-            userId: userId, // Don't notify the user who logged the deuce
-          });
-        }
-      }
-
-      // Recalculate streaks for all affected groups
-      const STREAK_MILESTONES = [7, 30, 100, 365];
-      let maxStreak = 0;
-      for (const groupId of targetGroupIds) {
-        try {
-          await recalculateStreak(groupId);
-        } catch (err) {
-          logger.error({ err, groupId }, "Error recalculating streak for group");
-        }
-      }
-      // Batch fetch streaks after all recalculations — single query instead of N
-      const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
-      for (const groupId of targetGroupIds) {
-        const { currentStreak } = streakMap.get(groupId) ?? { currentStreak: 0 };
-        if (currentStreak > maxStreak) maxStreak = currentStreak;
-        if (STREAK_MILESTONES.includes(currentStreak)) {
-          track("streak_milestone", userId, { groupId, streak: currentStreak });
-        }
-      }
-
-      // Async: reverse geocode and create passport stamp (fire-and-forget)
-      triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
-        storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
-
-      // Generate Battle Shits tokens for active matches
-      const deuceEntryId = entries[0]?.id ?? '';
-      try {
-        await generateBattleTokens(userId, deuceEntryId, currentCount);
-      } catch (err) {
-        logger.error({ err }, "Error generating battle tokens");
-      }
+      const { maxStreak } = await postDeuceSideEffects({
+        entries, userId, targetGroupIds, isGhost,
+        latitude, longitude, currentCount, broadcastToGroup,
+      });
 
       res.json({ entries, count: entries.length, streak: maxStreak });
     } catch (error) {
@@ -447,49 +462,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
         has_photo: !!photoUrl,
       });
 
-      const user = await storage.getUser(userId);
-      const displayName = buildDisplayName(user);
-
-      if (!isGhost) {
-        const safeUser = user ? sanitizeUserForResponse(user) : null;
-        for (const gid of targetGroupIds) {
-          const groupEntry = entries.find(e => e.groupId === gid);
-          broadcastToGroup(gid, {
-            type: 'deuce_logged',
-            message: `${displayName} logged a new deuce`,
-            entry: { ...groupEntry, user: safeUser },
-            userId,
-          });
-        }
-      }
-
-      for (const gid of targetGroupIds) {
-        try { await recalculateStreak(gid); } catch (err) {
-          logger.error({ err, groupId: gid }, "Error recalculating streak for group");
-        }
-      }
-
-      // Streak milestone tracking
-      const STREAK_MILESTONES = [7, 30, 100, 365];
-      const streakMap = await storage.getGroupStreaksBatch(targetGroupIds);
-      for (const gid of targetGroupIds) {
-        const { currentStreak } = streakMap.get(gid) ?? { currentStreak: 0 };
-        if (STREAK_MILESTONES.includes(currentStreak)) {
-          track("streak_milestone", userId, { groupId: gid, streak: currentStreak });
-        }
-      }
-
-      // Passport stamp (fire-and-forget)
-      triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
-        storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
-
-      // Battle tokens for active matches
-      const bulkEntryId = entries[0]?.id ?? '';
-      try {
-        await generateBattleTokens(userId, bulkEntryId, currentCount);
-      } catch (err) {
-        logger.error({ err }, "Error generating battle tokens");
-      }
+      await postDeuceSideEffects({
+        entries, userId, targetGroupIds, isGhost,
+        latitude, longitude, currentCount, broadcastToGroup,
+      });
 
       res.json({ entries, count: entries.length });
     } catch (error) {
@@ -507,9 +483,6 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const userId = req.user.id;
       const today = getTodayUTC();
       const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
-
-      const syncUser = await storage.getUser(userId);
-      const syncDisplayName = buildDisplayName(syncUser);
 
       for (const entry of parsed.data.entries) {
         try {
@@ -558,36 +531,11 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
           await storage.updateUserDeuceCount(userId, 1);
           track('log_created', userId, { has_notes: !!entry.thoughts, source: 'offline_sync' });
 
-          // WebSocket broadcast to group members
-          const safeUser = syncUser ? sanitizeUserForResponse(syncUser) : null;
-          for (const gid of validGroups) {
-            const groupEntry = syncEntries.find(e => e.groupId === gid);
-            broadcastToGroup(gid, {
-              type: 'deuce_logged',
-              message: `${syncDisplayName} logged a new deuce`,
-              entry: { ...groupEntry, user: safeUser },
-              userId,
-            });
-          }
-
-          // Battle tokens for active matches
-          const syncEntryId = syncEntries[0]?.id ?? '';
           const syncCount = await storage.getUserDailyLogCount(userId, today);
-          try {
-            await generateBattleTokens(userId, syncEntryId, syncCount);
-          } catch (err) {
-            logger.error({ err }, '[sync] Error generating battle tokens');
-          }
-
-          // Passport stamp (fire-and-forget)
-          triggerPassportStamp(undefined, undefined, (geo, lat, lon) =>
-            storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
-
-          for (const gid of validGroups) {
-            try { await recalculateStreak(gid); } catch (err) {
-              logger.error({ err, groupId: gid }, '[sync] recalculateStreak failed for group');
-            }
-          }
+          await postDeuceSideEffects({
+            entries: syncEntries, userId, targetGroupIds: validGroups,
+            isGhost: false, currentCount: syncCount, broadcastToGroup,
+          });
 
           results.push({ id: entry.id, status: 'ok' });
         } catch (err) {

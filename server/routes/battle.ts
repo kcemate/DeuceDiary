@@ -3,7 +3,7 @@ import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
-import { asyncRoute as helperAsyncRoute } from "./helpers";
+import { asyncRoute as helperAsyncRoute, parseOrFail } from "./helpers";
 import { STANDARD_GRID, QUICK_GRID, SHIPS } from "@shared/schema";
 
 const asyncRoute = (failMsg: string, handler: (req: AuthReq, res: Response) => Promise<void>) =>
@@ -200,11 +200,9 @@ export function createBattleRouter(): Router {
   // POST /api/battle/challenge — create a 1v1 match
   router.post("/api/battle/challenge", isAuthenticated, asyncRoute("Failed to create match", async (req, res) => {
     const userId = req.user.id;
-    const parsed = challengeSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-    }
-    const { groupId, opponentId, matchType } = parsed.data;
+    const parsed = parseOrFail(challengeSchema, req.body, res);
+    if (!parsed) return;
+    const { groupId, opponentId, matchType } = parsed;
 
     if (opponentId === userId) {
       return res.status(400).json({ message: "Cannot challenge yourself" });
@@ -316,13 +314,11 @@ export function createBattleRouter(): Router {
       return res.status(409).json({ message: "Ships already placed" });
     }
 
-    const parsed = placeShipsSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-    }
+    const parsed = parseOrFail(placeShipsSchema, req.body, res);
+    if (!parsed) return;
 
     const validationError = validateShipPlacement(
-      parsed.data.ships,
+      parsed.ships,
       match.matchType as "standard" | "quick",
     );
     if (validationError) {
@@ -332,7 +328,7 @@ export function createBattleRouter(): Router {
     await storage.placeShips(
       matchId,
       userId,
-      parsed.data.ships.map((s) => ({ shipType: s.type, cells: s.cells })),
+      parsed.ships.map((s) => ({ shipType: s.type, cells: s.cells })),
     );
 
     // Check if both players have placed → transition to active
@@ -360,11 +356,9 @@ export function createBattleRouter(): Router {
       return res.status(409).json({ message: "Match is not active" });
     }
 
-    const parsed = attackSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-    }
-    const { col, row } = parsed.data;
+    const parsed = parseOrFail(attackSchema, req.body, res);
+    if (!parsed) return;
+    const { col, row } = parsed;
 
     const grid = match.matchType === "standard" ? STANDARD_GRID : QUICK_GRID;
     if (col < 0 || col >= grid.cols || row < 0 || row >= grid.rows) {
@@ -420,11 +414,9 @@ export function createBattleRouter(): Router {
       return res.status(409).json({ message: "Match is not active" });
     }
 
-    const parsed = powerupSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-    }
-    const { type } = parsed.data;
+    const parsed = parseOrFail(powerupSchema, req.body, res);
+    if (!parsed) return;
+    const { type } = parsed;
 
     const powerups = await storage.getPowerups(matchId, userId);
     const powerup = powerups.find((p) => p.powerupType === type);
@@ -472,11 +464,9 @@ export function createBattleRouter(): Router {
   // POST /api/battle/matchmake — random opponent from shared squads
   router.post("/api/battle/matchmake", isAuthenticated, asyncRoute("Failed to matchmake", async (req, res) => {
     const userId = req.user.id;
-    const parsed = matchmakeSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-    }
-    const { groupId, matchType } = parsed.data;
+    const parsed = parseOrFail(matchmakeSchema, req.body, res);
+    if (!parsed) return;
+    const { groupId, matchType } = parsed;
 
     const isInGroup = await storage.isUserInGroup(userId, groupId);
     if (!isInGroup) return res.status(403).json({ message: "Not a member of this group" });
