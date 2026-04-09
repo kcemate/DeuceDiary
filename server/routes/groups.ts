@@ -55,7 +55,10 @@ const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Pr
 
 /** Build the full HTML page for OG invite link previews. */
 function buildInviteOgHtml(
-  preview: { name: string; description?: string | null; memberCount: number; currentStreak: number; deuceCount: number; memberNames: string[] },
+  preview: {
+    name: string; description?: string | null; memberCount: number;
+    currentStreak: number; deuceCount: number; memberNames: string[];
+  },
   inviteCode: string,
 ): string {
   const title = `Join ${preview.name} on Deuce Diary`;
@@ -164,7 +167,10 @@ export function createGroupsRouter(uploadsDir: string): Router {
   router.post('/api/groups', isAuthenticated, asyncRoute("Failed to create group", async (req, res) => {
     const userId = req.user.id;
 
-    const parsed = parseOrFail(createGroupSchema, req.body, res, "Invalid group data: name is required (max 100 chars)");
+    const parsed = parseOrFail(
+      createGroupSchema, req.body, res,
+      "Invalid group data: name is required (max 100 chars)",
+    );
     if (!parsed) return;
     const insertParsed = insertGroupSchema.safeParse({
       ...parsed,
@@ -343,7 +349,8 @@ export function createGroupsRouter(uploadsDir: string): Router {
 
   // Weekly Throne Report — group-level shareable summary card (premium)
   router.get('/api/groups/:groupId/weekly-report',
-    isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'), asyncRoute("Failed to fetch group weekly report",
+    isAuthenticated, requireGroupMember(), requiresPremiumFor('weekly_report'),
+    asyncRoute("Failed to fetch group weekly report",
     async (req, res) => {
     const groupId = req.groupId;
     const report = await fetchWeeklyReport(groupId, res);
@@ -506,7 +513,8 @@ export function createGroupsRouter(uploadsDir: string): Router {
   }));
 
   // Group preview for invite landing page (public — no auth)
-  router.get('/api/groups/preview/:inviteCode', invitePreviewLimiter, asyncRoute("Failed to fetch group preview", async (req, res) => {
+  router.get('/api/groups/preview/:inviteCode', invitePreviewLimiter,
+    asyncRoute("Failed to fetch group preview", async (req, res) => {
     const { inviteCode } = req.params;
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(inviteCode)) {
       return res.status(404).json({ message: "Invite not found" });
@@ -560,7 +568,8 @@ export function createGroupsRouter(uploadsDir: string): Router {
   // OG HTML page for invite links -- crawlers get rich meta tags (public)
   const INVITE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const INVITE_NOT_FOUND_HTML = '<html><body><h1>Invite not found or expired</h1></body></html>';
-  router.get('/api/og/invite/:inviteCode', invitePreviewLimiter, asyncRoute("Failed to render invite OG page", async (req, res) => {
+  router.get('/api/og/invite/:inviteCode', invitePreviewLimiter,
+    asyncRoute("Failed to render invite OG page", async (req, res) => {
     const { inviteCode } = req.params;
     if (!INVITE_UUID_RE.test(inviteCode)) {
       return res.status(404).send(INVITE_NOT_FOUND_HTML);

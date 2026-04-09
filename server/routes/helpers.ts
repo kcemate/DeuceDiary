@@ -183,7 +183,10 @@ export const usernameParamSchema = z.object({
 // --- Utility Functions ---
 
 /** Check if a user has an active premium subscription */
-type PremiumCheckUser = { subscription?: string | null; subscriptionExpiresAt?: string | Date | null } | null | undefined;
+type PremiumCheckUser = {
+  subscription?: string | null;
+  subscriptionExpiresAt?: string | Date | null;
+} | null | undefined;
 export function isPremiumUser(user: PremiumCheckUser): boolean {
   return (
     user?.subscription === "premium" &&

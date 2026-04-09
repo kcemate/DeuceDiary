@@ -237,7 +237,9 @@ async function scorePredictions(
     }
 
     const payout = isCorrect ? pred.wager * 2 : 0;
-    await db.update(predictions).set({ result: isCorrect ? "correct" : "wrong", payout }).where(eq(predictions.id, pred.id));
+    await db.update(predictions)
+      .set({ result: isCorrect ? "correct" : "wrong", payout })
+      .where(eq(predictions.id, pred.id));
     if (isCorrect) await creditSpp(pred.userId, groupId, payout);
   }
 }
@@ -275,7 +277,10 @@ export function createPredictionsRouter(): Router {
 
       // Get group members for question generation
       const members = await db
-        .select({ userId: groupMembers.userId, username: users.username, firstName: users.firstName, lastName: users.lastName })
+        .select({
+          userId: groupMembers.userId, username: users.username,
+          firstName: users.firstName, lastName: users.lastName,
+        })
         .from(groupMembers)
         .innerJoin(users, eq(users.id, groupMembers.userId))
         .where(eq(groupMembers.groupId, groupId));
