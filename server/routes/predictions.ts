@@ -4,7 +4,7 @@ import { db } from "../db";
 import { isAuthenticated } from "../replitAuth";
 import { requireGroupMember } from "../groupAuth";
 import { requiresPremiumFor } from "../premiumAuth";
-import { asyncRoute } from "./helpers";
+import { asyncRoute, parseOrFail } from "./helpers";
 import {
   predictionCards,
   predictions,
@@ -325,12 +325,10 @@ export function createPredictionsRouter(): Router {
       const { groupId } = req;
       const userId = req.user.id;
 
-      const parsed = submitPredictionsSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: parsed.error.issues[0]?.message ?? "Invalid input" });
-      }
+      const parsed = parseOrFail(submitPredictionsSchema, req.body, res);
+      if (!parsed) return;
 
-      const { predictions: preds } = parsed.data;
+      const { predictions: preds } = parsed;
 
       const weekStart = getCurrentWeekStart();
       const [card] = await db

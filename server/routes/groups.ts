@@ -19,6 +19,7 @@ import {
   getYesterdayUTC,
   checkAndNotifyStreakRisk,
   escapeHtml,
+  parseOrFail,
   asyncRoute as helperAsyncRoute,
 } from "./helpers";
 
@@ -163,12 +164,10 @@ export function createGroupsRouter(uploadsDir: string): Router {
   router.post('/api/groups', isAuthenticated, asyncRoute("Failed to create group", async (req, res) => {
     const userId = req.user.id;
 
-    const parsed = createGroupSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid group data: name is required (max 100 chars)" });
-    }
+    const parsed = parseOrFail(createGroupSchema, req.body, res, "Invalid group data: name is required (max 100 chars)");
+    if (!parsed) return;
     const insertParsed = insertGroupSchema.safeParse({
-      ...parsed.data,
+      ...parsed,
       createdBy: userId,
     });
     if (!insertParsed.success) {

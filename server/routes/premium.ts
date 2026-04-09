@@ -6,7 +6,7 @@ import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
 import {
-  getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, asyncRoute,
+  getTodayUTC, getYesterdayUTC, subscriptionUpgradeSchema, referralApplySchema, getTitle, asyncRoute, parseOrFail,
 } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
@@ -34,11 +34,9 @@ export function createPremiumRouter(): Router {
   router.post('/api/referral/apply', isAuthenticated, async (req: AuthReq, res) => {
     try {
       const userId = req.user.id;
-      const parsed = referralApplySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: 'Referral code is required' });
-      }
-      const { code } = parsed.data;
+      const parsed = parseOrFail(referralApplySchema, req.body, res, 'Referral code is required');
+      if (!parsed) return;
+      const { code } = parsed;
 
       // Fetch referrer and current user in parallel
       const [referrer, currentUser] = await Promise.all([
@@ -209,11 +207,9 @@ export function createPremiumRouter(): Router {
     isAuthenticated,
     wrap('Error upgrading subscription:', 'Failed to upgrade subscription', async (req, res) => {
     const userId = req.user.id;
-    const parsed = subscriptionUpgradeSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid plan. Must be 'monthly' or 'annual'" });
-    }
-    const { plan } = parsed.data;
+    const parsed = parseOrFail(subscriptionUpgradeSchema, req.body, res, "Invalid plan. Must be 'monthly' or 'annual'");
+    if (!parsed) return;
+    const { plan } = parsed;
 
     const expiresAt = new Date();
     if (plan === 'annual') {

@@ -14,6 +14,7 @@ import { z } from "zod";
 import {
   createDeuceSchema,
   createLocationSchema,
+  parseOrFail,
   MAX_LOGS_PER_DAY,
   getTodayUTC,
   recalculateStreak,
@@ -156,11 +157,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   router.post('/api/locations', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user.id;
-      const parsed = createLocationSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Location name is required" });
-      }
-      const name = parsed.data.name;
+      const parsed = parseOrFail(createLocationSchema, req.body, res, "Location name is required");
+      if (!parsed) return;
+      const name = parsed.name;
 
       if (!name.trim()) {
         return res.status(400).json({ message: "Location name is required" });
@@ -190,11 +189,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
-      const parsed = reactionSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Emoji is required" });
-      }
-      const { emoji } = parsed.data;
+      const parsed = parseOrFail(reactionSchema, req.body, res, "Emoji is required");
+      if (!parsed) return;
+      const { emoji } = parsed;
 
       const entry = await getAuthorizedEntry(entryId, userId, res);
       if (!entry) return;
@@ -219,11 +216,9 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
     try {
       const userId = req.user.id;
       const { entryId } = req.params;
-      const parsed = reactionSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Emoji is required" });
-      }
-      const { emoji } = parsed.data;
+      const parsed = parseOrFail(reactionSchema, req.body, res, "Emoji is required");
+      if (!parsed) return;
+      const { emoji } = parsed;
 
       await storage.removeReaction(userId, entryId, emoji);
       res.json({ message: "Reaction removed" });
@@ -318,13 +313,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const currentCount = await checkDailyRateLimit(userId, res);
       if (currentCount === null) return;
 
-      const parsed = createDeuceSchema.safeParse(req.body);
-      if (!parsed.success) {
-        const firstIssue = parsed.error.issues[0]?.message || "Invalid deuce entry data";
-        return res.status(400).json({ message: firstIssue });
-      }
+      const parsed = parseOrFail(createDeuceSchema, req.body, res);
+      if (!parsed) return;
 
-      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed;
 
       // Handle both single group (backward compatibility) and multiple groups
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
@@ -397,13 +389,10 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
       const currentCount = await checkDailyRateLimit(userId, res);
       if (currentCount === null) return;
 
-      const parsed = createDeuceSchema.safeParse(req.body);
-      if (!parsed.success) {
-        const firstIssue = parsed.error.issues[0]?.message || "Invalid deuce entry data";
-        return res.status(400).json({ message: firstIssue });
-      }
+      const parsed = parseOrFail(createDeuceSchema, req.body, res);
+      if (!parsed) return;
 
-      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed.data;
+      const { groupIds, groupId, bristolScore, photoUrl, latitude, longitude, ...entryData } = parsed;
       const targetGroupIds = groupIds || (groupId ? [groupId] : []);
 
       if (targetGroupIds.length === 0) {
@@ -477,14 +466,14 @@ export function createDeucesRouter(broadcastToGroup: BroadcastFn): Router {
   // Offline sync — accepts an array of queued deuce logs
   router.post('/api/deuces/sync', isAuthenticated, async (req, res) => {
     try {
-      const parsed = syncDeuceSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ message: 'Invalid sync payload' });
+      const parsed = parseOrFail(syncDeuceSchema, req.body, res, 'Invalid sync payload');
+      if (!parsed) return;
 
       const userId = req.user.id;
       const today = getTodayUTC();
       const results: Array<{ id: string; status: 'ok' | 'error'; reason?: string }> = [];
 
-      for (const entry of parsed.data.entries) {
+      for (const entry of parsed.entries) {
         try {
           const currentCount = await storage.getUserDailyLogCount(userId, today);
           if (currentCount >= MAX_LOGS_PER_DAY) {
