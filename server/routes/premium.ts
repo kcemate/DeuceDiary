@@ -199,6 +199,12 @@ export function createPremiumRouter(): Router {
   }));
 
   // Subscription upgrade (dev mode — no real payment)
+  // Disabled in production: Clerk Billing + RevenueCat handle real upgrades via webhooks
+  if (process.env.NODE_ENV === 'production') {
+    router.post('/api/subscription/upgrade', isAuthenticated, (_req, res) => {
+      res.status(403).json({ message: 'Use in-app purchase to upgrade' });
+    });
+  } else {
   router.post('/api/subscription/upgrade',
     isAuthenticated,
     wrap('Error upgrading subscription:', 'Failed to upgrade subscription', async (req, res) => {
@@ -219,6 +225,7 @@ export function createPremiumRouter(): Router {
     const updatedUser = await storage.updateUserSubscription(userId, 'premium', expiresAt);
     res.json(updatedUser);
   }));
+  }
 
   // --- Daily Challenges (premium) ---
   router.get('/api/challenges/today',
