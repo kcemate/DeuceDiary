@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { apiRequest } from "@/lib/queryClient";
+import { apiUrl } from "@/lib/api-base";
 import { getUserDisplayName, getInitials } from "@/lib/userUtils";
 import { StreakFrame } from "@/components/streak-frame";
 import { GoldCrownBadge } from "@/components/gold-crown-badge";
@@ -207,7 +208,7 @@ export default function GroupDetail() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("avatar", file);
-      const res = await fetch(`/api/groups/${groupId}/avatar`, {
+      const res = await fetch(apiUrl(`/api/groups/${groupId}/avatar`), {
         method: "POST",
         body: formData,
         credentials: "include",

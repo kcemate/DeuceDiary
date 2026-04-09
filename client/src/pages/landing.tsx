@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SignInButton } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
+import { apiUrl } from "@/lib/api-base";
 
 // ── Demo feed data — realistic sample of the core loop ──
 const DEMO_ENTRIES = [
@@ -210,7 +211,7 @@ export default function Landing() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch(apiUrl("/api/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim() }),

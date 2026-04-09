@@ -3,6 +3,7 @@ import logger from "@/lib/logger";
 import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { useEffect, useRef, useCallback } from "react";
 import { setTokenGetter } from "@/lib/auth-token";
+import { apiUrl } from "@/lib/api-base";
 import type { User } from "@shared/schema";
 
 const CLERK_ENABLED = true;
@@ -58,7 +59,7 @@ function useClerkAuthHook() {
       if (!token) {
         throw new Error("401: No auth token available");
       }
-      const res = await fetch("/api/auth/user", {
+      const res = await fetch(apiUrl("/api/auth/user"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {

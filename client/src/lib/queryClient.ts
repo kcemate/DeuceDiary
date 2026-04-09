@@ -1,6 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { getAuthToken } from "./auth-token";
 import { toast } from "@/hooks/use-toast";
+import { apiUrl } from "./api-base";
 
 /**
  * Custom error class that carries the HTTP status and, for 429 responses,
@@ -60,7 +61,7 @@ export async function apiRequest<T = unknown>(
     : { "Content-Type": "application/json" };
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(apiUrl(url), {
       method: options?.method || "GET",
       headers: {
         ...contentTypeHeader,
@@ -101,7 +102,7 @@ export const getQueryFn: <T>(options: {
     reactQuerySignal?.addEventListener("abort", () => controller.abort());
 
     try {
-      const res = await fetch(queryKey.join("/") as string, {
+      const res = await fetch(apiUrl(queryKey.join("/") as string), {
         credentials: "include",
         headers: auth,
         signal: controller.signal,

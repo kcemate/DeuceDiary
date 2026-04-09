@@ -56,6 +56,9 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5001",
   "http://localhost:3000",
   "http://localhost:8081",
+  "capacitor://localhost",
+  "ionic://localhost",
+  "https://localhost",
 ];
 app.use(cors({
   origin: (origin, callback) => {

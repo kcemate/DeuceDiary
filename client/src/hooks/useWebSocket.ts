@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./useAuth";
 import { getAuthToken } from "@/lib/auth-token";
+import { API_BASE } from "@/lib/api-base";
 
 interface WebSocketMessage {
   type: string;
@@ -54,8 +55,16 @@ export function useWebSocket() {
       return;
     }
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    let wsUrl = `${protocol}//${window.location.host}/ws`;
+    // On native (Capacitor), API_BASE is "https://deucediary.com" — use that for WS too
+    // On web, API_BASE is "" so we use window.location.host as before
+    let wsUrl: string;
+    if (API_BASE) {
+      const wsProtocol = API_BASE.startsWith("https") ? "wss:" : "ws:";
+      wsUrl = `${wsProtocol}//${API_BASE.replace(/^https?:\/\//, "")}/ws`;
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl = `${protocol}//${window.location.host}/ws`;
+    }
 
     // Attach Clerk token as query param for authenticated connections
     const token = await getAuthToken();

@@ -1,93 +1,95 @@
 {
-  "id": "8d0d2a03-ff4d-4169-9de3-b830b8ea0b41",
-  "target": {
-    "name": "groups",
-    "path": "./server/routes/groups.ts",
-    "description": "Group management routes — CRUD, invites, join/leave (506 lines)"
-  },
-  "clicks": [
-    {
-      "number": 1,
+  "run": {
+    "id": "8d0d2a03-ff4d-4169-9de3-b830b8ea0b41",
+    "target": {
+      "name": "groups",
+      "path": "./server/routes/groups.ts",
+      "description": "Group management routes — CRUD, invites, join/leave (506 lines)"
+    },
+    "clicks": [
+      {
+        "number": 1,
+        "target": "groups",
+        "analysis": "Here are the **top 3 actionable improvements** for `./server/routes/groups.ts` (506 lines), focusing on code quality, error handling, performance, and maintainability:\n\n---\n\n### **1. Extract Business Logic from Routes (Separation of Concerns)**\n**Problem**:\n- Routes likely mix HTTP handling (e.g., `req/res`, status codes) with core business logic (e.g., group validation, invite logic, DB queries).\n- This violates the **Single Responsibility Principle** and makes the file harder to test/maintain.\n\n**Actionable Fix**:\n- **Move business logic to services**:\n  Create a `groupService.ts` (or split into `groupInvitesService.ts`, `groupMembershipService.ts`) to encapsulate:\n  - Validation (e.g., \"Does the user have permission to invite?\").\n  - Database operations (e.g., `prisma.group.create()`).\n  - Complex workflows (e.g., \"join group\" → \"send notification\" → \"update stats\").\n- **Keep routes thin**: Routes should only:\n  - Parse input (e.g., `req.body`).\n  - Call the service.\n  - Return HTTP responses (e.g., `res.status(201).json(result)`).\n\n**Example**:\n```ts\n// Before (in routes/groups.ts)\nrouter.post(\"/:id/invite\", async (req, res) => {\n  const { id } = req.params;\n  const { userId } = req.body;\n  if (!req.user.isAdmin) throw new Error(\"Unauthorized\");\n  const group = await prisma.group.findUnique({ where: { id } });\n  if (!group) throw new Error(\"Group not found\");\n  const invite = await prisma.invite.create({ data: { groupId: id, userId } });\n  res.json(invite);\n});\n\n// After (in services/groupInvitesService.ts)\nexport const createInvite = async (groupId: string, userId: string, requester: User) => {\n  if (!requester.isAdmin) throw new UnauthorizedError(\"Only admins can invite\");\n  const group = await prisma.group.findUnique({ where: { id: groupId } });\n  if (!group) throw new NotFoundError(\"Group not found\");\n  return prisma.invite.create({ data: { groupId, userId } });\n};\n\n// In routes/groups.ts\nrouter.post(\"/:id/invite\", async (req, res) => {\n  const invite = await groupInvitesService.createInvite(req.params.id, req.body.userId, req.user);\n  res.json(invite);\n});\n```\n\n**Benefits**:\n- Easier to test (mock services, not HTTP).\n- Reusable logic (e.g., invite logic used in WebSocket events).\n- Cleaner route files (506 → ~200 lines).\n\n---\n\n### **2. Standardize Error Handling (Avoid Try/Catch Spaghetti)**\n**Problem**:\n- Likely scattered `try/catch` blocks with inconsistent error responses (e.g., some return `500`, others `400` with raw `Error` messages).\n- Hard to debug and maintain.\n\n**Actionable Fix**:\n- **Use a custom error handler middleware**:\n  Create a `utils/errors.ts` with:\n  - Custom error classes (e.g., `NotFoundError`, `ValidationError`).\n  - A middleware to catch and format errors consistently.\n\n**Example**:\n```ts\n// utils/errors.ts\nexport class NotFoundError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"NotFoundError\";\n  }\n}\n\n// Middleware (e.g., in app.ts)\napp.use((err: Error, req: Request, res: Response, next: NextFunction) => {\n  if (err instanceof NotFoundError) {\n    return res.status(404).json({ error: err.message });\n  }\n  // ... other error types\n  res.status(500).json({ error: \"Internal Server Error\" });\n});\n\n// In services/groupService.ts\nif (!group) throw new NotFoundError(\"Group not found\");\n```\n\n**Benefits**:\n- Consistent error responses (e.g., always `{ error: string }`).\n- No repeated `try/catch` in routes.\n- Easier to add logging (e.g., log `err.stack` in middleware).\n\n---\n\n### **3. Optimize Database Queries (N+1 Problems, Overfetching)**\n**Problem**:\n- Likely **N+1 queries** (e.g., fetching a group, then its members in a loop) or **overfetching** (e.g., `SELECT *` when only `id` and `name` are needed).\n- Poor performance for list endpoints (e.g., `/groups` with 1000s of records).\n\n**Actionable Fix**:\n- **Use Prisma’s `include`/`select`**:\n  Fetch related data in a single query (e.g., group + members + invites).\n- **Add pagination** to list endpoints (e.g., `?limit=20&offset=0`).\n- **Avoid `SELECT *`**: Explicitly select fields.\n\n**Example**:\n```ts\n// Before (N+1)\nconst groups = await prisma.group.findMany();\nconst groupsWithMembers = await Promise.all(\n  groups.map(async (group) => ({\n    ...group,\n    members: await prisma.member.findMany({ where: { groupId: group.id } }),\n  }))\n);\n\n// After (single query)\nconst groups = await prisma.group.findMany({\n  include: {\n    members: true, // or `select: { id: true, name: true }` to reduce payload\n  },\n  skip: offset,\n  take: limit,\n});\n```\n\n**Benefits**:\n- **Faster**: Fewer round trips to the DB.\n- **Smaller payloads**: Avoid sending unused fields (e.g., `passwordHash`).\n- **Scalable**: Pagination prevents memory issues with large datasets.\n\n---\n\n### **Bonus: Quick Wins**\n1. **Add input validation**:\n   Use `zod` or `joi` to validate `req.body`/`req.params` at the route level (e.g., `zod.object({ userId: z.string().uuid() })`).\n2. **Add logging**:\n   Log critical actions (e.g., \"User X invited Y to group Z\") for debugging.\n3. **Extract route handlers**:\n   Split the 506-line file into smaller files (e.g., `groups/membership.ts`, `groups/invites.ts`).\n\n---\n\n### **Summary of Top 3**\n| Improvement               | Why It Matters                          | Effort |\n|---------------------------|----------------------------------------|--------|\n| Extract business logic    | Testable, reusable, maintainable       | Medium |\n| Standardize error handling| Debuggable, consistent API responses   | Low    |\n| Optimize DB queries       | Faster, scalable, smaller payloads     | Medium |\n\nStart with **error handling** (low effort, high impact), then **extract services**, and finally **optimize queries**. This will cut the file size by ~60% and improve maintainability.",
+        "proposal": "**Specific Improvement**: Standardize error handling by creating custom error classes and a middleware to handle them consistently.\n\n**Files to Modify**:\n1. Create `./server/utils/errors.ts` (new file)\n2. Update `./server/routes/groups.ts`\n3. Update your main app file (e.g., `./server/app.ts` or `./server/index.ts`) to include the error middleware\n\n**Exact Code Changes**:\n\n1. First, create `./server/utils/errors.ts`:\n```ts\n// Custom error classes\nexport class NotFoundError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"NotFoundError\";\n  }\n}\n\nexport class UnauthorizedError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"UnauthorizedError\";\n  }\n}\n\nexport class ValidationError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"ValidationError\";\n  }\n}\n```\n\n2. In `./server/routes/groups.ts`, replace raw error throws with the custom errors:\n```ts\n// Replace:\nif (!group) throw new Error(\"Group not found\");\n// With:\nif (!group) throw new NotFoundError(\"Group not found\");\n\n// Replace:\nif (!req.user.isAdmin) throw new Error(\"Unauthorized\");\n// With:\nif (!req.user.isAdmin) throw new UnauthorizedError(\"Only admins can perform this action\");\n```\n\n3. Add error handling middleware to your main app file (after all routes):\n```ts\nimport { NotFoundError, UnauthorizedError, ValidationError } from './utils/errors';\n\n// Add this after all your routes\napp.use((err: Error, req: Request, res: Response, next: NextFunction) => {\n  if (err instanceof NotFoundError) {\n    return res.status(404).json({ error: err.message });\n  }\n  if (err instanceof UnauthorizedError) {\n    return res.status(403).json({ error: err.message });\n  }\n  if (err instanceof ValidationError) {\n    return res.status(400).json({ error: err.message });\n  }\n\n  console.error(err.stack);\n  res.status(500).json({ error: \"Internal Server Error\" });\n});\n```\n\nThis change immediately improves:\n- Consistent error responses\n- Proper HTTP status codes\n- Better error categorization\n- Easier debugging\n- Foundation for future error handling improvements",
+        "filesModified": [
+          "./server/utils/errors.ts",
+          "./server/routes/groups.ts",
+          "./server/app.ts"
+        ],
+        "testsPassed": true,
+        "timestamp": "2026-03-30T20:45:44.203Z",
+        "scoreAfterClick": 89,
+        "issuesFixedCount": 0,
+        "categoryDeltas": [
+          {
+            "category": "Testing",
+            "before": 23,
+            "max": 25,
+            "after": 23,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          },
+          {
+            "category": "Security",
+            "before": 10,
+            "max": 15,
+            "after": 10,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          },
+          {
+            "category": "Type Safety",
+            "before": 15,
+            "max": 15,
+            "after": 15,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          },
+          {
+            "category": "Error Handling",
+            "before": 20,
+            "max": 20,
+            "after": 20,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          },
+          {
+            "category": "Performance",
+            "before": 10,
+            "max": 10,
+            "after": 10,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          },
+          {
+            "category": "Code Quality",
+            "before": 11,
+            "max": 15,
+            "after": 11,
+            "delta": 0,
+            "issuesFixed": 0,
+            "wastedEffort": false
+          }
+        ]
+      }
+    ],
+    "startedAt": "2026-03-30T20:45:44.192Z",
+    "status": "completed",
+    "resumeState": {
+      "completedClicks": 1,
+      "totalClicks": 1,
       "target": "groups",
-      "analysis": "Here are the **top 3 actionable improvements** for `./server/routes/groups.ts` (506 lines), focusing on code quality, error handling, performance, and maintainability:\n\n---\n\n### **1. Extract Business Logic from Routes (Separation of Concerns)**\n**Problem**:\n- Routes likely mix HTTP handling (e.g., `req/res`, status codes) with core business logic (e.g., group validation, invite logic, DB queries).\n- This violates the **Single Responsibility Principle** and makes the file harder to test/maintain.\n\n**Actionable Fix**:\n- **Move business logic to services**:\n  Create a `groupService.ts` (or split into `groupInvitesService.ts`, `groupMembershipService.ts`) to encapsulate:\n  - Validation (e.g., \"Does the user have permission to invite?\").\n  - Database operations (e.g., `prisma.group.create()`).\n  - Complex workflows (e.g., \"join group\" → \"send notification\" → \"update stats\").\n- **Keep routes thin**: Routes should only:\n  - Parse input (e.g., `req.body`).\n  - Call the service.\n  - Return HTTP responses (e.g., `res.status(201).json(result)`).\n\n**Example**:\n```ts\n// Before (in routes/groups.ts)\nrouter.post(\"/:id/invite\", async (req, res) => {\n  const { id } = req.params;\n  const { userId } = req.body;\n  if (!req.user.isAdmin) throw new Error(\"Unauthorized\");\n  const group = await prisma.group.findUnique({ where: { id } });\n  if (!group) throw new Error(\"Group not found\");\n  const invite = await prisma.invite.create({ data: { groupId: id, userId } });\n  res.json(invite);\n});\n\n// After (in services/groupInvitesService.ts)\nexport const createInvite = async (groupId: string, userId: string, requester: User) => {\n  if (!requester.isAdmin) throw new UnauthorizedError(\"Only admins can invite\");\n  const group = await prisma.group.findUnique({ where: { id: groupId } });\n  if (!group) throw new NotFoundError(\"Group not found\");\n  return prisma.invite.create({ data: { groupId, userId } });\n};\n\n// In routes/groups.ts\nrouter.post(\"/:id/invite\", async (req, res) => {\n  const invite = await groupInvitesService.createInvite(req.params.id, req.body.userId, req.user);\n  res.json(invite);\n});\n```\n\n**Benefits**:\n- Easier to test (mock services, not HTTP).\n- Reusable logic (e.g., invite logic used in WebSocket events).\n- Cleaner route files (506 → ~200 lines).\n\n---\n\n### **2. Standardize Error Handling (Avoid Try/Catch Spaghetti)**\n**Problem**:\n- Likely scattered `try/catch` blocks with inconsistent error responses (e.g., some return `500`, others `400` with raw `Error` messages).\n- Hard to debug and maintain.\n\n**Actionable Fix**:\n- **Use a custom error handler middleware**:\n  Create a `utils/errors.ts` with:\n  - Custom error classes (e.g., `NotFoundError`, `ValidationError`).\n  - A middleware to catch and format errors consistently.\n\n**Example**:\n```ts\n// utils/errors.ts\nexport class NotFoundError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"NotFoundError\";\n  }\n}\n\n// Middleware (e.g., in app.ts)\napp.use((err: Error, req: Request, res: Response, next: NextFunction) => {\n  if (err instanceof NotFoundError) {\n    return res.status(404).json({ error: err.message });\n  }\n  // ... other error types\n  res.status(500).json({ error: \"Internal Server Error\" });\n});\n\n// In services/groupService.ts\nif (!group) throw new NotFoundError(\"Group not found\");\n```\n\n**Benefits**:\n- Consistent error responses (e.g., always `{ error: string }`).\n- No repeated `try/catch` in routes.\n- Easier to add logging (e.g., log `err.stack` in middleware).\n\n---\n\n### **3. Optimize Database Queries (N+1 Problems, Overfetching)**\n**Problem**:\n- Likely **N+1 queries** (e.g., fetching a group, then its members in a loop) or **overfetching** (e.g., `SELECT *` when only `id` and `name` are needed).\n- Poor performance for list endpoints (e.g., `/groups` with 1000s of records).\n\n**Actionable Fix**:\n- **Use Prisma’s `include`/`select`**:\n  Fetch related data in a single query (e.g., group + members + invites).\n- **Add pagination** to list endpoints (e.g., `?limit=20&offset=0`).\n- **Avoid `SELECT *`**: Explicitly select fields.\n\n**Example**:\n```ts\n// Before (N+1)\nconst groups = await prisma.group.findMany();\nconst groupsWithMembers = await Promise.all(\n  groups.map(async (group) => ({\n    ...group,\n    members: await prisma.member.findMany({ where: { groupId: group.id } }),\n  }))\n);\n\n// After (single query)\nconst groups = await prisma.group.findMany({\n  include: {\n    members: true, // or `select: { id: true, name: true }` to reduce payload\n  },\n  skip: offset,\n  take: limit,\n});\n```\n\n**Benefits**:\n- **Faster**: Fewer round trips to the DB.\n- **Smaller payloads**: Avoid sending unused fields (e.g., `passwordHash`).\n- **Scalable**: Pagination prevents memory issues with large datasets.\n\n---\n\n### **Bonus: Quick Wins**\n1. **Add input validation**:\n   Use `zod` or `joi` to validate `req.body`/`req.params` at the route level (e.g., `zod.object({ userId: z.string().uuid() })`).\n2. **Add logging**:\n   Log critical actions (e.g., \"User X invited Y to group Z\") for debugging.\n3. **Extract route handlers**:\n   Split the 506-line file into smaller files (e.g., `groups/membership.ts`, `groups/invites.ts`).\n\n---\n\n### **Summary of Top 3**\n| Improvement               | Why It Matters                          | Effort |\n|---------------------------|----------------------------------------|--------|\n| Extract business logic    | Testable, reusable, maintainable       | Medium |\n| Standardize error handling| Debuggable, consistent API responses   | Low    |\n| Optimize DB queries       | Faster, scalable, smaller payloads     | Medium |\n\nStart with **error handling** (low effort, high impact), then **extract services**, and finally **optimize queries**. This will cut the file size by ~60% and improve maintainability.",
-      "proposal": "**Specific Improvement**: Standardize error handling by creating custom error classes and a middleware to handle them consistently.\n\n**Files to Modify**:\n1. Create `./server/utils/errors.ts` (new file)\n2. Update `./server/routes/groups.ts`\n3. Update your main app file (e.g., `./server/app.ts` or `./server/index.ts`) to include the error middleware\n\n**Exact Code Changes**:\n\n1. First, create `./server/utils/errors.ts`:\n```ts\n// Custom error classes\nexport class NotFoundError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"NotFoundError\";\n  }\n}\n\nexport class UnauthorizedError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"UnauthorizedError\";\n  }\n}\n\nexport class ValidationError extends Error {\n  constructor(message: string) {\n    super(message);\n    this.name = \"ValidationError\";\n  }\n}\n```\n\n2. In `./server/routes/groups.ts`, replace raw error throws with the custom errors:\n```ts\n// Replace:\nif (!group) throw new Error(\"Group not found\");\n// With:\nif (!group) throw new NotFoundError(\"Group not found\");\n\n// Replace:\nif (!req.user.isAdmin) throw new Error(\"Unauthorized\");\n// With:\nif (!req.user.isAdmin) throw new UnauthorizedError(\"Only admins can perform this action\");\n```\n\n3. Add error handling middleware to your main app file (after all routes):\n```ts\nimport { NotFoundError, UnauthorizedError, ValidationError } from './utils/errors';\n\n// Add this after all your routes\napp.use((err: Error, req: Request, res: Response, next: NextFunction) => {\n  if (err instanceof NotFoundError) {\n    return res.status(404).json({ error: err.message });\n  }\n  if (err instanceof UnauthorizedError) {\n    return res.status(403).json({ error: err.message });\n  }\n  if (err instanceof ValidationError) {\n    return res.status(400).json({ error: err.message });\n  }\n\n  console.error(err.stack);\n  res.status(500).json({ error: \"Internal Server Error\" });\n});\n```\n\nThis change immediately improves:\n- Consistent error responses\n- Proper HTTP status codes\n- Better error categorization\n- Easier debugging\n- Foundation for future error handling improvements",
-      "filesModified": [
-        "./server/utils/errors.ts",
-        "./server/routes/groups.ts",
-        "./server/app.ts"
-      ],
-      "testsPassed": true,
-      "timestamp": "2026-03-30T20:45:44.203Z",
-      "scoreAfterClick": 89,
-      "issuesFixedCount": 0,
-      "categoryDeltas": [
-        {
-          "category": "Testing",
-          "before": 23,
-          "max": 25,
-          "after": 23,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        },
-        {
-          "category": "Security",
-          "before": 10,
-          "max": 15,
-          "after": 10,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        },
-        {
-          "category": "Type Safety",
-          "before": 15,
-          "max": 15,
-          "after": 15,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        },
-        {
-          "category": "Error Handling",
-          "before": 20,
-          "max": 20,
-          "after": 20,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        },
-        {
-          "category": "Performance",
-          "before": 10,
-          "max": 10,
-          "after": 10,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        },
-        {
-          "category": "Code Quality",
-          "before": 11,
-          "max": 15,
-          "after": 11,
-          "delta": 0,
-          "issuesFixed": 0,
-          "wastedEffort": false
-        }
-      ]
-    }
-  ],
-  "startedAt": "2026-03-30T20:45:44.192Z",
-  "status": "completed",
-  "resumeState": {
-    "completedClicks": 1,
-    "totalClicks": 1,
-    "target": "groups",
-    "interruptedAt": "2026-03-30T20:46:35.109Z"
+      "interruptedAt": "2026-03-30T20:46:35.109Z"
+    },
+    "finishedAt": "2026-03-30T20:46:35.109Z"
   },
-  "finishedAt": "2026-03-30T20:46:35.109Z",
-  "_scoreBefore": {
+  "scoreBefore": {
     "projectName": "rest-express",
     "total": 89,
     "maxTotal": 100,
@@ -868,7 +870,7 @@
       }
     ]
   },
-  "_scoreAfter": {
+  "scoreAfter": {
     "projectName": "rest-express",
     "total": 89,
     "maxTotal": 100,
@@ -1648,5 +1650,6 @@
         "severity": "low"
       }
     ]
-  }
+  },
+  "savedAt": "2026-03-30T20:46:37.411Z"
 }

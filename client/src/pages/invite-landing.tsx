@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiUrl } from "@/lib/api-base";
 import { SignInButton, SignUpButton, useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 // Hardcoded true — useAuth.ts does the same. The env var isn't available
@@ -185,7 +186,7 @@ export default function InviteLanding() {
     (async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`/api/join/${code}`, {
+        const res = await fetch(apiUrl(`/api/join/${code}`), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -219,7 +220,7 @@ export default function InviteLanding() {
     setError("");
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch(apiUrl("/api/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username.trim(), inviteCode: code }),
@@ -253,7 +254,7 @@ export default function InviteLanding() {
 
     try {
       const token = await getToken();
-      const res = await fetch(`/api/join/${code}`, {
+      const res = await fetch(apiUrl(`/api/join/${code}`), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
