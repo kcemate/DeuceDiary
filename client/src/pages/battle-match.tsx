@@ -395,8 +395,7 @@ function BattlePhase({
                 rounded-xl text-xs font-bold border transition-all ${
                 sonarPing.used
                   ? "bg-muted/30 text-muted-foreground border-border opacity-50 cursor-default"
-                  : "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25
-                    active:scale-95"
+                  : "bg-blue-500/15 text-blue-400 border-blue-500/30 hover:bg-blue-500/25 active:scale-95"
               }`}
             >
               📡 Sonar Ping {sonarPing.used ? "(used)" : ""}
@@ -410,8 +409,7 @@ function BattlePhase({
                 rounded-xl text-xs font-bold border transition-all ${
                 ghostWipe.used
                   ? "bg-muted/30 text-muted-foreground border-border opacity-50 cursor-default"
-                  : "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25
-                    active:scale-95"
+                  : "bg-purple-500/15 text-purple-400 border-purple-500/30 hover:bg-purple-500/25"
               }`}
             >
               👻 Ghost Wipe {ghostWipe.used ? "(used)" : ""}

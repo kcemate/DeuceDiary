@@ -159,6 +159,8 @@
     transition: background-color 0.2s ease, color 0.2s ease;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   /* ── Global focus-visible styles — WCAG 2.4.7 / 2.4.11 ──────────── */
