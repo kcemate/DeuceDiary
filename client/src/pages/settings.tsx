@@ -226,32 +226,44 @@ export default function Settings() {
 
       {/* ── Preferences ─────────────────────────────────────────── */}
       <SettingsSection title="Preferences">
-        <SettingsRow
-          icon={<Bell className="w-4 h-4" />}
-          label="Throne Alerts"
-          trailing={
-            <Switch
-              id="push-notifications"
-              checked={pushNotifications}
-              onCheckedChange={async (checked) => {
-                if (checked) {
-                  const result = await pushSubscribe();
-                  if (result) {
-                    setPushNotifications(true);
-                    toast({ title: "Push notifications enabled" });
+        {isPushSupported ? (
+          <SettingsRow
+            icon={<Bell className="w-4 h-4" />}
+            label="Throne Alerts"
+            trailing={
+              <Switch
+                id="push-notifications"
+                checked={pushNotifications}
+                onCheckedChange={async (checked) => {
+                  if (checked) {
+                    const result = await pushSubscribe();
+                    if (result) {
+                      setPushNotifications(true);
+                      toast({ title: "Push notifications enabled" });
+                    } else {
+                      setPushNotifications(false);
+                      toast({ title: "Could not enable push notifications", description: "Check browser permissions", variant: "destructive" });
+                    }
                   } else {
+                    await pushUnsubscribe();
                     setPushNotifications(false);
-                    toast({ title: "Could not enable push notifications", description: "Check browser permissions", variant: "destructive" });
+                    toast({ title: "Push notifications disabled" });
                   }
-                } else {
-                  await pushUnsubscribe();
-                  setPushNotifications(false);
-                  toast({ title: "Push notifications disabled" });
-                }
-              }}
-            />
-          }
-        />
+                }}
+              />
+            }
+          />
+        ) : (
+          <SettingsRow
+            icon={<Bell className="w-4 h-4" />}
+            label="Throne Alerts"
+            trailing={
+              <span className="text-xs text-muted-foreground">
+                Add to Home Screen to enable
+              </span>
+            }
+          />
+        )}
         <div className="px-5 py-4">
           <div className="flex items-center gap-2 mb-3">
             <Palette className="w-4 h-4 text-muted-foreground" />
