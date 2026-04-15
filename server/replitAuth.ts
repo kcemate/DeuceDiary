@@ -179,18 +179,32 @@ export async function setupAuth(app: Express) {
 // --------------- isAuthenticated middleware ---------------
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // --- Clerk mode: verify Bearer JWT ---
+  // --- Clerk mode: verify Bearer JWT or __session cookie ---
   if (clerkEnabled) {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
+    let token: string | null = null;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else {
+      // Fallback: read JWT from Clerk's __session cookie (iOS PWA doesn't always send Bearer)
+      const cookieHeader = req.headers.cookie || '';
+      const match = cookieHeader.match(/(?:^|;\s*)__session=([^;]+)/);
+      if (match) {
+        token = decodeURIComponent(match[1]);
+        logger.info({ method: req.method, path: req.path }, "[AUTH] using __session cookie fallback");
+      }
+    }
+
+    if (!token) {
       logger.info(
         { method: req.method, path: req.path,
-          authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING' },
-        "[AUTH] 401 no-bearer",
+          authHeader: authHeader ? authHeader.substring(0, 20) + '...' : 'MISSING',
+          hasSessionCookie: !!req.cookies?.__session },
+        "[AUTH] 401 no-token-no-cookie",
       );
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const token = authHeader.split(" ")[1];
     type JWTPayload = {
       sub: string; email?: string | null; first_name?: string | null;
       last_name?: string | null; image_url?: string | null;

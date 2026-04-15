@@ -82,11 +82,7 @@ export function usePushNotifications({ getToken }: PushNotificationsOptions = {}
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       await subscription.unsubscribe();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (getToken) {
-        const token = await getToken();
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-      }
+      const headers = await authHeaders(getToken);
       await fetch('/api/push/subscribe', {
         method: 'DELETE',
         headers,
@@ -100,18 +96,37 @@ export function usePushNotifications({ getToken }: PushNotificationsOptions = {}
   return { isSupported, permission, requestPermission, subscribe, unsubscribe };
 }
 
+async function authHeaders(
+  getToken?: () => Promise<string | null>
+): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  if (getToken) {
+    // Retry getToken up to 3 times with delay — Clerk session may not be ready yet
+    let token: string | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      token = await getToken();
+      if (token) break;
+      console.warn(`[Push] getToken returned null (attempt ${attempt + 1}/3), retrying in 500ms...`);
+      await new Promise(r => setTimeout(r, 500));
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      console.log('[Push] Got Clerk token, length:', token.length);
+    } else {
+      console.error('[Push] getToken returned null after 3 attempts — push will likely 401');
+    }
+  }
+
+  return headers;
+}
+
 async function syncSubscription(
   subscription: PushSubscription,
   getToken?: () => Promise<string | null>
 ) {
   const data = subscription.toJSON();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-  // Send Clerk JWT in Authorization header — bypasses cookie/SameSite issues in iOS PWA
-  if (getToken) {
-    const token = await getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-  }
+  const headers = await authHeaders(getToken);
 
   const res = await fetch('/api/push/subscribe', {
     method: 'POST',
