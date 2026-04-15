@@ -223,15 +223,16 @@ export function createAdminRouter(): Router {
     if (!isPushConfigured()) {
       return res.status(503).json({ message: "Push not configured (missing VAPID keys)" });
     }
-    // Accept either admin key with userId in body, or authenticated session
+    // Accept either admin key with userId in query, or authenticated session
     let userId: string | undefined;
-    if (requireAdminKey(req, res)) {
-      userId = req.body?.userId;
-      if (!userId) return res.status(400).json({ message: "userId required in body when using admin key" });
+    const isAdmin = req.headers['x-admin-key'] && process.env.ADMIN_KEY && safeKeyCompare(req.headers['x-admin-key'] as string, process.env.ADMIN_KEY);
+    if (isAdmin) {
+      userId = (req.query.userId as string) || req.body?.userId;
+      if (!userId) return res.status(400).json({ message: "userId required (query or body) when using admin key" });
     } else if (req.user?.id) {
       userId = req.user.id;
     } else {
-      return; // requireAdminKey already sent 401
+      return Errors.unauthorized(res);
     }
     const sent = await sendPushToUser(userId, {
       title: "🚽 Throne Alert!",
