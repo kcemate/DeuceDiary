@@ -475,31 +475,26 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── App Store / Download Section ── */}
+      {/* ── Mobile App Teaser ── */}
       <section className="border-y border-border bg-card/50">
-        <div className="max-w-3xl mx-auto px-4 py-16 md:py-20 text-center">
+        <div className="max-w-3xl mx-auto px-4 py-12 md:py-16 text-center">
           <div className="text-5xl mb-4">📱</div>
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-3">
-            Coming soon to iOS
+          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">
+            Native iOS app — launching soon
           </h2>
-          <p className="text-muted-foreground text-lg mb-6 max-w-md mx-auto">
-            Take your throne game mobile. Track deuces, check your streak, and roast your
-            squad — all from your pocket.
+          <p className="text-muted-foreground text-base mb-1 max-w-md mx-auto">
+            One-tap logging, push notifications for streak rescues, and widgets for your lock screen.
           </p>
-          <a
-            href="#"
-            aria-label="Download on the App Store (coming soon)"
-            className="inline-block opacity-80 hover:opacity-100 transition-opacity"
-          >
-            <img
-              src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-              alt="Download on the App Store"
-              className="h-14 mx-auto"
-            />
-          </a>
-          <p className="text-xs text-muted-foreground mt-3">
-            App Store badge is a placeholder — link coming at launch.
+          <p className="text-xs text-muted-foreground mb-6">
+            Web app is live now — iOS drops later this year.
           </p>
+          <div className="flex flex-wrap gap-3 justify-center text-sm text-muted-foreground">
+            {["One-tap log", "Streak alerts", "Lock screen widget", "Offline mode"].map((f) => (
+              <span key={f} className="bg-muted border border-border rounded-full px-3 py-1 font-medium">
+                {f}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 

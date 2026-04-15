@@ -73,3 +73,11 @@
 12. Sticky mobile CTA (fixed bottom bar on scroll)
 
 **All 461 tests passing after every iteration.**
+
+---
+
+# Session 2 — 2026-04-15
+
+## Iteration 1: Fix misleading "No email, no password" sign-up copy
+Changed step-1 desc from "No email, no password, no friction" to "One tap with Google or Apple. Zero friction — you're in before the flush." Old copy promised zero-friction auth but Clerk presents a real sign-in form, creating a trust mismatch and potential drop-off.
+
