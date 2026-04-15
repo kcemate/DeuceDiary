@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { Expo } from "expo-server-sdk";
+import { z } from "zod";
 import { storage } from "../storage";
 import { isAuthenticated } from "../replitAuth";
 import { requiresPremiumFor } from "../premiumAuth";
@@ -12,7 +13,25 @@ import {
   MAX_PUSH_TOKENS_PER_USER,
   parseOrFail,
   asyncRoute,
-} from "./helpers"
+} from "./helpers";
+import {
+  savePushSubscription,
+  removePushSubscription,
+  getVapidPublicKey,
+  isPushConfigured,
+} from "../push";
+
+const webPushSubscribeSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string(),
+    auth: z.string(),
+  }),
+});
+
+const webPushUnsubscribeSchema = z.object({
+  endpoint: z.string().url(),
+});
 
 export function createNotificationsRouter(): Router {
   const router = Router();
@@ -85,6 +104,38 @@ export function createNotificationsRouter(): Router {
 
     const user = await storage.updateUserReminder(userId, data.hour, data.minute);
     res.json({ reminderHour: user.reminderHour, reminderMinute: user.reminderMinute });
+  }));
+
+  // --- Web Push: Get VAPID public key ---
+  router.get('/api/push/vapid-key', (_req, res) => {
+    if (!isPushConfigured()) {
+      return res.status(503).json({ message: "Push notifications not configured" });
+    }
+    res.json({ publicKey: getVapidPublicKey() });
+  });
+
+  // --- Web Push: Subscribe ---
+  router.post('/api/push/subscribe',
+    isAuthenticated,
+    asyncRoute('subscribing to push', 'Failed to subscribe to push notifications', async (req, res) => {
+    const userId = req.user.id;
+    const data = parseOrFail(webPushSubscribeSchema, req.body, res, "Valid subscription object required");
+    if (!data) return;
+
+    await savePushSubscription(userId, data, req.headers['user-agent']);
+    res.json({ ok: true });
+  }));
+
+  // --- Web Push: Unsubscribe ---
+  router.delete('/api/push/subscribe',
+    isAuthenticated,
+    asyncRoute('unsubscribing from push', 'Failed to unsubscribe from push notifications', async (req, res) => {
+    const userId = req.user.id;
+    const data = parseOrFail(webPushUnsubscribeSchema, req.body, res, "endpoint is required");
+    if (!data) return;
+
+    await removePushSubscription(userId, data.endpoint);
+    res.json({ ok: true });
   }));
 
   return router;

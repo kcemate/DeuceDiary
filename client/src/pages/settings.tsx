@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const THEMES: {
   id: ThemeName;
@@ -110,7 +111,11 @@ export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [pushNotifications, setPushNotifications] = useState(true);
+  const { isSupported: isPushSupported, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
+  const [pushNotifications, setPushNotifications] = useState(() => {
+    if (typeof Notification !== 'undefined') return Notification.permission === 'granted';
+    return false;
+  });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -226,7 +231,22 @@ export default function Settings() {
             <Switch
               id="push-notifications"
               checked={pushNotifications}
-              onCheckedChange={setPushNotifications}
+              onCheckedChange={async (checked) => {
+                if (checked) {
+                  const result = await pushSubscribe();
+                  if (result) {
+                    setPushNotifications(true);
+                    toast({ title: "Push notifications enabled" });
+                  } else {
+                    setPushNotifications(false);
+                    toast({ title: "Could not enable push notifications", description: "Check browser permissions", variant: "destructive" });
+                  }
+                } else {
+                  await pushUnsubscribe();
+                  setPushNotifications(false);
+                  toast({ title: "Push notifications disabled" });
+                }
+              }}
             />
           }
         />

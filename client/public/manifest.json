@@ -51,5 +51,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["health", "lifestyle", "social"]
+  "categories": ["health", "lifestyle", "social"],
+  "permissions": ["notifications"]
 }

@@ -31,6 +31,7 @@ import { v4 as uuidv4 } from "uuid";
 import { promises as fs } from "fs";
 import path from "path";
 import { registerWss, incWsCounter, getWsMetrics } from "./lib/wsMetrics";
+import { sendPushToGroup } from "./push";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Ensure uploads directory exists
@@ -236,12 +237,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   function broadcastToGroup(groupId: string, message: Record<string, unknown>) {
     const connections = groupConnections.get(groupId);
+    const onlineUserIds = new Set<string>();
     if (connections) {
       const stamped = { msgId: uuidv4(), ...message };
       const payload = JSON.stringify(stamped);
       connections.forEach((ws) => {
-        if (ws.readyState === WebSocket.OPEN) ws.send(payload);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(payload);
+          onlineUserIds.add(ws.userId);
+        }
       });
+    }
+
+    // Send push notification to offline group members
+    if (message.type === 'deuce_logged' && message.userId) {
+      (async () => {
+        try {
+          const members = await storage.getGroupMembers(groupId);
+          const offlineUserIds = members
+            .filter(m => m.userId !== message.userId && !onlineUserIds.has(m.userId))
+            .map(m => m.userId);
+          if (offlineUserIds.length > 0) {
+            await sendPushToGroup(offlineUserIds, {
+              title: 'Deuce Diary',
+              body: (message.message as string) || 'Someone logged a deuce!',
+              icon: '/icon-192.png',
+              url: '/',
+              tag: `deuce-${groupId}`,
+            });
+          }
+        } catch (err) {
+          logger.error({ err }, 'Failed to send push notifications for group broadcast');
+        }
+      })();
     }
   }
 
