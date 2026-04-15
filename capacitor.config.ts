@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist/public',
   ios: {
     scheme: 'Deuce Diary',
-    backgroundColor: '#8B6914',
+    backgroundColor: '#0F1B2D',
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
   },
