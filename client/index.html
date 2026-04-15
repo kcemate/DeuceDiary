@@ -46,13 +46,14 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Register self-unregistering SW to flush any previously cached version
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(() => {
-            console.log('Deuce Diary SW registered');
-          }).catch(err => console.log('SW registration failed:', err));
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach((r) => r.unregister());
         });
+        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
       }
     </script>
+
   </body>
 </html>
