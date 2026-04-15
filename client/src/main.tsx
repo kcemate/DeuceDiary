@@ -6,13 +6,14 @@ import "./index.css";
 import { apiUrl } from "@/lib/api-base";
 
 async function init() {
-  // Flush any previously cached service worker (PWA experiment that caused stale HTML)
+  // Service worker management: only flush stale caches, keep our push SW registered
   if ('serviceWorker' in navigator) {
     try {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
+      // Clear stale caches (from old PWA experiment), but DON'T unregister service workers
+      // — our push notification SW (sw.js) needs to stay registered for notifications to work
       const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
+      const staleKeys = keys.filter((k) => k !== 'dd-v2');
+      await Promise.all(staleKeys.map((k) => caches.delete(k)));
     } catch { /* non-critical */ }
   }
 
