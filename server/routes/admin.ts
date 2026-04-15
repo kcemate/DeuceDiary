@@ -4,11 +4,13 @@ import logger from "../lib/logger";
 import { pool } from "../db";
 import { storage } from "../storage";
 import { getRandomTemplate } from "../challengeTemplates";
+import { sendPushToUser, isPushConfigured } from "../push";
 import { checkAllGroupStreaksAndNotify } from "../streakNotifications";
 import { getRecentErrors } from "../lib/errorTracker";
 import { buildDetailedHealth, buildDegradedHealth } from "../lib/perfBaseline";
 import { getWsMetrics } from "../lib/wsMetrics";
 import { Errors } from "../lib/apiError";
+import { isAuthenticated } from "../replitAuth";
 
 /** Constant-time string comparison to prevent timing attacks on API keys */
 function safeKeyCompare(provided: string | undefined, expected: string | undefined): boolean {
@@ -211,6 +213,22 @@ export function createAdminRouter(): Router {
     } catch {
       res.status(503).json(buildDegradedHealth());
     }
+  });
+
+  // Test push notification — sends to the authenticated user
+  router.post("/api/admin/test-push", isAuthenticated, async (req: Request, res: Response) => {
+    if (!isPushConfigured()) {
+      return res.status(503).json({ message: "Push not configured (missing VAPID keys)" });
+    }
+    const userId = req.user!.id;
+    const sent = await sendPushToUser(userId, {
+      title: "🚽 Throne Alert!",
+      body: "Push notifications are working! Time to log a deuce.",
+      icon: "/icon-192.png",
+      url: "/log",
+      tag: "test-push",
+    });
+    res.json({ sent, userId });
   });
 
   return router;
