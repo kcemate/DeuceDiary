@@ -141,6 +141,19 @@ export const pushTokens = pgTable("push_tokens", {
   unique("uq_push_tokens_token").on(table.token),
 ]);
 
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(),
+  p256dh: varchar("p256dh", { length: 200 }).notNull(),
+  auth: varchar("auth", { length: 100 }).notNull(),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_push_subscriptions_user").on(table.userId),
+  unique("uq_push_subscriptions_endpoint").on(table.endpoint),
+]);
+
 export const reactions = pgTable("reactions", {
   id: serial("id").primaryKey(),
   entryId: varchar("entry_id").notNull().references(() => deuceEntries.id, { onDelete: "cascade" }),
@@ -488,6 +501,13 @@ export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
   }),
 }));
 
+export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [pushSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
+
 export const reactionsRelations = relations(reactions, ({ one }) => ({
   entry: one(deuceEntries, {
     fields: [reactions.entryId],
@@ -667,4 +687,7 @@ export type InsertDeuceEntryRequest = z.infer<typeof insertDeuceEntrySchema>;
 export type InsertLocationRequest = z.infer<typeof insertLocationSchema>;
 export type InsertInviteRequest = z.infer<typeof insertInviteSchema>;
 export type InsertReactionRequest = z.infer<typeof insertReactionSchema>;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
 export type UpdateUserRequest = z.infer<typeof updateUserSchema>;
