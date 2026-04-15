@@ -52,6 +52,8 @@ app.use(
 const extraOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(",").map(s => s.trim()) : [];
 const ALLOWED_ORIGINS = [
   ...extraOrigins,
+  "https://deucediary.com",
+  "https://www.deucediary.com",
   "http://localhost:5000",
   "http://localhost:5001",
   "http://localhost:3000",
@@ -67,7 +69,9 @@ app.use(cors({
     // Allow Expo development URLs (exp://*)
     if (origin.startsWith("exp://")) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error("Not allowed by CORS"));
+    // Log but don't throw — return false to deny without crashing
+    logger.warn({ origin }, "[CORS] Origin not allowed");
+    return callback(null, false);
   },
   credentials: true,
 }));
