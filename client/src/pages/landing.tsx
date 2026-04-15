@@ -355,6 +355,20 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Mid-page CTA ── */}
+      {!isAuthenticated && (
+        <section className="max-w-2xl mx-auto px-4 py-10 text-center">
+          <p className="text-muted-foreground text-sm mb-3">
+            Ready to claim your throne? Takes 10 seconds.
+          </p>
+          <SignInButton mode="redirect" forceRedirectUrl="/">
+            <Button className="btn-shimmer text-white font-bold py-4 px-8 text-base rounded-2xl shadow-lg shadow-primary/25">
+              Join Free — Start Your Streak →
+            </Button>
+          </SignInButton>
+        </section>
+      )}
+
       {/* ── How It Works ── */}
       <section id="how-it-works" className="bg-card/50 border-y border-border">
         <div className="max-w-4xl mx-auto px-4 py-16 md:py-24">

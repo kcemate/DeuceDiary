@@ -81,3 +81,6 @@
 ## Iteration 1: Fix misleading "No email, no password" sign-up copy
 Changed step-1 desc from "No email, no password, no friction" to "One tap with Google or Apple. Zero friction — you're in before the flush." Old copy promised zero-friction auth but Clerk presents a real sign-in form, creating a trust mismatch and potential drop-off.
 
+## Iteration 2: Replace broken App Store placeholder with clean iOS teaser
+Removed the section with a `href="#"` dead link and an explicit "this is a placeholder" disclaimer that destroyed credibility. Replaced with a polished "launching soon" teaser showing feature chips (one-tap log, streak alerts, lock screen widget, offline mode) — transparent about timing, no fake links.
+
