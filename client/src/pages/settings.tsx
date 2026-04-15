@@ -110,10 +110,10 @@ function SettingsRow({
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
-  const { signOut, isSignedIn: _isClerkSignedIn } = useClerk();
+  const { signOut, isSignedIn: _isClerkSignedIn, getToken } = useClerk();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { isSupported: isPushSupported, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
+  const { isSupported: isPushSupported, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications({ getToken });
   const [pushNotifications, setPushNotifications] = useState(() => {
     if (typeof Notification !== 'undefined') return Notification.permission === 'granted';
     return false;
@@ -242,7 +242,7 @@ export default function Settings() {
                       toast({ title: "Push notifications enabled" });
                     } else {
                       setPushNotifications(false);
-                      toast({ title: "Could not enable push notifications", description: "Check browser permissions", variant: "destructive" });
+                      toast({ title: "Could not enable push notifications", description: "Try refreshing the app or re-logging in, then toggle again", variant: "destructive" });
                     }
                   } else {
                     await pushUnsubscribe();

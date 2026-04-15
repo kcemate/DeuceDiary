@@ -2,7 +2,12 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 
 const VAPID_KEY_ENDPOINT = '/api/push/vapid-key';
 
-export function usePushNotifications() {
+interface PushNotificationsOptions {
+  /** Clerk getToken() — if provided, sends Bearer token instead of relying on cookies */
+  getToken?: () => Promise<string | null>;
+}
+
+export function usePushNotifications({ getToken }: PushNotificationsOptions = {}) {
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
@@ -45,9 +50,13 @@ export function usePushNotifications() {
     // Check existing subscription
     let subscription = await registration.pushManager.getSubscription();
     if (subscription) {
-      // Already subscribed — sync with server
       subscriptionRef.current = subscription;
-      await syncSubscription(subscription);
+      try {
+        await syncSubscription(subscription, getToken);
+      } catch (syncErr) {
+        console.error('[Push] Sync existing subscription failed:', syncErr);
+        return null;
+      }
       return subscription;
     }
 
@@ -59,40 +68,64 @@ export function usePushNotifications() {
     });
 
     subscriptionRef.current = subscription;
-    await syncSubscription(subscription);
+    try {
+      await syncSubscription(subscription, getToken);
+    } catch (syncErr) {
+      console.error('[Push] Sync new subscription failed:', syncErr);
+      return null;
+    }
     return subscription;
-  }, [isSupported, permission, requestPermission]);
+  }, [isSupported, permission, requestPermission, getToken]);
 
   const unsubscribe = useCallback(async () => {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       await subscription.unsubscribe();
-      // Tell server to remove
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (getToken) {
+        const token = await getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      }
       await fetch('/api/push/subscribe', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ endpoint: subscription.endpoint }),
         credentials: 'include',
       });
     }
     subscriptionRef.current = null;
-  }, []);
+  }, [getToken]);
 
   return { isSupported, permission, requestPermission, subscribe, unsubscribe };
 }
 
-async function syncSubscription(subscription: PushSubscription) {
+async function syncSubscription(
+  subscription: PushSubscription,
+  getToken?: () => Promise<string | null>
+) {
   const data = subscription.toJSON();
-  await fetch('/api/push/subscribe', {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+  // Send Clerk JWT in Authorization header — bypasses cookie/SameSite issues in iOS PWA
+  if (getToken) {
+    const token = await getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch('/api/push/subscribe', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       endpoint: data.endpoint,
       keys: data.keys,
     }),
     credentials: 'include',
   });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => 'Unknown error');
+    throw new Error(`Push subscribe failed (${res.status}): ${errText}`);
+  }
 }
 
 // Convert VAPID key from base64 to Uint8Array
