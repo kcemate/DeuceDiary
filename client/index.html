@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#8B6914" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>Deuce Diary — The Social Poop Tracker</title>
     <meta name="description" content="Track your deuces, build streaks, and compete with friends. The Strava of poop tracking. Free, fun, and surprisingly useful." />
     <!-- Open Graph -->
@@ -42,5 +45,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(() => {
+            console.log('Deuce Diary SW registered');
+          }).catch(err => console.log('SW registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
