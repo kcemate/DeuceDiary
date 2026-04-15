@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { useTheme, type ThemeName } from "@/hooks/useTheme";
 import { useAuth, usePremium } from "@/hooks/useAuth";
+import { useClerk } from "@clerk/clerk-react";
 import { useToast } from "@/hooks/use-toast";
 import { BackHeader } from "@/components/back-header";
 import { Switch } from "@/components/ui/switch";
@@ -109,6 +110,7 @@ function SettingsRow({
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { signOut, isSignedIn: _isClerkSignedIn } = useClerk();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { isSupported: isPushSupported, permission: pushPermission, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
@@ -441,7 +443,13 @@ export default function Settings() {
       {/* ── Logout ──────────────────────────────────────────────── */}
       <div className="mt-4">
         <Button
-          onClick={() => (window.location.href = "/api/logout")}
+          onClick={() => {
+            if (signOut) {
+              signOut({ redirectUrl: "/" });
+            } else {
+              window.location.href = "/api/logout";
+            }
+          }}
           variant="outline"
           className="w-full rounded-xl font-bold text-muted-foreground"
         >
