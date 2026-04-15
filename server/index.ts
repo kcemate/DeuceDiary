@@ -36,7 +36,7 @@ app.use(
       : {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "https://clerk.com", "https://*.clerk.accounts.dev"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://clerk.com", "https://*.clerk.accounts.dev"],
             workerSrc: ["'self'", "blob:", "https://*.clerk.accounts.dev"],
             connectSrc: ["'self'", "https://*.clerk.accounts.dev", "wss://*.clerk.accounts.dev", "https://clerk-telemetry.com"],
             imgSrc: ["'self'", "data:", "https://img.clerk.com", "https:", "https://developer.apple.com"],
