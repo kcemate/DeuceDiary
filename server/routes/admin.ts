@@ -5,6 +5,9 @@ import { pool } from "../db";
 import { storage } from "../storage";
 import { getRandomTemplate } from "../challengeTemplates";
 import { sendPushToUser, isPushConfigured } from "../push";
+import { db } from "../db";
+import { pushSubscriptions } from "../../shared/schema";
+import { eq } from "drizzle-orm";
 import { checkAllGroupStreaksAndNotify } from "../streakNotifications";
 import { getRecentErrors } from "../lib/errorTracker";
 import { buildDetailedHealth, buildDegradedHealth } from "../lib/perfBaseline";
@@ -238,6 +241,19 @@ export function createAdminRouter(): Router {
       tag: "test-push",
     });
     res.json({ sent, userId });
+  });
+
+  // Debug: list push subscriptions for a user (admin key)
+  router.get("/api/admin/push-subs", async (req: Request, res: Response) => {
+    if (!requireAdminKey(req, res)) return;
+    const userId = req.query?.userId as string;
+    if (!userId) return res.status(400).json({ message: "userId query param required" });
+    const subs = await db.select({
+      id: pushSubscriptions.id,
+      endpoint: pushSubscriptions.endpoint,
+      createdAt: pushSubscriptions.createdAt,
+    }).from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
+    res.json({ count: subs.length, subscriptions: subs });
   });
 
   return router;
