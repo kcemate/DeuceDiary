@@ -1,12 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SignInButton } from "@clerk/clerk-react";
 import { useAuth } from "@/hooks/useAuth";
-import { apiUrl } from "@/lib/api-base";
 
 // ── Demo feed data — realistic sample of the core loop ──
 const DEMO_ENTRIES = [
@@ -190,10 +187,6 @@ function DemoGroupFeed() {
 }
 
 export default function Landing() {
-  const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
   const [showStickyCta, setShowStickyCta] = useState(false);
 
@@ -205,34 +198,7 @@ export default function Landing() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!username.trim()) return;
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(apiUrl("/api/login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.message || "Login failed");
-        return;
-      }
-      // Invalidate auth query so the app picks up the new session
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    } catch {
-      setError("Network error — is the server running?");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  function scrollToLogin() {
-    document.getElementById("login-section")?.scrollIntoView({ behavior: "smooth" });
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-16 md:pb-0">
@@ -253,12 +219,21 @@ export default function Landing() {
             Everyone poops — now you can finally prove you're the best at it.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={scrollToLogin}
-              className="btn-shimmer text-white font-bold py-5 px-8 text-lg rounded-2xl shadow-lg shadow-primary/25"
-            >
-              Start Your Streak — It's Free
-            </Button>
+            {!isAuthenticated ? (
+              <SignInButton mode="redirect" forceRedirectUrl="/">
+                <Button
+                  className="btn-shimmer text-white font-bold py-5 px-8 text-lg rounded-2xl shadow-lg shadow-primary/25"
+                >
+                  Start Your Streak — It's Free
+                </Button>
+              </SignInButton>
+            ) : (
+              <Link href="/">
+                <Button className="btn-shimmer text-white font-bold py-5 px-8 text-lg rounded-2xl shadow-lg shadow-primary/25">
+                  Go to Your Throne →
+                </Button>
+              </Link>
+            )}
             <a
               href="#how-it-works"
               className={[
@@ -396,8 +371,8 @@ export default function Landing() {
               {
                 step: "1",
                 emoji: "📝",
-                title: "Sign Up",
-                desc: "Pick a username. That's it. No email, no password, no friction.",
+                title: "Sign Up Free",
+                desc: "One tap with Google or Apple. Zero friction — you're in before the flush.",
               },
               {
                 step: "2",
@@ -566,59 +541,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Final CTA + Login Form ── */}
-      <section id="login-section" className="max-w-md mx-auto px-4 py-16 md:py-24">
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">👑</div>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-            Ready to claim your throne?
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Pick a username. Start your streak. It's free forever.
-          </p>
-        </div>
-
-        {/* Login Form */}
-        {!isAuthenticated ? (
-          <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className={[
-              "btn-shimmer w-full text-white font-bold",
-              "py-4 text-lg rounded-2xl shadow-lg shadow-primary/25",
-            ].join(" ")}>
-              Enter the Throne Room
-            </Button>
-          </SignInButton>
-        ) : (
-          <>
-            <form onSubmit={handleLogin} className="space-y-3">
-              <Input
-                type="text"
-                placeholder="What do your dudes call you?"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                autoFocus
-                className="rounded-xl border-border bg-card py-3 text-base"
-              />
-              {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-              <Button
-                type="submit"
-                disabled={loading || !username.trim()}
-                className={[
-                  "btn-shimmer w-full text-white font-bold py-4 text-lg rounded-2xl",
-                  "shadow-lg shadow-primary/25 disabled:opacity-50 disabled:animate-none",
-                ].join(" ")}
-              >
-                {loading ? "Signing in…" : "Enter the Throne Room"}
-              </Button>
-            </form>
-
-            <p className="text-center text-xs text-muted-foreground mt-4">
-              No email required. No password. Just vibes and bowel movements.
-            </p>
-          </>
-        )}
-      </section>
+      {/* ── Footer ── */}
 
       {/* ── Footer ── */}
       <footer className="border-t border-border">
