@@ -1,486 +1,290 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+```tsx
 import { SignInButton } from "@clerk/clerk-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
-// ── Demo feed data — realistic sample of the core loop ──
-const DEMO_ENTRIES = [
+const features = [
   {
-    username: "FlushKing99",
-    avatar: "💪",
-    thoughts: "Morning constitutional. Clean and efficient. 8/10 would recommend.",
-    location: "Home Base",
-    timeAgo: "2m ago",
-    reactions: [{ emoji: "🔥", count: 3 }, { emoji: "👑", count: 1 }],
-    isNew: true,
+    icon: "🔥",
+    label: "fire",
+    title: "Streaks",
+    description:
+      "Log daily to keep the flame alive. Miss a day and it resets — your squad gets notified.",
   },
   {
-    username: "TroneZone",
-    avatar: "🏆",
-    thoughts: "Post-gym drop. Possibly the greatest deuce of my career.",
-    location: "Planet Fitness",
-    timeAgo: "14m ago",
-    reactions: [{ emoji: "😂", count: 5 }, { emoji: "💪", count: 2 }],
-    isNew: false,
+    icon: "👥",
+    label: "people",
+    title: "Squads",
+    description:
+      "Form a crew. Cheer each other on, hold each other accountable. Talk crap — literally.",
   },
   {
-    username: "SeatWarrior",
-    avatar: "🎯",
-    thoughts: "Double deuce day. Living the dream. The streak continues.",
-    location: "The Office",
-    timeAgo: "1h ago",
-    reactions: [{ emoji: "🚽", count: 4 }],
-    isNew: false,
+    icon: "🏆",
+    label: "trophy",
+    title: "Leaderboards",
+    description:
+      "Climb the ranks each week. Who's the most consistent? The throne awaits.",
   },
   {
-    username: "CrownPrincess",
-    avatar: "👸",
-    thoughts: "Solid 10-minute session. Audiobook made it even better.",
-    location: "Home Base",
-    timeAgo: "3h ago",
-    reactions: [{ emoji: "📚", count: 2 }, { emoji: "❤️", count: 1 }],
-    isNew: false,
+    icon: "📊",
+    label: "chart",
+    title: "Stats",
+    description:
+      "Track frequency, time-of-day patterns, and weekly trends. Know what your gut's telling you.",
   },
 ];
 
-function DemoGroupFeed() {
-  const [visibleItems, setVisibleItems] = useState(1);
-  const [highlightNew, setHighlightNew] = useState(false);
+const steps = [
+  {
+    num: "1",
+    title: "Log it",
+    description: "Tap. Rate. Done in ten seconds.",
+  },
+  {
+    num: "2",
+    title: "Stack streaks",
+    description: "Daily consistency earns streaks and bragging rights.",
+  },
+  {
+    num: "3",
+    title: "Compete",
+    description: "Rise through leaderboards. Rally your squad. Rule the throne.",
+  },
+];
 
-  useEffect(() => {
-    // Stagger reveal of demo items
-    const timers = DEMO_ENTRIES.map((_, i) =>
-      setTimeout(() => setVisibleItems(i + 1), i * 500 + 300)
-    );
-    // Pulse the "new" entry after a delay
-    const pulseTimer = setTimeout(() => setHighlightNew(true), 800);
-    return () => {
-      timers.forEach(clearTimeout);
-      clearTimeout(pulseTimer);
-    };
-  }, []);
+const testimonials = [
+  {
+    quote:
+      "I've never been this regular in my life. My squad holds me accountable — miss a day and they notice.",
+    name: "Alex M.",
+    detail: "47-day streak · Portland, OR",
+  },
+  {
+    quote:
+      "The leaderboard turned my bathroom breaks into a competitive sport. My roommate and I are locked in a weekly battle.",
+    name: "Jordan K.",
+    detail: "Top 10 weekly · Austin, TX",
+  },
+  {
+    quote:
+      "Finally, an app that gets it. I actually look forward to logging now. Simple, fun, weirdly motivating.",
+    name: "Sam R.",
+    detail: "93-day streak · Chicago, IL",
+  },
+];
 
-  return (
-    <section className="border-y border-border bg-card/50">
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        <div className="text-center mb-6">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
-            See it in action
-          </p>
-          <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">
-            This is what your squad feed looks like
-          </h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Real-time updates, reactions, streaks — the whole throne experience.
-          </p>
-        </div>
-
-        {/* Fake phone frame */}
-        <div className="max-w-sm mx-auto">
-          {/* Group header */}
-          <div className={[
-            "bg-card border border-border rounded-t-2xl px-4 py-3",
-            "flex items-center justify-between border-b-0",
-          ].join(" ")}>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🚽</span>
-              <div>
-                <p className="font-bold text-foreground text-sm leading-tight">The Throne Room</p>
-                <p className="text-xs text-muted-foreground">4 members</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-base">🔥</span>
-              <span className="text-sm font-extrabold text-foreground">12</span>
-              <Badge variant="secondary" className="text-xs px-2 py-0.5">🥈 Silver</Badge>
-            </div>
-          </div>
-
-          {/* Feed entries */}
-          <div className="bg-card border border-border rounded-b-2xl overflow-hidden divide-y divide-border">
-            {DEMO_ENTRIES.slice(0, visibleItems).map((entry, i) => (
-              <div
-                key={i}
-                className={`px-4 py-3 transition-all duration-500 ${
-                  i === 0 && highlightNew
-                    ? "bg-green-50 dark:bg-green-950/20"
-                    : ""
-                }`}
-              >
-                <div className="flex gap-2.5">
-                  <div className={[
-                    "w-8 h-8 rounded-full bg-muted",
-                    "flex items-center justify-center text-base flex-shrink-0",
-                  ].join(" ")}>
-                    {entry.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-bold text-foreground">{entry.username}</span>
-                      {i === 0 && highlightNew && (
-                        <Badge className={[
-                          "bg-green-100 text-green-700 border-green-200",
-                          "text-[10px] px-1.5 py-0 font-semibold",
-                        ].join(" ")}>
-                          NEW
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground ml-auto">{entry.timeAgo}</span>
-                    </div>
-                    <p className="text-xs text-foreground mt-0.5 leading-relaxed">
-                      {entry.thoughts}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      📍 {entry.location}
-                    </p>
-                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                      {entry.reactions.map((r, ri) => (
-                        <span
-                          key={ri}
-                          className={[
-                            "inline-flex items-center gap-0.5 bg-muted rounded-full",
-                            "px-2 py-0.5 text-[11px] font-medium text-muted-foreground",
-                          ].join(" ")}
-                        >
-                          {r.emoji} {r.count}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {visibleItems < DEMO_ENTRIES.length && (
-              <div className="px-4 py-3 flex gap-2.5 animate-pulse">
-                <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0" />
-                <div className="flex-1 space-y-1.5 py-1">
-                  <div className="h-2.5 bg-muted rounded w-1/3" />
-                  <div className="h-2 bg-muted rounded w-2/3" />
-                  <div className="h-2 bg-muted rounded w-1/2" />
-                </div>
-              </div>
-            )}
-            {/* Streak rescue teaser */}
-            {visibleItems >= DEMO_ENTRIES.length && (
-              <div className="px-4 py-2.5 bg-red-50 dark:bg-red-950/20 flex items-center gap-2">
-                <span className="text-sm">⚠️</span>
-                <p className="text-xs text-red-600 font-medium flex-1">
-                  <span className="font-bold">CrownPrincess</span> hasn't logged today —
-                  streak at risk!
-                </p>
-                <span className="text-[10px] text-red-400 font-bold whitespace-nowrap">
-                  🆘 Save it
-                </span>
-              </div>
-            )}
-          </div>
-
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            ↑ This is live — your feed updates in real-time
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
+const faqs = [
+  {
+    question: "Is this a joke?",
+    answer:
+      "It's funny, but it works. Streak-based habit tracking is proven — we just applied it to something everyone does. Your gut health matters, and consistency is the #1 indicator.",
+  },
+  {
+    question: "Can other people see my logs?",
+    answer:
+      "No. Your individual logs are private by default. Your squad only sees your streak status (active or broken), and the leaderboard only shows ranking — never details.",
+  },
+  {
+    question: "Is this a medical app?",
+    answer:
+      "No. Deuce Diary is for awareness and fun, not diagnosis. If you notice changes that concern you, talk to a doctor — not an app.",
+  },
+  {
+    question: "What does it cost?",
+    answer:
+      "Free. Full stop. Log, streak, squad, and compete — all free. No premium tier, no paywalls.",
+  },
+  {
+    question: "Is my data secure?",
+    answer:
+      "Yes. We use bank-grade encryption and never sell your data. Your bathroom habits are your business — literally.",
+  },
+];
 
 export default function Landing() {
-  const { isAuthenticated } = useAuth();
-  const [showStickyCta, setShowStickyCta] = useState(false);
-
-  useEffect(() => {
-    function onScroll() {
-      setShowStickyCta(window.scrollY > 600);
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-
-
   return (
-    <div className="min-h-screen bg-background text-foreground pb-16 md:pb-0">
-      {/* ── Hero Section ── */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 pt-16 pb-20 md:pt-24 md:pb-28 text-center">
-          <div className="text-7xl md:text-8xl mb-6 animate-bounce">🚽</div>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight">
-            Because your best ideas
-            <br />happen on the <span className="text-primary">throne</span>
-          </h1>
-          <p className="text-sm font-bold text-primary uppercase tracking-widest mb-3">
-            The Strava of Poop Tracking
-          </p>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Build daily streaks. Compete with your squad. Climb the leaderboard.
-            <br className="hidden md:block" />
-            Everyone poops — now you can finally prove you're the best at it.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {!isAuthenticated ? (
-              <SignInButton mode="redirect" forceRedirectUrl="/">
-                <Button
-                  className="btn-shimmer text-white font-bold py-5 px-8 text-lg rounded-2xl shadow-lg shadow-primary/25"
-                >
-                  Start Your Streak — It's Free
-                </Button>
-              </SignInButton>
-            ) : (
-              <Link href="/">
-                <Button className="btn-shimmer text-white font-bold py-5 px-8 text-lg rounded-2xl shadow-lg shadow-primary/25">
-                  Go to Your Throne →
-                </Button>
-              </Link>
-            )}
-            <a
-              href="#how-it-works"
-              className={[
-                "inline-flex items-center justify-center py-5 px-8 text-lg font-semibold",
-                "rounded-2xl border border-border bg-card hover:bg-muted transition-colors",
-              ].join(" ")}
+    <div className="min-h-screen bg-[#0a0a0a] text-white antialiased selection:bg-green-500/30">
+      {/* ── Nav ── */}
+      <nav
+        className="fixed top-0 inset-x-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5"
+        role="navigation"
+        aria-label="Main navigation"
+      >
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <a
+            href="#"
+            className="flex items-center gap-2 group"
+            aria-label="Deuce Diary home"
+          >
+            <span
+              className="text-xl transition-transform group-hover:scale-110"
+              aria-hidden="true"
             >
-              How It Works
-            </a>
-          </div>
+              🚽
+            </span>
+            <span className="font-bold text-lg tracking-tight">
+              Deuce Diary
+            </span>
+          </a>
+          <SignInButton mode="modal">
+            <Button
+              size="sm"
+              className="bg-green-500 hover:bg-green-400 text-black font-semibold rounded-full px-5 cursor-pointer"
+            >
+              Sign up free
+            </Button>
+          </SignInButton>
         </div>
-        {/* Subtle gradient fade at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent" />
+      </nav>
+
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden pt-28 pb-16 sm:pt-40 sm:pb-24 px-4 sm:px-6">
+        <div
+          className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,_rgba(34,197,94,0.10)_0%,_transparent_70%)]"
+          aria-hidden="true"
+        />
+        <div className="relative max-w-3xl mx-auto text-center">
+          <div
+            className="text-6xl sm:text-7xl leading-none mb-6 select-none motion-safe:animate-bounce"
+            style={{ animationDuration: "3s" }}
+            aria-hidden="true"
+          >
+            🚽
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] mb-5">
+            The Strava of
+            <br className="hidden sm:block" /> Poop Tracking
+          </h1>
+          <p className="text-lg sm:text-xl text-neutral-400 max-w-xl mx-auto mb-8 leading-relaxed">
+            Streaks. Squads. Leaderboards.
+            <br />
+            <span className="text-neutral-300">
+              Because your best ideas happen on the throne.
+            </span>
+          </p>
+          <SignInButton mode="modal">
+            <Button
+              size="lg"
+              className="bg-green-500 hover:bg-green-400 text-black font-bold text-lg rounded-full px-8 h-14 shadow-lg shadow-green-500/20 cursor-pointer"
+            >
+              Start your streak — it's free
+            </Button>
+          </SignInButton>
+          <p className="text-sm text-neutral-500 mt-3">
+            Google, Apple, or email — sign up in seconds.
+          </p>
+        </div>
       </section>
 
-      {/* ── Social Proof Stats ── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-3xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {[
-              { value: "10K+", label: "Deuces Logged", emoji: "💩" },
-              { value: "500+", label: "Active Streakers", emoji: "🔥" },
-              { value: "100+", label: "Squads Competing", emoji: "🏆" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-2xl md:text-3xl font-extrabold text-foreground">
-                  <span className="mr-1">{stat.emoji}</span>{stat.value}
-                </div>
-                <p className="text-xs md:text-sm text-muted-foreground font-medium mt-0.5">
-                  {stat.label}
+      {/* ── Social proof bar ── */}
+      <section className="pb-16 sm:pb-20 px-4 sm:px-6" aria-label="Social proof">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-white/10 bg-white/[0.04] text-sm text-neutral-300">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            Join thousands of consistent throne thinkers
+          </div>
+        </div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="pb-20 sm:pb-28 px-4 sm:px-6" aria-label="Features">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 tracking-tight">
+            Everything you need to own the throne
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {features.map((f) => (
+              <div
+                key={f.title}
+                className="group rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 hover:border-green-500/30 hover:bg-white/[0.04] transition-colors"
+              >
+                <span
+                  className="text-3xl mb-4 block transition-transform group-hover:scale-110"
+                  role="img"
+                  aria-label={f.label}
+                >
+                  {f.icon}
+                </span>
+                <h3 className="text-lg font-semibold mb-1.5">{f.title}</h3>
+                <p className="text-neutral-400 text-sm leading-relaxed">
+                  {f.description}
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Live Demo Feed ── */}
-      <DemoGroupFeed />
-
-      {/* ── Features Section ── */}
-      <section className="max-w-5xl mx-auto px-4 py-16 md:py-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-            Everything you need to rule the throne
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            No 47-field symptom forms. No gimmicky map pins. Just the good stuff.
-          </p>
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Feature 1: Streaks */}
-          <div className={[
-            "bg-card border border-border border-l-4 border-l-primary",
-            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
-          ].join(" ")}>
-            <div className="flex items-start space-x-4">
-              <span className="text-4xl mt-1">🔥</span>
-              <div>
-                <h3 className="text-xl font-bold mb-1">Streaks That Stick</h3>
-                <p className="text-muted-foreground">
-                  Build your daily deuce streak and climb from Peasant to Porcelain Royalty.
-                  Miss a day? It resets. Duolingo energy, bathroom edition.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Feature 2: Squads */}
-          <div className={[
-            "bg-card border border-border border-l-4 border-l-blue-500",
-            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
-          ].join(" ")}>
-            <div className="flex items-start space-x-4">
-              <span className="text-4xl mt-1">👥</span>
-              <div>
-                <h3 className="text-xl font-bold mb-1">Squads — Your Poop Crew</h3>
-                <p className="text-muted-foreground">
-                  Create or join a squad with friends. See who's keeping up, who's slacking,
-                  and celebrate milestones together. Group streaks keep everyone honest.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Feature 3: Leaderboards */}
-          <div className={[
-            "bg-card border border-border border-l-4 border-l-amber-500",
-            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
-          ].join(" ")}>
-            <div className="flex items-start space-x-4">
-              <span className="text-4xl mt-1">🏆</span>
-              <div>
-                <h3 className="text-xl font-bold mb-1">Live Leaderboards</h3>
-                <p className="text-muted-foreground">
-                  Who dropped the most deuces this week? Every squad has a real-time
-                  leaderboard. Friendly competition has never been this… regular.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Feature 4: Quick Logging */}
-          <div className={[
-            "bg-card border border-border border-l-4 border-l-green-500",
-            "rounded-2xl p-6 hover:shadow-lg transition-shadow",
-          ].join(" ")}>
-            <div className="flex items-start space-x-4">
-              <span className="text-4xl mt-1">⚡</span>
-              <div>
-                <h3 className="text-xl font-bold mb-1">Log in Seconds</h3>
-                <p className="text-muted-foreground">
-                  Open, tap, done. The fastest poop logging experience out there — because
-                  nobody wants to spend <em>more</em> time in the bathroom.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {/* ── Mid-page CTA ── */}
-      {!isAuthenticated && (
-        <section className="max-w-2xl mx-auto px-4 py-10 text-center">
-          <p className="text-muted-foreground text-sm mb-3">
-            Ready to claim your throne? Takes 10 seconds.
-          </p>
-          <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className="btn-shimmer text-white font-bold py-4 px-8 text-base rounded-2xl shadow-lg shadow-primary/25">
-              Join Free — Start Your Streak →
+      <section className="pb-20 sm:pb-28 px-4 sm:px-6">
+        <div className="max-w-xl mx-auto text-center">
+          <SignInButton mode="modal">
+            <Button
+              size="lg"
+              className="bg-green-500 hover:bg-green-400 text-black font-bold text-base rounded-full px-8 h-12 shadow-lg shadow-green-500/20 cursor-pointer"
+            >
+              Get started free
             </Button>
           </SignInButton>
-        </section>
-      )}
-
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="bg-card/50 border-y border-border">
-        <div className="max-w-4xl mx-auto px-4 py-16 md:py-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">
-              Three steps to throne glory
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              It takes less time than your average bathroom visit.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            {[
-              {
-                step: "1",
-                emoji: "📝",
-                title: "Sign Up Free",
-                desc: "One tap with Google or Apple. Zero friction — you're in before the flush.",
-              },
-              {
-                step: "2",
-                emoji: "👥",
-                title: "Join a Squad",
-                desc: "Create one or hop into a friend's. This is more fun with witnesses.",
-              },
-              {
-                step: "3",
-                emoji: "🔥",
-                title: "Start Your Streak",
-                desc: "Log your first deuce. The streak begins. The throne awaits.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="flex flex-col items-center">
-                <div className={[
-                  "w-14 h-14 rounded-full bg-primary/10 border-2 border-primary",
-                  "flex items-center justify-center text-2xl font-extrabold text-primary mb-4",
-                ].join(" ")}>
-                  {item.step}
-                </div>
-                <span className="text-4xl mb-3">{item.emoji}</span>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-neutral-500 mt-2.5">
+            Google, Apple, or email — pick your speed.
+          </p>
         </div>
       </section>
 
-      {/* ── Bonus Features Strip ── */}
-      <section className="max-w-4xl mx-auto px-4 py-16 md:py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            Plus all the extras
+      {/* ── How it works ── */}
+      <section className="pb-20 sm:pb-28 px-4 sm:px-6" aria-label="How it works">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 tracking-tight">
+            Three steps to greatness
           </h2>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-          {[
-            { emoji: "😂", label: "Reactions & Feed" },
-            { emoji: "📊", label: "Weekly Throne Report" },
-            { emoji: "🔒", label: "Privacy First" },
-            { emoji: "📈", label: "Personal Stats" },
-            { emoji: "👑", label: "Porcelain Premium" },
-            { emoji: "🌙", label: "Dark Mode" },
-            { emoji: "🔗", label: "Invite & Referrals" },
-            { emoji: "📱", label: "Mobile Native" },
-          ].map((item) => (
-            <div key={item.label} className="bg-card border border-border rounded-xl p-4">
-              <span className="text-2xl block mb-2">{item.emoji}</span>
-              <span className="text-sm font-semibold">{item.label}</span>
-            </div>
-          ))}
+          <ol className="space-y-8">
+            {steps.map((s) => (
+              <li key={s.num} className="flex gap-5 items-start">
+                <div
+                  className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 font-bold text-sm"
+                  aria-hidden="true"
+                >
+                  {s.num}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg mb-0.5">{s.title}</h3>
+                  <p className="text-neutral-400 text-sm leading-relaxed">
+                    {s.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-4xl mx-auto px-4 py-16 md:py-20">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              What the throne community says
-            </h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                quote: "I never thought I'd be competitive about pooping, but here we are. My squad is ruthless.",
-                name: "Jake M.",
-                detail: "42-day streak",
-                emoji: "🔥",
-              },
-              {
-                quote: "My doctor asked how I track my habits. I showed him Deuce Diary. He downloaded it.",
-                name: "Sarah K.",
-                detail: "Squad leader",
-                emoji: "👩‍⚕️",
-              },
-              {
-                quote: "The streak rescue feature saved my 30-day run. This app gets me.",
-                name: "Marcus T.",
-                detail: "Porcelain Royalty",
-                emoji: "👑",
-              },
-            ].map((t) => (
-              <div key={t.name} className="bg-background border border-border rounded-2xl p-5">
-                <div className="text-3xl mb-3">{t.emoji}</div>
-                <p className="text-foreground text-sm leading-relaxed mb-4 italic">
-                  "{t.quote}"
+      <section className="pb-20 sm:pb-28 px-4 sm:px-6" aria-label="Testimonials">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 tracking-tight">
+            Don't take our word for it
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 hover:border-green-500/20 transition-colors"
+              >
+                <p className="text-neutral-300 text-sm leading-relaxed mb-4">
+                  &ldquo;{t.quote}&rdquo;
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-xs font-bold">
+                    {t.name.charAt(0)}
+                  </div>
                   <div>
-                    <p className="text-sm font-bold text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.detail}</p>
+                    <p className="text-sm font-medium text-neutral-200">
+                      {t.name}
+                    </p>
+                    <p className="text-xs text-green-400">{t.detail}</p>
                   </div>
                 </div>
               </div>
@@ -489,108 +293,70 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Mobile App Teaser ── */}
-      <section className="border-y border-border bg-card/50">
-        <div className="max-w-3xl mx-auto px-4 py-12 md:py-16 text-center">
-          <div className="text-5xl mb-4">📱</div>
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">
-            Native iOS app — launching soon
+      {/* ── FAQ ── */}
+      <section className="pb-20 sm:pb-28 px-4 sm:px-6" aria-label="Frequently asked questions">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 tracking-tight">
+            Questions? We got you.
           </h2>
-          <p className="text-muted-foreground text-base mb-1 max-w-md mx-auto">
-            One-tap logging, push notifications for streak rescues, and widgets for your lock screen.
-          </p>
-          <p className="text-xs text-muted-foreground mb-6">
-            Web app is live now — iOS drops later this year.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center text-sm text-muted-foreground">
-            {["One-tap log", "Streak alerts", "Lock screen widget", "Offline mode"].map((f) => (
-              <span key={f} className="bg-muted border border-border rounded-full px-3 py-1 font-medium">
-                {f}
-              </span>
+          <div className="space-y-6">
+            {faqs.map((faq) => (
+              <div key={faq.question} className="border-b border-white/5 pb-6">
+                <h3 className="font-semibold text-neutral-200 mb-2">
+                  {faq.question}
+                </h3>
+                <p className="text-neutral-400 text-sm leading-relaxed">
+                  {faq.answer}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FAQ / Objection Handling ── */}
-      <section className="max-w-2xl mx-auto px-4 py-16 md:py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            You've got questions. We've got answers.
+      {/* ── Final CTA ── */}
+      <section className="relative pb-24 sm:pb-32 px-4 sm:px-6 overflow-hidden">
+        <div
+          className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,_rgba(34,197,94,0.08)_0%,_transparent_70%)]"
+          aria-hidden="true"
+        />
+        <div className="relative max-w-xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
+            Ready to get on the board?
           </h2>
-        </div>
-        <div className="space-y-4">
-          {[
-            {
-              q: "Is this actually a poop tracking app?",
-              a: "Yes. And it's glorious. Think of it as Duolingo meets Strava — but for your bowel movements."
-                + " We made it social, competitive, and genuinely fun.",
-            },
-            {
-              q: "Is my data private?",
-              a: "Your logs are only visible to squads you choose to join. We don't sell your data."
-                + " What happens on the throne stays on the throne.",
-            },
-            {
-              q: "Is it really free?",
-              a: "The core experience — logging, streaks, squads, leaderboards — is 100% free."
-                + " Porcelain Premium adds power features for the truly dedicated.",
-            },
-            {
-              q: "Will my friends judge me?",
-              a: "They'll be too busy protecting their own streaks."
-                + " Besides, everyone poops — now you can finally prove you're the best at it.",
-            },
-          ].map((faq) => (
-            <div key={faq.q} className="bg-card border border-border rounded-xl p-5">
-              <h3 className="font-bold text-foreground mb-1.5">{faq.q}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
-            </div>
-          ))}
+          <p className="text-neutral-400 mb-8 leading-relaxed">
+            Your streak starts today. Don't let day one pass you by.
+          </p>
+          <SignInButton mode="modal">
+            <Button
+              size="lg"
+              className="bg-green-500 hover:bg-green-400 text-black font-bold text-lg rounded-full px-8 h-14 shadow-lg shadow-green-500/20 cursor-pointer"
+            >
+              Sign up free
+            </Button>
+          </SignInButton>
+          <p className="text-sm text-neutral-500 mt-3">
+            Join with Google, Apple, or email.
+          </p>
         </div>
       </section>
 
       {/* ── Footer ── */}
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-border">
-        <div className={[
-          "max-w-4xl mx-auto px-4 py-8 flex flex-col md:flex-row",
-          "items-center justify-between gap-4 text-sm text-muted-foreground",
-        ].join(" ")}>
+      <footer
+        className="border-t border-white/5 py-8 px-4 sm:px-6"
+        role="contentinfo"
+      >
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-neutral-500">
           <div className="flex items-center gap-2">
-            <span className="text-lg">🚽</span>
-            <span className="font-bold text-foreground">Deuce Diary</span>
-            <span>&middot;</span>
-            <span>&copy; {new Date().getFullYear()}</span>
+            <span role="img" aria-label="toilet">
+              🚽
+            </span>
+            <span className="font-medium text-neutral-400">Deuce Diary</span>
           </div>
-          <div className="flex gap-4">
-            <Link href="/privacy" className="hover:text-foreground hover:underline transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-foreground hover:underline transition-colors">
-              Terms of Service
-            </Link>
-          </div>
+          <p>Because your best ideas happen on the throne.</p>
         </div>
       </footer>
-
-      {/* ── Sticky Mobile CTA ── */}
-      {!isAuthenticated && showStickyCta && (
-        <div className={[
-          "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-          "bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 safe-area-bottom",
-        ].join(" ")}>
-          <SignInButton mode="redirect" forceRedirectUrl="/">
-            <Button className={[
-              "btn-shimmer w-full text-white font-bold",
-              "py-3 text-base rounded-xl shadow-lg shadow-primary/25",
-            ].join(" ")}>
-              Start Your Streak — Free
-            </Button>
-          </SignInButton>
-        </div>
-      )}
     </div>
   );
 }
+```
