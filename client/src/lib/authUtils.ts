@@ -29,6 +29,25 @@ export function handleAuthError(error: Error, toast: ToastFn): boolean {
  * @param description - error description string, or a function receiving the error
  * @param title - toast title (defaults to "Error")
  */
+/** Parse a raw API error message (e.g. `409: {"message":"..."}`) into a clean user-facing string. */
+function cleanApiMessage(raw: string): string {
+  // Try extracting JSON message after status code prefix ("409: {...}")
+  const colonIdx = raw.indexOf(": ");
+  if (colonIdx !== -1) {
+    const afterStatus = raw.slice(colonIdx + 2).trim();
+    try {
+      const parsed = JSON.parse(afterStatus);
+      if (parsed.message) return parsed.message;
+    } catch { /* not JSON, fall through */ }
+  }
+  // Try parsing the whole string as JSON
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.message) return parsed.message;
+  } catch { /* not JSON */ }
+  return raw;
+}
+
 export function mutationErrorHandler(
   toast: ToastFn,
   description: string | ((error: Error) => string),
@@ -36,9 +55,10 @@ export function mutationErrorHandler(
 ) {
   return (error: Error) => {
     if (handleAuthError(error, toast)) return;
+    const desc = typeof description === "function" ? description(error) : description;
     toast({
       title,
-      description: typeof description === "function" ? description(error) : description,
+      description: cleanApiMessage(desc),
       variant: "destructive",
     });
   };
