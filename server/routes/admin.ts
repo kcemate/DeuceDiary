@@ -6,7 +6,7 @@ import { storage } from "../storage";
 import { getRandomTemplate } from "../challengeTemplates";
 import { sendPushToUser, isPushConfigured } from "../push";
 import { db } from "../db";
-import { pushSubscriptions } from "../../shared/schema";
+import { pushSubscriptions, battleMatches, battleShips, battleAttacks, battleTokens, battlePowerups } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 import { checkAllGroupStreaksAndNotify } from "../streakNotifications";
 import { getRecentErrors } from "../lib/errorTracker";
@@ -255,6 +255,30 @@ export function createAdminRouter(): Router {
       createdAt: pushSubscriptions.createdAt,
     }).from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId));
     res.json({ count: subs.length, subscriptions: subs });
+  });
+
+  // DELETE /api/admin/battles — delete all battle data (admin key required)
+  router.delete("/api/admin/battles", async (req: Request, res: Response) => {
+    if (!requireAdminKey(req, res)) return;
+    try {
+      const r1 = await db.delete(battlePowerups);
+      const r2 = await db.delete(battleTokens);
+      const r3 = await db.delete(battleAttacks);
+      const r4 = await db.delete(battleShips);
+      const r5 = await db.delete(battleMatches);
+      res.json({
+        deleted: {
+          battlePowerups: r1?.rowsAffected ?? r1?.count ?? 0,
+          battleTokens: r2?.rowsAffected ?? r2?.count ?? 0,
+          battleAttacks: r3?.rowsAffected ?? r3?.count ?? 0,
+          battleShips: r4?.rowsAffected ?? r4?.count ?? 0,
+          battleMatches: r5?.rowsAffected ?? r5?.count ?? 0,
+        },
+      });
+    } catch (error: any) {
+      console.error("Failed to delete battles:", error);
+      res.status(500).json({ message: "Failed to delete battles", error: error.message });
+    }
   });
 
   return router;
