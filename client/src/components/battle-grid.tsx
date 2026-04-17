@@ -27,6 +27,7 @@ interface BattleGridProps {
   previewCells?: GridCell[];
   previewValid?: boolean;
   dayLabels?: string[];
+  selectedCell?: GridCell | null;
 }
 
 type Attack = GridAttack;
@@ -57,6 +58,7 @@ export function BattleGrid({
   previewCells = [],
   previewValid = true,
   dayLabels,
+  selectedCell,
 }: BattleGridProps) {
   // Build lookup maps for fast rendering
   const shipCellMap = new Map<string, GridShip>();
@@ -90,6 +92,7 @@ export function BattleGrid({
     if (mode === "attack") {
       if (hit === true) return "hit";
       if (hit === false) return "miss";
+      if (selectedCell && selectedCell.col === col && selectedCell.row === row) return "selected";
       return "fog";
     }
     if (mode === "defense") {
@@ -109,6 +112,10 @@ export function BattleGrid({
     const base =
       "relative flex items-center justify-center text-base select-none transition-all duration-150";
     switch (state) {
+      case "selected":
+        return cn(base,
+          "bg-yellow-500/20 border-2 border-yellow-400 cursor-pointer",
+          "animate-pulse shadow-[0_0_8px_2px_rgba(234,179,8,0.4)]");
       case "fog":
         return cn(base,
           "bg-blue-950/60 border border-blue-900/40 cursor-pointer active:scale-95",
@@ -157,6 +164,8 @@ export function BattleGrid({
         return <span className="text-sm leading-none opacity-70">💨</span>;
       case "ship-hit":
         return <span className="text-sm leading-none">💥</span>;
+      case "selected":
+        return <span className="text-base leading-none">🎯</span>;
       case "ship":
       case "placed":
         return null; // colored block — emoji shown in inventory only
@@ -173,7 +182,7 @@ export function BattleGrid({
         {/* Column headers */}
         <div
           className="grid mb-0.5"
-          style={{ gridTemplateColumns: `32px repeat(${cols}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `48px repeat(${cols}, minmax(48px, 1fr))` }}
         >
           <div /> {/* corner */}
           {labels.map((label) => (
@@ -192,7 +201,7 @@ export function BattleGrid({
             <div
               key={row}
               className="grid items-stretch"
-              style={{ gridTemplateColumns: `32px repeat(${cols}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `48px repeat(${cols}, minmax(48px, 1fr))` }}
             >
               {/* Row header */}
               <div className="flex flex-col items-center justify-center pr-1">
@@ -210,7 +219,7 @@ export function BattleGrid({
                 return (
                   <div
                     key={col}
-                    className={cn(getCellClass(state, ship), "min-h-[42px]")}
+                    className={cn(getCellClass(state, ship), "min-h-[48px]")}
                     onClick={() => onCellClick?.(col, row)}
                     role={onCellClick ? "button" : undefined}
                     aria-label={`${labels[col]} ${TIME_SLOT_LABELS[row]?.label}`}

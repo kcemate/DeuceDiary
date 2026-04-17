@@ -166,33 +166,9 @@ function PlacementPhase({
         </p>
       </div>
 
-      {/* Orientation toggle */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Direction:</span>
-        <button
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
-            orientation === "horizontal"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          }`}
-          onClick={() => setOrientation("horizontal")}
-        >
-          ← Horizontal
-        </button>
-        <button
-          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
-            orientation === "vertical"
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          }`}
-          onClick={() => setOrientation("vertical")}
-        >
-          ↕ Vertical
-        </button>
-      </div>
-
-      {/* Grid */}
+      {/* Grid with rotate button overlay */}
       <div
+        className="relative"
         onMouseLeave={() => setHoverCell(null)}
         onTouchEnd={() => setHoverCell(null)}
       >
@@ -206,6 +182,21 @@ function PlacementPhase({
           previewCells={preview}
           previewValid={previewValid}
         />
+        {selectedType && (
+          <button
+            className="absolute bottom-3 right-2 flex items-center gap-1.5 px-3
+              bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-lg
+              active:scale-95 transition-transform min-h-[44px] border border-white/20
+              backdrop-blur-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOrientation((o) => (o === "horizontal" ? "vertical" : "horizontal"));
+            }}
+            aria-label="Rotate ship"
+          >
+            ↻ {orientation === "horizontal" ? "Horizontal" : "Vertical"}
+          </button>
+        )}
       </div>
 
       {/* Ship inventory */}
@@ -290,6 +281,7 @@ function BattlePhase({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"enemy" | "mine">("enemy");
   const [lastResult, setLastResult] = useState<{ hit: boolean; sunk?: boolean; shipType?: string } | null>(null);
+  const [pendingCell, setPendingCell] = useState<GridCell | null>(null);
 
   const grid = matchType === "standard" ? STANDARD_GRID : QUICK_GRID;
   const { myShips, myAttacks, opponentAttacks, tokenBalance, myPowerups } = data;
@@ -304,6 +296,7 @@ function BattlePhase({
     errorMessage: (e: Error) => e.message,
     onSuccess: (result) => {
       setLastResult({ hit: result.hit, sunk: result.sunk, shipType: result.shipType });
+      setPendingCell(null);
       onRefresh();
       if (result.hit) {
         if (result.sunk) {
@@ -451,6 +444,7 @@ function BattlePhase({
             rows={grid.rows}
             ships={opponentSunkAsShips}
             attacks={myAttacks}
+            selectedCell={pendingCell}
             onCellClick={(col, row) => {
               if (available <= 0) {
                 toast({
@@ -460,11 +454,20 @@ function BattlePhase({
                 });
                 return;
               }
-              attackMutation.mutate({ col, row });
+              if (attackMutation.isPending) return;
+              // Two-tap confirmation: first tap selects, second tap on same cell fires
+              if (pendingCell && pendingCell.col === col && pendingCell.row === row) {
+                attackMutation.mutate({ col, row });
+              } else {
+                setPendingCell({ col, row });
+              }
             }}
           />
           <p className="text-center text-xs text-muted-foreground mt-2">
-            Tap a cell to fire · Revealed: {myAttacks.length} cells
+            {pendingCell
+              ? "🎯 Tap again to fire · Tap elsewhere to retarget"
+              : "Tap to target · Tap again to fire"}
+            {" · "}Revealed: {myAttacks.length} cells
           </p>
         </div>
       ) : (
