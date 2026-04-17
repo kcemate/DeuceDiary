@@ -12,7 +12,7 @@ async function init() {
       // Clear stale caches (from old PWA experiment), but DON'T unregister service workers
       // — our push notification SW (sw.js) needs to stay registered for notifications to work
       const keys = await caches.keys();
-      const staleKeys = keys.filter((k) => k !== 'dd-v2');
+      const staleKeys = keys.filter((k) => k !== 'dd-v3');
       await Promise.all(staleKeys.map((k) => caches.delete(k)));
     } catch { /* non-critical */ }
   }
