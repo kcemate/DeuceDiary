@@ -1,0 +1,49 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**What it gets right:**
+- Rich, interactive demo feed with staggered IntersectionObserver animations — this is the strongest conversion element because it *shows* the product in action
+- Realistic, on-brand demo data ("greatest deuce of my career," "8/10 would recommend") — the voice is spot-on
+- Proper accessibility (`aria-label`), semantic structure, and clean component architecture
+- Uses Clerk's `SignInButton` and `useAuth` hook correctly
+- Dark theme + green primary + 🚽 hero all present
+
+**What it gets wrong:**
+- The code is **truncated** — we never see the full landing page (hero, features, CTA sections, footer). The snippet cuts off mid-comment ("Fake phone fram")
+- Can't evaluate the full conversion flow, mobile layout, or whether CTAs are repeated throughout
+- The cleanup function inside the IntersectionObserver callback is returned but never executed (it's inside the callback, not the effect cleanup) — a subtle bug
+
+### Version 2 (Revision B)
+**What it gets right:**
+- Nothing. It's completely empty.
+
+**What it gets wrong:**
+- No code at all — total failure on every dimension: conversion, brand voice, visual polish, mobile UX, code quality. This is an automatic disqualification.
+
+### Version 3 (Synthesis AB)
+**What it gets right:**
+- Identical strong points to Version 1 (same demo data, same component, same animations)
+- The framing text suggests intent to tighten copy and improve accessibility
+
+**What it gets wrong:**
+- The code is **literally identical** to Version 1 up to the truncation point — no actual synthesis or improvement occurred
+- Same IntersectionObserver cleanup bug
+- Also truncated, so we can't evaluate the full page
+- Claims to refine but delivers a copy-paste, which is misleading
+
+---
+
+## Ranking
+
+| Criterion | V1 | V2 | V3 |
+|---|---|---|---|
+| Conversion flow | Partial (truncated) | ❌ None | Partial (truncated, same as V1) |
+| Visual polish | Good (animations, structure) | ❌ | Same as V1 |
+| Mobile UX | Unknown (truncated) | ❌ | Same as V1 |
+| Copy quality | On-brand, fun | ❌ | Same as V1 |
+| Code quality | Good (minor bug) | ❌ | Same as V1 |
+| Completeness | Truncated but substantive | Empty | Truncated, identical to V1 |
+
+V1 edges out V3 because it's the original — V3 claims improvements but delivers none. V2 is empty.
+
+**RANKING: 1, 3, 2**

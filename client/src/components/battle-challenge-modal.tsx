@@ -118,7 +118,7 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
             }`}
             onClick={() => setMatchType("standard")}
           >
-            ⚓ Standard (7×3)
+            ⚓ Standard (10×7)
           </button>
           <button
             className={`flex-1 py-2 text-sm font-bold transition-colors ${
@@ -128,7 +128,7 @@ export function BattleChallengeModal({ open, onOpenChange }: BattleChallengeModa
             }`}
             onClick={() => setMatchType("quick")}
           >
-            ⚡ Quick (3×3)
+            ⚡ Quick (7×7)
           </button>
         </div>
 

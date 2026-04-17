@@ -1,0 +1,53 @@
+# Evaluation of Battle Shits Match Screen Versions
+
+## Version 1 (Incumbent A)
+
+**Gets right:**
+- Complete constant definitions with thematic taunts (social/viral hook)
+- Rich `MatchData` type includes progression-ready fields: `xpAwarded`, `streakCount`, `tokenBalance`, `powerups`
+- `useAnimationTrigger` custom hook shows investment in feedback immediacy
+- PlacementPhase component begins with proper state management for orientation, hover preview, and ship selection
+- Ship configs with emojis reinforce brand voice
+
+**Gets wrong:**
+- **Truncated mid-line** (`useState<string | n`) — cannot evaluate the full core loop, attack phase, results screen, or any of the engagement/retention features
+- No visible implementation of XP display, streak counters, or reward animations
+- No visible rematch flow or friction reduction between matches
+- Taunts are defined but no UI for sending them is visible
+
+---
+
+## Version 2 (Revision B)
+
+**Gets right:**
+- Nothing — **the submission is completely empty**
+
+**Gets wrong:**
+- No code whatsoever. Fails every priority: no core loop, no progression, no social hooks, no feedback, no mobile UX, no brand voice
+
+---
+
+## Version 3 (Synthesis AB)
+
+**Gets right:**
+- Adds `useMemo` import, suggesting awareness of performance optimization for mobile
+- Same solid foundation as V1 (ship configs, grid constants)
+
+**Gets wrong:**
+- **Truncated even earlier** than V1 — cuts off mid-constant at the Battleshit label, showing less implementation than the incumbent
+- Cannot evaluate any phase components, progression, social hooks, or feedback systems
+- No visible differentiation from V1 beyond the import addition
+
+---
+
+## Ranking
+
+**RANKING: 1, 3, 2**
+
+| Rank | Version | Rationale |
+|------|---------|-----------|
+| 1st | **Version 1** | Shows the most implementation — taunts system, animation hooks, PlacementPhase with state, and progression-ready data types. Most evidence of engagement-minded design. |
+| 2nd | **Version 3** | Marginal improvement via `useMemo` import, but truncates earlier, revealing less actual UX work. Effectively a subset of V1 with one import added. |
+| 3rd | **Version 2** | Empty submission. Unacceptable. |
+
+**Critical note:** All three versions are truncated, making a full evaluation impossible. Version 1 wins by showing the most code and the clearest intent toward the stated priorities — but none deliver a complete file as the rules require. A complete submission would likely need to show: attack phase UI, XP/streak progression display, taunt sending interface, rematch friction reduction, and result/reward animations.

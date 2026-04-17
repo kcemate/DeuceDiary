@@ -1,0 +1,33 @@
+### Conversion Friction
+- The "🆘 Save it" text in the demo feed's streak rescue banner looks like an actionable button or link, but it is non-interactive plain text. This creates a micro-frustration and trains users to ignore interactive-looking elements on the page.
+- The Mobile App Teaser section promotes an iOS app that is "launching soon" but provides no waitlist capture (email or phone). Users interested in the native app have no way to convert or be notified, resulting in a lost lead.
+- The "How It Works" anchor link (`<a href="#how-it-works">`) will cause an instant, jarring jump to the section rather than a smooth scroll, interrupting the user's browsing flow.
+- The sticky mobile CTA at the bottom of the viewport will overlap with the "Final CTA" section as the user reaches the end of the page, resulting in two competing sign-up buttons on screen at the same time.
+
+### Visual Polish Gaps
+- The `DemoGroupFeed` component has a broken cleanup function in its `IntersectionObserver`. The `return` statement that clears the timers is nested *inside* the `if (entry.isIntersecting)` block, meaning it will never execute on component unmount. If the component unmounts before all stagger timers fire, it will cause a memory leak and potential state-update-on-unmounted-component errors.
+- The "NEW" badge uses hardcoded light-mode green classes (`bg-green-100 text-green-700 border-green-200`). If the user's system is in dark mode, these hardcoded light colors will clash severely with the dark background and lack sufficient contrast.
+- The "Bonus Features Strip" uses a `grid-cols-2` layout on mobile. Eight small boxes stacked in two columns on a narrow screen will look cramped, cluttered, and cheap, resembling a keyword-stuffed footer rather than a value proposition.
+- The `<details>` elements in the FAQ use a custom `+` icon with `group-open:rotate-45` to form an `x`. Standard Tailwind does not apply `group-open` to native `<details>` elements without a plugin or custom variant, so the icon will likely stay as a `+` even when the accordion is expanded.
+
+### Copy That Doesn't Convert
+- The hero headline "Because your best ideas happen on the throne" contradicts the app's core premise. The app is positioned as a competitive, social, streak-based habit tracker (Strava for poops), not a productivity/idea tool. This creates immediate cognitive dissonance.
+- The social proof stats ("500+ Active Streakers", "100+ Squads Competing") are numerically very low for a landing page. Highlighting that only 500 people use the app undermines the later claim to "Join thousands of streakers" in the final CTA, making the copy feel fabricated.
+- The testimonial from "Sarah K." stating "My doctor asked how I track my habits. I showed him Deuce Diary. He downloaded it" is highly unbelievable for a novelty app about poop tracking with friends. Fake-sounding testimonials actively destroy trust rather than build it.
+- The "How It Works" step 3 says "Log your first deuce. The streak begins." This is functionally identical to the core loop described in the Features section, making the "How It Works" section feel redundant rather than simplifying the pitch.
+
+### Redundant / Low-Value Sections
+- The "Bonus Features Strip" is a dumping ground. "Dark Mode" is a standard expectation, not a feature. "Privacy First" is already addressed in the FAQ. "Reactions & Feed" is already demonstrated in the Demo Feed. This section dilutes the core message.
+- The "How It Works" section is redundant. The app is simple enough that the Hero sub-headline ("Build daily streaks. Compete with your squad. Climb the leaderboard.") already explains how it works. Adding a 3-step diagram for "Sign up -> Join Squad -> Log" is over-explaining a self-explanatory concept.
+- The Mid-page CTA interrupts the user's scroll between Features and How It Works, asking them to convert before they've even seen how the product works.
+
+### Missing Best Practices
+- There are no real user avatars or social proof imagery. The testimonials use initials and emojis, which are the easiest format to fabricate. Without real names, photos, or social links, they carry no weight.
+- The footer lacks any social media links, contact information, or support channels. This makes the app look like a solo side project rather than a trustworthy platform, increasing hesitation for new users.
+- There is no visual differentiation or hierarchy between the sections. Every section uses the exact same `bg-card/50` and `border-y border-border` pattern, creating a monotonous "stripe" effect that blurs together.
+- The page lacks any urgency or scarcity triggers. There is no reason to sign up *today* versus tomorrow.
+
+### Accessibility Issues
+- The demo feed uses emojis as visual avatars inside `<div>` elements. While `aria-hidden="true"` is applied to the container, the actual text content of the feed (like "📍 Home Base") will be read aloud by screen readers as "Map pin Home Base", adding unnecessary verbosity.
+- The "How It Works" step numbers are visually represented by a styled `<div>` with `aria-hidden="true"`, but the text headings ("Sign Up Free", "Join a Squad") do not communicate the step order programmatically. A screen reader user will just hear a list of titles without knowing they are sequential steps.
+- The sticky mobile CTA uses `role="complementary"`, which is meant for supporting content like sidebars, not for a primary call-to-action. This misidentifies the element's purpose to assistive technologies.

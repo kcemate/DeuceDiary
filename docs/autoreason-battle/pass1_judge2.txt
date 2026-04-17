@@ -1,0 +1,62 @@
+# Evaluation of Battle Shits Match Screen Versions
+
+## Version 1 (Incumbent A)
+
+**Gets right:**
+- Solid foundational structure with all core types and constants
+- Working placement phase with countdown timer (urgency)
+- Grid mechanics and ship configs preserved
+- Mutation with toast for error handling
+
+**Gets wrong:**
+- No progression systems (XP, streaks, levels)
+- No social/viral hooks whatsoever
+- No animation or feedback helpers
+- Doesn't pre-select first ship (friction)
+- Truncated mid-toast-message — incomplete file
+- Barebones UX that does nothing to drive re-engagement
+
+---
+
+## Version 2 (Revision B)
+
+**Gets right:**
+- Nothing. This is an empty submission.
+
+**Gets wrong:**
+- Completely blank — no code, no features, no functionality
+- Fails every single priority from the brief
+- Cannot be evaluated on any dimension
+
+---
+
+## Version 3 (Synthesis AB)
+
+**Gets right:**
+- **Social hooks:** TAUNTS array with 6 themed options (💩🧻🚽💨🪠🫧) — directly drives viral, competitive interaction with on-brand copy ("Hope you brought extra TP!")
+- **Progression readiness:** `xpAwarded` and `streakCount` added to MatchData types — signals backend contract for retention loops
+- **Feedback immediacy:** `useAnimationTrigger` hook provides reusable animation detection — essential for hit/miss/sunk satisfaction
+- **Reduced friction:** Pre-selects first ship type (`shipConfigs[0]?.type ?? null`) instead of forcing user to tap
+- **`justPlacedType` state:** Enables placement confirmation feedback
+- **Brand voice preserved and amplified:** Taunts are perfectly irreverent; ship names untouched
+
+**Gets wrong:**
+- Also truncated (incomplete file) — but shows substantially more implemented features before cutoff
+- Can't verify full implementation of taunts UI or XP display
+
+---
+
+## Ranking
+
+| Priority | V1 | V2 | V3 |
+|---|---|---|---|
+| Core loop clarity | ✓ Basic | ✗ | ✓✓ Improved |
+| Feedback immediacy | ✗ | ✗ | ✓ Animation hook |
+| Progression systems | ✗ | ✗ | ✓ Types ready |
+| Social/viral hooks | ✗ | ✗ | ✓✓ Taunts |
+| Mobile UX | ✓ | ✗ | ✓ |
+| Brand voice | ✓ | ✗ | ✓✓ |
+
+**RANKING: 3, 1, 2**
+
+Version 3 is the clear winner — it's the only version that meaningfully addresses engagement and retention through taunts, progression types, animation infrastructure, and reduced placement friction, all while amplifying the irreverent brand voice. Version 1 is functional but barebones. Version 2 is nonexistent.

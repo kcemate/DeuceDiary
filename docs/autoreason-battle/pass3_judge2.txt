@@ -1,0 +1,28 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**Gets right:** Nothing — the file is completely empty. There is no code to evaluate.
+
+**Gets wrong:** Everything. Zero implementation of any kind. No types, no constants, no component, no game logic, no UI. This is a complete failure to deliver.
+
+---
+
+### Version 2 (Revision B)
+**Gets right:** Establishes a solid type system (CellState, GamePhase, PlacedShip, AttackAnimation, RewardBreakdown). Ship definitions preserve the brand voice (Floater, Log, Corn Log, Battleshit, USS Turdis with fun descriptions). Taunts are on-brand. Level thresholds provide progression scaffolding. Utility functions (createEmptyGrid, getShipCells, isValidPlacement) are correct.
+
+**Gets wrong:** **Truncated mid-function** at `getLevelFromXP`. The rule explicitly states "Output the COMPLETE file, never truncate." This means no component rendering, no state management, no UI, no animations, no social hooks implementation, no mobile layout — none of the actual user-facing code exists. The file is ~15-20% complete. All the scaffolding is invisible to the player.
+
+---
+
+### Version 3 (Synthesis AB)
+**Gets right:** Everything V2 does, plus meaningful additions: an `AttackResult` interface (needed for real-time sync), **10 taunts** vs 8 (more variety = better retention), and crucially **PHASE_COPY** — a `Record<GamePhase, {title, subtitle}>` that provides contextual, on-brand guidance for every game phase ("Hold your breath…", "Fire at Will!", "Brace Yourself!"). This directly addresses core loop clarity and mobile UX by giving players phase-appropriate orientation.
+
+**Gets wrong:** Also **truncated mid-function** (in `getShipCells`). Same fatal incompleteness as V2 — no component, no rendering, no state hooks, no animations, no actual gameplay UI. The PHASE_COPY and extra taunts are good design decisions that never get rendered.
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+V3 > V2 > V1. V3 makes better design decisions (PHASE_COPY for loop clarity, more taunts for variety, AttackResult type for sync), but all three fail the completeness mandate. V1 is empty, V2 is scaffolding-only and truncated, V3 is slightly richer scaffolding — still truncated. If any version had been complete, it would have won decisively, but as delivered, we're ranking degrees of incompleteness.

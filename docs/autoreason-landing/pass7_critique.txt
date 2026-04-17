@@ -1,0 +1,31 @@
+**Conversion Friction**
+- The mid-page CTA section sits between Features and How it Works with absolutely no supporting value proposition or context. It is a naked button asking for commitment at a point where the user hasn't finished evaluating the product, acting as an interruption rather than a conversion point.
+- The primary CTA buttons trigger Clerk's `<SignInButton>`, which opens a "Sign In" modal. For users expecting a "Sign Up" flow (as the button copy suggests), being confronted with a "Sign In" interface creates cognitive friction and raises fears about creating an account versus logging in.
+- The auth method reassurance text ("Google, Apple, or email — sign up in seconds") is repeated four times across the page (Hero, Mid-page, Final CTA, Footer). This redundancy wastes space that could be used to overcome specific objections, and the repeated promise of "seconds" sets an expectation that might clash with the reality of a multi-step Clerk authentication modal.
+- There are no links to App Store or Play Store listings. If this is a habit-tracking app meant for daily mobile use, forcing users into a web sign-up without directing them to a native app creates a disjointed onboarding path.
+
+**Visual Polish & Mobile Responsiveness**
+- There are zero product screenshots, UI mockups, or app previews. The entire page is a wall of text and emoji. Users cannot visualize the app experience, which is a major friction point for an app selling a visual concept like "streaks" and "leaderboards."
+- The vertical padding between sections (`pb-20 sm:pb-28`) is excessive. Combined with the lack of visual breaks, this creates an endlessly scrolling page on mobile devices, causing fatigue before the user reaches the FAQ or final CTA.
+- The three testimonials stack vertically on mobile. Three consecutive large blocks of quoted text require heavy scrolling and look monotonous on small screens.
+- The feature cards use `hover:border-green-500/30 hover:bg-white/[0.04]`. On touch devices, hover states either don't register or "stick," making these transition effects useless and potentially visually confusing on mobile.
+- The hero H1 uses `<br className="hidden sm:block" />` to break "The Strava of / Poop Tracking". On desktop, "The Strava of" hanging alone on one line is visually unbalanced and leaves a dangling preposition/phrase.
+
+**Copy That Doesn't Convert**
+- The hero subhead has a logical disconnect: "Streaks. Squads. Leaderboards." are about consistency, accountability, and competition. The follow-up line, "Because your best ideas happen on the throne," is about creativity. The value proposition doesn't align.
+- The social proof bar claims "Join thousands of consistent throne thinkers." "Thousands" is a weak, vague metric that often reads as inflated. Without a specific number (e.g., "12,000+"), it fails to provide concrete social validation.
+- The FAQ answer for data security uses the phrase "bank-grade encryption." This is a widely distrusted marketing cliché that often triggers the opposite of trust, especially for an app handling potentially sensitive health-adjacent data.
+
+**Redundant or Low-Value Sections**
+- The "Mid-page CTA" section is entirely redundant. It offers no new information, no new angle on the value prop, and sits awkwardly between two informational sections.
+- The FAQ section renders all questions and answers open by default. This defeats the purpose of an FAQ (which is to let users scan for *their* specific question and pull the answer). It results in a massive, unscannable wall of text at the bottom of the page.
+
+**Missing Best Practices**
+- The footer contains no links to a Privacy Policy or Terms of Service. For an app collecting daily habit data and claiming to be secure, the absence of legal links is a major trust gap and a compliance red flag.
+- The testimonials consist of text, an initial, and a location. There are no photos, no last names, and no links to social profiles. They look easily fabricated, which undermines their value as social proof.
+- The pulsing green dot in the social proof bar implies real-time activity ("live" users), but the adjacent text is static ("Join thousands..."). This mismatch makes the pulsing dot feel like a manipulative dark pattern rather than a genuine live indicator.
+
+**Accessibility**
+- The testimonial detail text (`text-xs text-green-400`) sits inside a container with `bg-green-500/20`. The low contrast between light green text and a 20% opacity green background likely fails WCAG AA contrast requirements.
+- The sub-CTA text (`text-sm text-neutral-500`) on the dark `#0a0a0a` background is borderline low-contrast, making it difficult for users with visual impairments to read the auth method details.
+- The hero toilet emoji uses `motion-safe:animate-bounce` with a custom 3-second duration. While it respects the motion preference, a continuously bouncing element—even slowly—can be a distracting trigger for users with attention deficit disorders or vestibular disorders, especially as the primary focal point of the hero section.

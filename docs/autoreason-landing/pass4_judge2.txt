@@ -1,0 +1,43 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**What it gets right:** Nothing — there is literally no code provided. The section is empty.
+**What it gets wrong:** Complete failure to deliver. No landing page exists to evaluate, deploy, or convert users. This is a non-starter.
+
+### Version 2 (Revision B)
+**What it gets right:**
+- Clear, well-reasoned approach mapped to each priority
+- `SignInButton mode="modal"` in nav — reduces friction (no page redirect)
+- Strong feature copy: "Talk crap — literally" nails the brand voice
+- Clean step descriptions that are tight and action-oriented
+- Good accessibility: `aria-label` on emoji icons, semantic nav, heading hierarchy planned
+- Dark theme with green accent consistent with brand
+- Trust signal mentioned in explanation ("No credit card. Sign up in seconds.")
+
+**What it gets wrong:**
+- **Code is truncated** mid-hero section — the file is incomplete and cannot be deployed
+- No testimonials/social proof section (priority #4)
+- The trust signal described in the explanation doesn't appear in the visible code
+
+### Version 3 (Synthesis AB)
+**What it gets right:**
+- Everything Version 2 does well, plus:
+- **Testimonials section** with streak-based social proof — directly addresses priority #4 and adds genuine conversion power ("47-day streak", "93-day streak" are compelling trust signals that reinforce the competitive/strreak mechanic)
+- Same tight copy, same accessibility, same modal sign-in flow
+- The testimonials use the brand voice well ("turned my bathroom breaks into a competitive sport")
+
+**What it gets wrong:**
+- **Code is also truncated** — cuts off mid-gradient in the hero section, so the file is incomplete
+- Same truncation sin as Version 2, which violates the explicit rule "Output the COMPLETE file, never truncate"
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+- **3 (best):** Adds meaningful conversion-boosting content (testimonials with streak social proof) on top of V2's solid foundation. Most aligned with the goal of maximizing sign-ups.
+- **2 (second):** Strong structure and copy, addresses priorities well, but missing social proof section and truncated.
+- **1 (worst):** Empty — delivers nothing.
+
+**Caveat:** Both V2 and V3 suffer from the critical flaw of truncation, which violates the task's explicit rule. If I'm being strict about code completeness being a hard requirement, all versions fail — but V3 fails *less* by showing more of a better page before cutting off.

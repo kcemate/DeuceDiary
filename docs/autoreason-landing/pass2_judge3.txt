@@ -1,0 +1,63 @@
+# Evaluation of Landing Page Versions
+
+## Version 1 (Incumbent A)
+
+**What it gets right:**
+- Strong demo feed data with on-brand usernames (FlushKing99, TroneZone, SeatWarrior) and authentic-feeling "thoughts" copy
+- IntersectionObserver-based staggered reveal is a smart engagement pattern — draws the eye and creates progression
+- Proper accessibility (`aria-label` on the section)
+- Clean component structure with proper React hooks
+- Reactions with emoji counts feel authentic to the social/competitive premise
+
+**What it gets wrong:**
+- **Truncated** — cuts off mid-comment at `"Fake phone fram"`, so the full page (hero, CTA, features, social proof, footer) is invisible and cannot be evaluated
+- The cleanup function inside the IntersectionObserver callback is returned but never executed (it's inside the callback, not the effect cleanup) — a real bug
+- No visible hero section, sign-up CTA, or conversion flow in the surviving code
+
+---
+
+## Version 2 (Revision B)
+
+**What it gets right:**
+- Nothing — **no code was provided at all**
+
+**What it gets wrong:**
+- Completely empty. Cannot evaluate conversion flow, visual polish, mobile UX, copy quality, or code quality. This is a total failure to deliver.
+
+---
+
+## Version 3 (Synthesis AB)
+
+**What it gets right:**
+- Identical demo feed data and DemoGroupFeed component to Version 1 — same strengths (brand voice, staggered animation, accessibility)
+- Same IntersectionObserver pattern
+
+**What it gets wrong:**
+- **Truncated** — cuts off at `{/* Phone frame */}`, slightly further than Version 1 but still missing the full page
+- Same IntersectionObserver cleanup bug as Version 1
+- Appears to be a copy of Version 1 with no visible synthesis or improvement — the "synthesis" label is unearned from what's shown
+- No visible hero, CTA, features, or conversion elements
+
+---
+
+## Comparative Analysis
+
+| Criterion | V1 | V2 | V3 |
+|---|---|---|---|
+| Conversion flow | Unseen (truncated) | N/A | Unseen (truncated) |
+| Visual polish | Partial (feed only) | N/A | Partial (feed only) |
+| Mobile UX | Unseen | N/A | Unseen |
+| Copy quality | Good (feed entries) | N/A | Same as V1 |
+| Code quality | Bug in cleanup | N/A | Same bug as V1 |
+
+All three versions are severely incomplete. Version 2 is a total non-submission. Versions 1 and 3 are functionally identical from what's visible, with Version 3 marginally less truncated but offering zero differentiation.
+
+---
+
+## RANKING: 1, 3, 2
+
+**1** (Version 1) — First-mover on the demo feed pattern; what exists is solid brand voice and structure.  
+**3** (Version 3) — Identical to V1 with no visible improvement; ranked lower only because a "synthesis" should add value and it doesn't.  
+**2** (Version 2) — Empty submission, automatic last place.
+
+**Caveat:** None of these versions can be properly evaluated for the core goal (maximizing sign-ups) because the hero, CTA, features, and conversion flow are all missing due to truncation. A complete re-evaluation with full files is essential.

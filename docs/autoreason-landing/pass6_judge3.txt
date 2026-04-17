@@ -1,0 +1,54 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Punchy, irreverent brand voice throughout — "Talk crap — literally," "Know thyself," "Rule the throne"
+- Steps/how-it-works section reduces friction by showing simplicity (3 steps, 10 seconds)
+- Concise feature descriptions respect the reader's time
+- Clean nav with prominent CTA
+
+**Gets wrong:**
+- **No FAQ section** — this is the single biggest conversion gap. Users will have privacy concerns ("can people see my logs?"), cost anxiety, and credibility doubts. Leaving these unaddressed = drop-off.
+- Testimonials lack location detail, making them feel more fabricated
+- Feature descriptions are a bit thin — "Track frequency, duration, and trends" doesn't differentiate
+- No objection handling anywhere on the page
+
+---
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- **FAQ section is excellent** — addresses the top 5 objections (joke?, privacy?, medical?, cost?, security?) with on-brand answers. This alone will meaningfully improve conversion.
+- Testimonials enhanced with locations (Portland, Austin, Chicago) — more credible
+- Feature descriptions are more specific and benefit-oriented ("Spot what your gut's telling you")
+- Privacy answer is particularly strong: "Your bathroom habits are your business — literally"
+
+**Gets wrong:**
+- **Removes the steps/how-it-works section** — this was a conversion asset. Showing "Tap. Rate. Done in 10 seconds" immediately reduces perceived friction. Losing it is a regression.
+- Brand voice is slightly diluted — "Create a crew of up to 10" is more clinical than "Talk crap — literally"
+- Feature labels ("Streaks feature") are unnecessarily verbose and less fun than V1's
+- Loses some of the competitive/irreverent energy that makes the brand distinctive
+
+---
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- **Has BOTH steps AND FAQ** — this is the optimal conversion architecture. Steps reduce perceived effort; FAQ removes objections. Having both covers the two biggest conversion killers.
+- Best brand voice balance — keeps V1's irreverence ("Talk crap — literally," "The throne awaits") while incorporating V2's clarity and detail
+- Enhanced testimonials with locations from V2
+- Feature descriptions hit the sweet spot: specific enough to be credible, punchy enough to be fun
+- FAQ section preserves V2's excellent objection-handling copy
+
+**Gets wrong:**
+- Feature labels still use V1's shorter style ("fire", "people") which is fine for aria but slightly inconsistent with the more descriptive approach
+- Minor: inherits any minor issues from both parents (e.g., "bank-grade encryption" in FAQ is a cliché, though the follow-up punchline saves it)
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+Version 3 is the clear winner because it combines the two most powerful conversion tools — friction-reducing steps *and* objection-killing FAQ — while maintaining the strongest brand voice. Version 2 is a solid second thanks to its FAQ section, but losing the steps section hurts. Version 1 has the best voice but the weakest conversion architecture, with no FAQ to address the obvious objections users will have about a poop-tracking app.

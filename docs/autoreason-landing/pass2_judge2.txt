@@ -1,0 +1,66 @@
+# Evaluation of Landing Page Versions
+
+## Version 1 (Incumbent A)
+
+**Gets right:**
+- Demo feed data is on-brand and realistic — usernames like "FlushKing99" and "TroneZone" nail the irreverent voice
+- IntersectionObserver with staggered reveal is a nice polish touch for engagement
+- Proper accessibility (`aria-label` on the section)
+- Clean Tailwind dark-theme styling with `bg-card/50`, `border-border`
+- Reactions with emoji counts effectively preview the social/competitive loop
+
+**Gets wrong:**
+- **Truncated** — we can't see the full page (hero, CTA, features, social proof, footer)
+- Comment typo: `"Fake phone fram"` — suggests rushed work
+- The `useEffect` cleanup function is defined *inside* the IntersectionObserver callback where it never executes — it should be in the outer return. This is a real bug.
+- No visible CTA or sign-up flow in the truncated output — can't evaluate conversion optimization
+
+---
+
+## Version 2 (Revision B)
+
+**Gets right:**
+- Nothing evaluable — the version contains **no code at all**
+
+**Gets wrong:**
+- Completely empty submission — zero landing page content provided
+- Cannot accomplish any of the stated goals
+
+---
+
+## Version 3 (Synthesis AB)
+
+**Gets right:**
+- Identical demo feed data and DemoGroupFeed component as V1 — same brand voice quality
+- Same IntersectionObserver stagger animation
+- Same accessibility and Tailwind usage
+- Comment is cleaner: `{/* Phone frame */}` vs V1's broken `{/* Fake phone fram */}`
+
+**Gets wrong:**
+- **Also truncated** at essentially the same point as V1
+- Same `useEffect` cleanup bug — the inner `return () => { ... }` inside the observer callback never runs as a cleanup; it's dead code
+- No visible differentiation from V1 in the available code — appears to be a copy with minor comment fixes
+
+---
+
+## Summary
+
+All three versions suffer from truncation, making a full evaluation impossible. Based on visible code:
+
+- **V2** is a non-starter (empty)
+- **V1 and V3** are nearly identical, with V3 having a marginally cleaner comment
+- Both V1 and V3 share the same `useEffect` cleanup bug — the cleanup function returned inside the observer callback is unreachable dead code; the actual cleanup only calls `observer.disconnect()`
+
+The critical conversion elements (hero CTA, sign-up flow, features section, social proof, sticky nav) are invisible in all versions, so none can be properly judged on the primary goal of maximizing sign-ups.
+
+---
+
+**RANKING: 3, 1, 2**
+
+| Rank | Version | Rationale |
+|------|---------|-----------|
+| 1st | **3** | Marginally cleaner code (fixed comment), otherwise identical to V1 |
+| 2nd | **1** | Same substance as V3 but with a typo; tied on all functional merits |
+| 3rd | **2** | No content — complete failure to deliver |
+
+*Note: The ranking between 1 and 3 is essentially a coin flip given they appear to be the same code with a one-word comment difference. The real differentiator would be in the truncated portions (hero, CTA, features, footer) which are unavailable for review.*

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import logger from "@/lib/logger";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,15 +7,15 @@ import { PageSpinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useMutationWithToast } from "@/hooks/useMutationWithToast";
 import { BattleGrid, GridCell, GridShip, GridAttack } from "@/components/battle-grid";
+import { apiRequest } from "@/lib/queryClient";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const STANDARD_GRID = { cols: 10, rows: 7 };
-const QUICK_GRID = { cols: 7, rows: 7 };
+const STANDARD_GRID = { cols: 7, rows: 3 };
+const QUICK_GRID = { cols: 3, rows: 3 };
 
 const SHIPS_CONFIG = {
   standard: [
@@ -45,6 +45,7 @@ interface MatchData {
     matchType: "standard" | "quick";
     status: "pending" | "placement" | "active" | "completed" | "forfeited" | "voided";
     winnerId?: string;
+    placementDeadline: string;
   };
   myShips: Array<{ type: string; cells: GridCell[]; sunk: boolean }>;
   opponentSunkShips: Array<{ type: string; cells: GridCell[]; sunk: boolean }>;
@@ -60,10 +61,12 @@ interface MatchData {
 function PlacementPhase({
   matchId,
   matchType,
+  placementDeadline,
   onPlaced,
 }: {
   matchId: string;
   matchType: "standard" | "quick";
+  placementDeadline: string;
   onPlaced: () => void;
 }) {
   const { toast } = useToast();
@@ -74,6 +77,30 @@ function PlacementPhase({
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [orientation, setOrientation] = useState<"horizontal" | "vertical">("horizontal");
   const [hoverCell, setHoverCell] = useState<GridCell | null>(null);
+
+  // Countdown timer for placement deadline
+  const deadlineTime = new Date(placementDeadline).getTime();
+  const [timeLeftMs, setTimeLeftMs] = useState<number>(deadlineTime - Date.now());
+  const [isExpired, setIsExpired] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isExpired) return;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeLeft = deadlineTime - now;
+      
+      if (timeLeft <= 0) {
+        setTimeLeftMs(0);
+        setIsExpired(true);
+        clearInterval(interval);
+      } else {
+        setTimeLeftMs(timeLeft);
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [deadlineTime, isExpired]);
 
   const placeMutation = useMutationWithToast({
     mutationFn: (ships: PlacedShip[]) =>
@@ -161,14 +188,49 @@ function PlacementPhase({
       {/* Phase header */}
       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-center">
         <p className="text-sm font-bold text-yellow-400">⚓ Phase 1: Deploy Your Fleet</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Select a ship, then tap the grid to place it
-        </p>
+        {isExpired ? (
+          <p className="text-xs text-red-500 font-bold mt-0.5">
+            ⏰ Time expired! Ships will auto-place when opponent is ready.
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Select a ship, then tap the grid to place it
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              ⏰ Time left: {Math.floor(timeLeftMs / 1000 / 60)}m {Math.floor(timeLeftMs / 1000) % 60}s
+            </p>
+          </>
+        )}
       </div>
 
-      {/* Grid with rotate button overlay */}
+      {/* Orientation toggle */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Direction:</span>
+        <button
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+            orientation === "horizontal"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+          onClick={() => setOrientation("horizontal")}
+        >
+          ← Horizontal
+        </button>
+        <button
+          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+            orientation === "vertical"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground"
+          }`}
+          onClick={() => setOrientation("vertical")}
+        >
+          ↕ Vertical
+        </button>
+      </div>
+
+      {/* Grid */}
       <div
-        className="relative"
         onMouseLeave={() => setHoverCell(null)}
         onTouchEnd={() => setHoverCell(null)}
       >
@@ -182,21 +244,6 @@ function PlacementPhase({
           previewCells={preview}
           previewValid={previewValid}
         />
-        {selectedType && (
-          <button
-            className="absolute bottom-3 right-2 flex items-center gap-1.5 px-3
-              bg-primary/90 text-primary-foreground font-bold text-sm rounded-xl shadow-lg
-              active:scale-95 transition-transform min-h-[44px] border border-white/20
-              backdrop-blur-sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOrientation((o) => (o === "horizontal" ? "vertical" : "horizontal"));
-            }}
-            aria-label="Rotate ship"
-          >
-            ↻ {orientation === "horizontal" ? "Horizontal" : "Vertical"}
-          </button>
-        )}
       </div>
 
       {/* Ship inventory */}
@@ -251,7 +298,7 @@ function PlacementPhase({
       <Button
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold
           rounded-2xl py-5 shadow-lg shadow-primary/20"
-        disabled={!allPlaced || placeMutation.isPending}
+        disabled={!allPlaced || placeMutation.isPending || isExpired}
         onClick={() => placeMutation.mutate(placedShips)}
       >
         {placeMutation.isPending
@@ -281,7 +328,6 @@ function BattlePhase({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"enemy" | "mine">("enemy");
   const [lastResult, setLastResult] = useState<{ hit: boolean; sunk?: boolean; shipType?: string } | null>(null);
-  const [pendingCell, setPendingCell] = useState<GridCell | null>(null);
 
   const grid = matchType === "standard" ? STANDARD_GRID : QUICK_GRID;
   const { myShips, myAttacks, opponentAttacks, tokenBalance, myPowerups } = data;
@@ -296,7 +342,6 @@ function BattlePhase({
     errorMessage: (e: Error) => e.message,
     onSuccess: (result) => {
       setLastResult({ hit: result.hit, sunk: result.sunk, shipType: result.shipType });
-      setPendingCell(null);
       onRefresh();
       if (result.hit) {
         if (result.sunk) {
@@ -444,7 +489,6 @@ function BattlePhase({
             rows={grid.rows}
             ships={opponentSunkAsShips}
             attacks={myAttacks}
-            selectedCell={pendingCell}
             onCellClick={(col, row) => {
               if (available <= 0) {
                 toast({
@@ -454,20 +498,11 @@ function BattlePhase({
                 });
                 return;
               }
-              if (attackMutation.isPending) return;
-              // Two-tap confirmation: first tap selects, second tap on same cell fires
-              if (pendingCell && pendingCell.col === col && pendingCell.row === row) {
-                attackMutation.mutate({ col, row });
-              } else {
-                setPendingCell({ col, row });
-              }
+              attackMutation.mutate({ col, row });
             }}
           />
           <p className="text-center text-xs text-muted-foreground mt-2">
-            {pendingCell
-              ? "🎯 Tap again to fire · Tap elsewhere to retarget"
-              : "Tap to target · Tap again to fire"}
-            {" · "}Revealed: {myAttacks.length} cells
+            Tap a cell to fire · Revealed: {myAttacks.length} cells
           </p>
         </div>
       ) : (
@@ -720,7 +755,12 @@ export default function BattleMatch() {
       ) : isActive ? (
         <BattlePhase matchId={matchId!} matchType={matchType} data={data} onRefresh={refresh} />
       ) : isPlacementPhase ? (
-        <PlacementPhase matchId={matchId!} matchType={matchType} onPlaced={refresh} />
+        <PlacementPhase
+          matchId={matchId!}
+          matchType={matchType}
+          placementDeadline={data.match.placementDeadline}
+          onPlaced={refresh}
+        />
       ) : isWaiting ? (
         <WaitingPhase matchId={matchId!} onRefresh={refresh} />
       ) : isPending ? (

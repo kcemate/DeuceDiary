@@ -1,0 +1,46 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Brand voice is punchy and irreverent throughout: "Talk crap — literally," "The throne awaits," "Know thyself"
+- "How it works" steps section is a strong conversion element — "Done in ten seconds" directly attacks effort-friction
+- Concise, scannable copy works well on mobile
+- Clean data structures, minimal code
+
+**Gets wrong:**
+- **No FAQ section** — this is the biggest conversion sin. Unanswered objections ("Is this a joke?", "Can people see my logs?", "Is it free?") are a primary source of drop-off. Users won't sign up if they can't resolve privacy, cost, and seriousness concerns.
+- Testimonials lack location detail, reducing perceived authenticity
+- Feature descriptions are sometimes vague ("Know thyself" is clever but doesn't tell you what you're tracking)
+- Accessibility labels are thin ("fire", "people") — not descriptive enough for screen readers
+
+---
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- **FAQ section is a conversion powerhouse** — tackles the five most likely objections head-on: joke status, privacy, medical scope, cost, and data security. "Free. Full stop." and "Your bathroom habits are your business — literally" are excellent trust-building lines.
+- Testimonials gain credibility with city/state locations
+- Feature descriptions are more specific and informative (time-of-day patterns, squad size)
+- Better accessibility labels ("Streaks feature" vs "fire")
+
+**Gets wrong:**
+- **Lost the brand voice.** "Cheer each other on, hold each other accountable" is corporate HR language — the exact opposite of "Talk crap — literally." The irreverence that makes the brand memorable and shareable is flattened out.
+- **No "How it works" steps section.** Showing users the app takes "ten seconds" is a critical friction-reducer. Without it, the perceived effort is undefined.
+- Feature copy leans informative-but-boring when it should be informative-and-fun. This is supposed to be Strava-meets-Duolingo, not a SaaS product page.
+
+---
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- **Has both the steps section AND the FAQ.** This is the optimal conversion structure: steps reduce perceived effort, FAQ resolves objections. No other version has both.
+- Brand voice is back: "Talk crap — literally," "The throne awaits" — the irreverence that makes the app shareable and memorable
+- Feature descriptions blend V1's personality with V2's specificity: "Track frequency, time-of-day patterns, and weekly trends. Know what your gut's telling you" — informative *and* fun
+- Testimonials include locations from V2 for credibility
+- FAQ section retained with all five objection-handling questions
+- "Miss a day and it resets — your squad gets notified" creates urgency and social accountability in one line
+
+**Gets wrong:**
+- Accessibility labels revert to V1's simpler ones ("fire", "people") — a minor regression from V2
+- Page is longer than V1

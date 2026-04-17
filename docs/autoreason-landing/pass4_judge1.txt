@@ -1,0 +1,48 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**What it gets right:** Nothing — the submission is entirely empty. There is no code to evaluate.
+
+**What it gets wrong:** Complete non-submission. Zero landing page exists. This would produce zero sign-ups.
+
+---
+
+### Version 2 (Revision B)
+**What it gets right:**
+- Solid structural foundation: nav with `SignInButton mode="modal"` (one-tap, no redirect — directly addresses friction priority)
+- Good accessibility: `aria-label` on emoji icons, semantic `<nav>` with `role="navigation"`, heading hierarchy
+- Clean dark theme with green-500 accent, backdrop-blur nav
+- Feature copy is tight and on-brand ("Talk crap — literally", "The throne awaits")
+- Steps section is concise and action-oriented
+- Responsive padding classes (`px-4 sm:px-6`, `pt-28 sm:pt-40`)
+
+**What it gets wrong:**
+- **Truncated output** — cuts off mid-hero section, so the full page isn't delivered
+- No testimonials/social proof section — misses priority #4 entirely
+- No trust signals like "No credit card" or "Join thousands" visible in the surviving code
+- Only one CTA visible (nav); best practice is hero + bottom-of-page CTAs
+
+---
+
+### Version 3 (Synthesis AB)
+**What it gets right:**
+- Everything Version 2 does right (same nav, features, steps, accessibility, styling)
+- **Adds a testimonials section** with 3 on-brand quotes that include streak data — this directly addresses priority #4 (social proof/trust) and reinforces the competitive gamification angle ("47-day streak", "Top 10 weekly", "93-day streak")
+- Testimonial copy is irreverent and fun: "The leaderboard turned my bathroom breaks into a competitive sport" — perfect brand voice
+- Streak badges on testimonials serve as both social proof AND aspiration triggers
+
+**What it gets wrong:**
+- **Also truncated** — cuts off at the same hero section point, so we can't see the full rendered page
+- Same single-CTA-in-nav issue (though the hero CTA may have been in the truncated portion)
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+- **3 (Synthesis AB)** is best: It takes Version 2's solid foundation and meaningfully improves it with testimonials that are on-brand, provide social proof, and leverage the app's competitive streak mechanic as trust signaling. Every addition earns its place.
+- **2 (Revision B)** is second: Good structural and copy foundation, but missing the social proof section that directly addresses a stated priority.
+- **1 (Incumbent A)** is worst: Empty submission — no page, no sign-ups, total failure.
+
+**Note:** Both V2 and V3 suffer from truncation, which is a significant flaw in a task that demands "the COMPLETE file, never truncate." However, based on the visible code and clear structural intent, V3's addition of testimonials makes it the stronger conversion tool.

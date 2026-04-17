@@ -1,0 +1,1 @@
+It appears the landing page code/content is missing from your message — there's nothing between the two horizontal rules. Please paste the actual HTML/CSS/JS or the page content and I'll review it for the issues you've listed.

@@ -1,0 +1,55 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Demo feed data is on-brand and realistic — usernames like "FlushKing99" and "TroneZone" nail the voice
+- Staggered reveal animation creates engagement
+- Phone frame concept for showing the squad feed is a smart social-proof device
+- Section structure with label + heading + subtitle is solid
+
+**Gets wrong:**
+- **Truncated code** — cuts off mid-attribute (`<p classN`), making it non-functional
+- Animations fire on mount regardless of viewport visibility — wasteful and users may never see them if the section is below the fold
+- No accessibility attributes (aria-labels)
+- `text-muted-foreground` on the section label dilutes visual hierarchy
+- No responsive padding adjustments for larger screens
+- Starts `visibleItems` at 1, which is a slightly awkward initial state
+
+---
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- Nothing — the version is **completely empty**
+
+**Gets wrong:**
+- No code whatsoever was provided. This is a total failure to produce a deliverable.
+
+---
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- Same strong demo data and brand voice as V1
+- **IntersectionObserver** for lazy animation — only triggers when the section scrolls into view, which is both a performance win and a better UX (users actually *see* the animation)
+- `aria-label` on the section for accessibility
+- `text-primary` on the label instead of `text-muted-foreground` — stronger visual hierarchy, draws the eye
+- Responsive padding (`md:py-14`) for larger screens
+- Cleaner initial state (`visibleItems` starts at 0)
+- `useRef` pattern is more idiomatic for scroll-observation logic
+- Slightly faster stagger timing (400ms vs 500ms) — snappier feel
+
+**Gets wrong:**
+- **Also truncated** — cuts off at `{/* Fake phone fram`, so we can't evaluate the full implementation
+- The cleanup function inside the IntersectionObserver callback (`return () => { timers.forEach(clearTimeout)... }`) doesn't actually work as intended — it's returned from the *observer callback*, not the `useEffect`. The `useEffect` cleanup only disconnects the observer. This is a subtle bug where timers wouldn't be cleaned up on unmount during the animation phase.
+
+---
+
+## Ranking
+
+**3, 1, 2**
+
+- **Version 3 (best):** Clear improvements over V1 in performance (IntersectionObserver), accessibility, visual hierarchy, and responsive design. Even truncated, what's visible is more polished and conversion-conscious.
+- **Version 1 (second):** Functional core with good brand voice and demo data, but lacks the polish, lazy-animation, and accessibility improvements of V3.
+- **Version 2 (worst):** Empty — complete non-deliverable.

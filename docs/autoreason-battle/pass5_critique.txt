@@ -1,0 +1,67 @@
+## Critical UX Problems in This Battle Game
+
+### Core Loop Friction
+
+1. **"Press R to rotate" is desktop-only** — The placement phase subtitle explicitly tells mobile users to press a key they don't have. No touch-based rotation alternative is visible anywhere. Mobile players are stranded.
+
+2. **No auto-place or randomize option** — Players must manually place all 5 ships on a 10×10 grid before playing. This is setup friction with no gameplay payoff. New players can bounce before the match even starts.
+
+3. **The "waiting" phase is a black hole** — "Hold your breath…" with no progress indicator, no estimated wait time, no cancel option, and nothing for the player to do. If the opponent is slow or disconnected, the player stares at nothing.
+
+4. **No surrender/forfeit mechanism** — A player getting destroyed has no way to exit gracefully. They must sit through every remaining turn of a lost game.
+
+5. **No undo during placement** — A misplaced ship on a small mobile grid requires what? The placement flow isn't fully visible, but there's no obvious "remove last placed" or "clear all" control.
+
+### Missing Progression Visibility
+
+6. **XP/level system exists in code but is invisible to the player** — `LEVEL_THRESHOLDS`, `getLevelFromXP`, and `getXPForNextLevel` are all computed but never rendered during the match. The player earns progression they can't see.
+
+7. **Rewards are calculated but not contextualized** — `computeRewards` spits out numbers (baseXP, accuracyBonus, sunkBonus, etc.) with no indication of what these unlock, what the player is working toward, or why they matter.
+
+8. **No match-to-match progression connective tissue** — Nothing visible carries between matches: no streak counter, no win/loss record, no cumulative stats, no "you've sunk 47 ships total" milestone tracking.
+
+### Weak/Nonexistent Social Hooks
+
+9. **Taunts exist but can't leave the app** — 10 themed taunts with personality, but no share mechanism. No "share this dunk" button, no replay generation, no screenshot overlay with match results.
+
+10. **No opponent identity** — The AI is just "opponent." No name, no avatar, no rank, no personality. Players have nobody to beat and nobody to brag about beating.
+
+11. **Result phase subtitle is an empty string** — The most emotionally charged moment (win/loss) has literally no copy. This is the prime share moment and it says nothing.
+
+### Feedback & Juice Deficits
+
+12. **Sound design is emotionally flat** — Web Audio oscillator beeps for hits, misses, and sinks. No satisfying crunch, no rumble, no bass. The "sunk" sound is a sawtooth sweep that feels like a 1980s alarm clock, not a triumphant destruction.
+
+13. **No haptic feedback path** — No vibration API calls anywhere. On mobile, a hit should feel different than a miss. Currently they feel identical.
+
+14. **The 600ms splash animation is the only visible juice** — One brief flash per attack. No screen shake, no particle burst, no camera zoom on sink, no delayed reveal, no chain-reaction for multi-sink scenarios.
+
+15. **No game state summary visible during play** — Players can't see "3 of 5 enemy ships sunk" or "you have 2 ships remaining" at a glance. They must mentally track the board state across two grids.
+
+16. **AI difficulty is invisible and punishing** — The AI has a 70% chance to target cells adjacent to hits, making it aggressively smart. New players get hunted down with no difficulty ramp. No indication this is happening or why they're losing so fast.
+
+### Mobile Usability Gaps
+
+17. **10×10 grid on a 375px screen ≈ 32px per cell** — Below the 44px minimum touch target. Players will mis-tap cells, especially under time pressure or excitement. No confirmation step before firing.
+
+18. **No zoom/pan on the attack grid** — Precision targeting on a dense small grid with no way to enlarge the target area.
+
+19. **Ship placement requires tap-to-select then tap-to-place** — Two precise taps on tiny cells. One finger obscures the cell while aiming. No drag-to-place alternative.
+
+### Bland UX & Wasted Personality
+
+20. **The theme is toilet humor but the UI plays it straight** — Ship names like "Battleshit" and "USS Turdis" exist alongside generic phase copy like "Deploy Your Fleet" and "Fire at Will!" The thematic potential is abandoned at the UI layer.
+
+21. **Ship descriptions never surface during gameplay** — "Small but sneaky," "Roughage included," "The pride of the fleet" — these are character-building copy that could make players care about their ships, but they're trapped in a definition object with no visible rendering path.
+
+22. **No drama in the turn transition** — "Attacking" → "Defending" is a state swap with no ceremony. No "Your turn" fanfare, no tension build, no opponent action replay.
+
+23. **The result screen has no emotional arc** — Win or lose, the subtitle is empty. No stats comparison, no "you destroyed 3 ships in 12 turns," no opponent reaction, no rematch prompt visible.
+
+### Copy That Doesn't Engage
+
+24. **"Brace Yourself!"** — Generic. Could be any game. Not on-theme.
+
+25. **"Waiting for Opponent" / "Hold your breath…"** — Passive, helpless framing. The player is told to wait, not given agency or distraction.
+
+26. **Phase copy is purely instructional, never emotional** — "Tap a ship, then tap the grid to place" is a manual, not a moment. Placement could feel like commanding a fleet, not filling out a form.

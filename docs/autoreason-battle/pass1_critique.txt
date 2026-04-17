@@ -1,0 +1,93 @@
+## Core Loop Friction
+
+1. **The "Accept & Deploy Ships" button in PendingPhase doesn't actually accept the match** — it just calls `refetch()`. It's a fake CTA that refreshes data instead of performing the accept action. Players will tap it repeatedly wondering why nothing happens.
+
+2. **Running out of attack tokens is a dead end.** The message says "Log a deuce to earn attack tokens" but provides no path to do so — no link, no modal, no explanation of what that means. The player is stuck on the battle screen with no way forward.
+
+3. **The placement deadline expiry creates an ambiguous limbo state.** The UI says "Ships will auto-place when opponent is ready" but the client has no auto-placement logic. The player is told something will happen that the code never does.
+
+4. **The waiting phase has no estimated time, no opponent activity signal, and no push notification enrollment.** Players are told to wait with a manual "Check status" button — but the query already polls every 10s, so the button is redundant while also failing to communicate that auto-refresh is happening.
+
+5. **The grid tabs force players to switch between Enemy and Your grids to see both.** In a strategy game, you need to reference your own ship positions while planning attacks. The tab switch creates constant context-switching friction, especially on mobile where both grids could fit vertically.
+
+6. **No forfeit/quit option exists during active battle.** A player who wants out has no visible escape hatch.
+
+7. **The placement auto-advance logic is broken.** The `nextShip` finder contains `!preview.some(() => s.type === selectedType)` — the callback ignores its arguments, so this always evaluates to `s.type !== selectedType`. The auto-advance to the next unplaced ship doesn't work as intended.
+
+## Missing Progression
+
+8. **Zero persistence of achievement across matches.** Game over shows match-only stats (hits, misses, accuracy) with no lifetime context — no total wins, no win streak, no career accuracy, no rank. Each match exists in a vacuum.
+
+9. **No rewards are shown at game over.** No tokens earned, no XP gained, no unlocks. The match ends and the only CTA is "Back to Lobby" — there's no dopamine hit, no reason to feel like you gained something.
+
+10. **No unlock or customization system exists.** Ships, power-ups, grid themes, titles — nothing to work toward. The fleet status tracker and power-up buttons are the same every match with no sense of collection or growth.
+
+11. **No difficulty or matchmaking progression.** No visible skill rating, no league, no bracket. Players have no sense of climbing.
+
+## Weak Social / Viral Hooks
+
+12. **No share button on the game over screen.** "YOU WON!" is the peak emotional moment and the perfect viral vector — and it's completely unsharable.
+
+13. **The opponent has no identity.** No avatar, no username, no personality anywhere on the screen. You're fighting a faceless `opponentId`. No rivalry can form.
+
+14. **No rematch option after game over.** The only path is back to the lobby. A close loss is the moment players most want a rematch, and it's not offered.
+
+15. **No taunt, emote, or reaction system during battle.** The entire theme screams for bathroom humor interaction between players, but there's zero in-match communication.
+
+16. **No push notification enrollment.** An asynchronous game with no mechanism to bring players back when it's their turn is a retention black hole.
+
+## Poor Feedback
+
+17. **The `lastResult` state is set but never rendered.** Attack results rely entirely on toast notifications that auto-dismiss. There's no persistent visual indicator on the grid of what just happened.
+
+18. **No attack suspense.** The mutation fires and the result appears instantly — no brief delay, no animation, no "firing..." state. The moment of anticipation that makes Battleship exciting is completely absent.
+
+19. **The sonar ping result gives raw grid coordinates** ("Detected activity at 2,3") that require the player to mentally map numbers to grid positions. No highlighting on the grid itself.
+
+20. **Ghost Wipe's feedback is "Let's see what it does..."** — the game literally tells the player it doesn't know what happened. This is not feedback; it's an admission of missing design.
+
+21. **When out of attack tokens, the enemy grid is still fully tappable.** The player only discovers they can't attack after tapping, via a toast. The grid should visually communicate the disabled state before interaction.
+
+22. **Opponent's remaining unsunk ships are never revealed at game end.** The satisfying "aha, so THAT'S where they were!" reveal that makes Battleship endings rewarding is completely absent.
+
+23. **No sound effects are wired anywhere.** No hit sound, no miss splash, no sinking groan, no placement click. The entire battle is silent.
+
+24. **The 10-second polling interval means opponent actions can appear up to 10 seconds stale.** A player could fire, see a result, then suddenly an opponent's attack appears that happened earlier. No real-time updates, no visual cue that new opponent data has arrived.
+
+## Mobile Usability
+
+25. **The placement preview system relies on hover (`onMouseEnter`/`onMouseLeave`), which doesn't exist on touch devices.** The `onTouchEnd={() => setHoverCell(null)}` clears the preview, meaning mobile users never see where their ship will land before committing. They're placing blind.
+
+26. **The orientation toggle uses two small text buttons ("← Horizontal" / "↕ Vertical") with no visual connection to the grid.** On mobile, these are easy to mis-tap and feel disconnected from the placement action.
+
+27. **The back button is a single "←" character with no visible touch target padding.** It's a tiny tap zone in the top-left corner — the hardest reach for right-handed users.
+
+28. **The 7×3 standard grid cells could be very small on narrow screens.** No minimum cell size or responsive scaling is enforced. Tapping the correct cell on a small phone would be frustrating.
+
+29. **The ship inventory cards serve dual purpose (selection + removal) with the same tap target.** Tapping a placed ship removes it and selects it for re-placement — an irreversible action with no confirmation, easy to trigger accidentally on mobile.
+
+## Bland UX / Missing Juice
+
+30. **The game over screen is completely static.** No confetti for a win, no dramatic reveal, no animation. Just an emoji and some text. The emotional peak of the entire match lands flat.
+
+31. **Ship emojis don't match the theme.** The game is called "Battle Shits" with bathroom humor copy ("flush it down the drain", "drew blood or something worse") but the ships are 🚤🥖💣 — a speedboat, a baguette, and a bomb. The visual identity contradicts the copy.
+
+32. **The match ID is shown as "Match #abc123"** — developer-facing data presented as if it matters to players. No fun match names, no opponent context.
+
+33. **The waiting screen is a pulsing hourglass emoji.** No animation, no progress bar, no opponent activity feed, no estimated wait time. Just a static screen with a CSS `animate-pulse`.
+
+34. **The grid has no thematic visual treatment visible here.** No water, no waves, no porcelain texture — presumably just a sterile grid component with no atmosphere.
+
+35. **No turn indicator exists in active battle.** Is it simultaneous? Alternating? The UI never tells the player whether they should be attacking or waiting for the opponent to act.
+
+## Copy Problems
+
+36. **"Log a deuce to earn attack tokens" is the core economy explanation, buried in a single muted text line.** New players won't understand this connection between the app's logging feature and battle tokens. The mechanic that drives the entire game is hidden in small gray text.
+
+37. **"This battle may have been voided"** uses jargon ("voided") that players won't understand. What happened? Did they do something wrong? Did the opponent? No clarity.
+
+38. **"Your ships are deployed. Now we wait for your enemy to make their move"** is ambiguous — are you waiting for them to place ships? To attack? The copy doesn't specify what the opponent needs to do.
+
+39. **"Revealed: X cells"** is a stat that doesn't map to player understanding. Players think in terms of "how much of the grid have I searched" not "how many cells have I revealed."
+
+40. **The placement instructions say "Select a ship, then tap the grid to place it"** but the actual flow is: select ship → choose orientation → tap grid. The orientation step is hidden in a separate UI element and not mentioned in the instructions.

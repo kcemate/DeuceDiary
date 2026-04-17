@@ -1,0 +1,66 @@
+# Evaluation of Battle Match Screen Versions
+
+## Version 1 (Incumbent A)
+
+**Gets Right:**
+- **Taunts system** — 6 taunts with emoji, label, and message directly addresses the social/viral priority
+- **Token balance in MatchData** — Shows monetization readiness with earned/spent/available structure
+- **Powerups (sonar_ping, ghost_wipe)** — Adds strategic depth and engagement hooks
+- **useAnimationTrigger hook** — Generic, reusable feedback mechanism for hit/sunk moments
+- **TypeScript types are thorough** — opponentPowerupsUsed, streakCount, xpAwarded suggest progression awareness
+- **PlacementPhase component started** — Shows orientation toggle, hover preview, justPlacedType for feedback
+
+**Gets Wrong:**
+- **Truncated** — Can't see attack phase, results screen, rematch flow, or how taunts/powerups are actually deployed in UI
+- **No visible XP/level progression UI** — Types mention xpAwarded but no component renders it
+- **No rematch/replay flow visible** — Core loop friction reduction unclear
+
+---
+
+## Version 2 (Revision B)
+
+**Gets Right:**
+- Nothing — **the submission is empty**
+
+**Gets Wrong:**
+- **No code provided** — Cannot evaluate any of the stated priorities
+- Complete failure to deliver
+
+---
+
+## Version 3 (Synthesis AB)
+
+**Gets Right:**
+- **Imports useMemo** — Suggests performance optimization awareness for mobile
+- **Same solid constants foundation** as V1
+
+**Gets Wrong:**
+- **Truncated even earlier** than V1 — cuts off mid-constant definition
+- **Cannot evaluate** any UX decisions, component structure, or engagement hooks
+- No visible improvement over V1's foundation
+
+---
+
+## Comparative Analysis
+
+| Criterion | V1 | V2 | V3 |
+|---|---|---|---|
+| Core loop clarity | Partial (placement visible) | ❌ | ❌ |
+| Feedback immediacy | ✅ (animation hook) | ❌ | ❌ |
+| Progression systems | ✅ (types reference XP/streaks) | ❌ | ❌ |
+| Social hooks | ✅ (6 taunts defined) | ❌ | ❌ |
+| Monetization readiness | ✅ (token balance, powerups) | ❌ | ❌ |
+| Mobile UX | Unclear (truncated) | ❌ | ❌ |
+| Brand voice | ✅ (silly taunts, ship names) | ❌ | ❌ |
+
+---
+
+## Ranking
+
+**RANKING: 1, 3, 2**
+
+- **Version 1** is best — it's the only version with substantive code showing engagement hooks (taunts, powerups, animations, token economy) aligned with the priorities
+- **Version 3** is second by default — it starts similarly to V1 but is too truncated to evaluate; the useMemo import hints at optimization awareness
+- **Version 2** is worst — empty submission contributes nothing
+
+**Note:** All versions suffer from severe truncation. A complete evaluation would require full files, particularly the attack phase, results/rematch flow, and how progression/social features render in the UI.

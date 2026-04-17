@@ -1,0 +1,52 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Solid demo feed data with realistic, on-brand entries
+- Staggered reveal animation creates engagement
+- Clean section structure with header + phone frame concept
+- Brand voice comes through in demo copy ("8/10 would recommend," "greatest deuce of my career")
+
+**Gets wrong:**
+- **Animation fires on mount regardless of viewport visibility** — if user hasn't scrolled to the section, the staggered reveal plays to nobody, wasting the effect and creating a poor experience if they scroll down later and see everything already revealed
+- **No accessibility attributes** — missing aria-label on the section
+- **No responsive padding** — `py-10` with no breakpoint scaling hurts mobile vs. desktop experience
+- **Label uses `text-muted-foreground`** instead of `text-primary` — the "See it in action" kicker doesn't pop visually
+- **`visibleItems` starts at 1** — means first item appears instantly with no stagger, slightly jarring
+- **Code is truncated** — the `classN` cutoff and incomplete file make full evaluation impossible
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- Nothing evaluable — the version appears to be **completely empty** with no code provided
+
+**Gets wrong:**
+- No content to evaluate; fails every criterion by default
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- **IntersectionObserver for lazy animation** — staggered reveal only triggers when the section scrolls into view, meaning the user actually *sees* the animation. This is a meaningful conversion and UX improvement
+- **`aria-label="Live demo feed"`** — basic accessibility compliance
+- **Responsive padding `py-10 md:py-14`** — better mobile/desktop spacing
+- **`text-primary` on the kicker label** — "See it in action" now uses the green primary color, creating stronger visual hierarchy and drawing the eye
+- **`visibleItems` starts at 0** — cleaner initial state, all items animate in from nothing
+- **Slightly faster timing** (400ms + 200ms vs 500ms + 300ms) — snappier feel, less waiting
+- **`useRef` for the section element** — proper React pattern for DOM observation
+- **`observer.disconnect()` cleanup** — proper teardown
+
+**Gets wrong:**
+- **Code is also truncated** — can't evaluate the full page (hero, CTA, features, social proof, footer)
+- The cleanup function inside the IntersectionObserver callback `if` block is unreachable as written (returned from inside the callback, not from the effect) — minor bug, though practically the outer `return () => observer.disconnect()` handles cleanup
+- Doesn't appear to add new sections or significantly rework copy beyond what V1 had
+
+---
+
+## Ranking
+
+**RANKING: 3, 1, 2**
+
+- **3 (best):** Meaningful improvements over V1 — IntersectionObserver alone is a significant conversion/UX win (animation plays when seen, not wasted), plus accessibility, responsive padding, and better visual hierarchy. Even truncated, the visible code is strictly better.
+- **1 (second):** Functional and on-brand, but fires animations blindly, lacks accessibility, and has weaker visual hierarchy. The foundation is solid but unpolished.
+- **2 (worst):** Empty submission — fails all criteria by default.

@@ -1,0 +1,95 @@
+**Conversion Friction**
+
+1. The page has 11+ sections (Hero → Stats → Demo Feed → Features → Mid-Page CTA → How It Works → Bonus Features → Testimonials → Mobile App Teaser → FAQ → Final CTA). Most users will never reach the final CTA. This is an extremely long scroll-to-convert funnel.
+
+2. The mid-page CTA section is too thin to earn a conversion — just one sentence and a button, placed before the user has seen enough to be persuaded. It interrupts the narrative flow between features and how-it-works without adding value.
+
+3. The sticky mobile CTA only appears after 500px of scroll — an arbitrary threshold that may fire too late on tall screens or too early on short ones. There's no equivalent persistent CTA for desktop users at all.
+
+4. The demo feed animation deliberately delays showing content (4 items × 400ms + 200ms = 1.8s). A conversion-critical section is actively hiding its own content from users who scroll quickly.
+
+5. The "How It Works" secondary CTA in the hero is an `<a>` tag visually styled to look like a button with equal visual weight to the primary CTA. Two equally prominent actions create decision paralysis rather than a clear primary path.
+
+6. `forceRedirectUrl="/"` on every `SignInButton` redirects users back to this landing page after sign-in, not to the actual app dashboard. Newly signed-in users land on a marketing page instead of their product.
+
+7. The "Mobile App Teaser" section tells users a better native experience is "launching soon" — this creates a reason to wait rather than sign up now. It undermines the web app's value proposition.
+
+**Visual Polish Gaps**
+
+8. The social proof stats show "500+ Active Streakers" and "100+ Squads Competing" — these are objectively low numbers. Highlighting weak adoption on a landing page hurts credibility more than having no stats at all.
+
+9. The demo feed's "NEW" badge uses hardcoded Tailwind green classes (`bg-green-100 text-green-700 border-green-200`) with a `dark:` variant for background only. `text-green-700` on `dark:bg-green-950/20` will have poor contrast in dark mode.
+
+10. The streak rescue teaser uses `text-red-600 dark:text-red-400` — `text-red-400` on `dark:bg-red-950/20` is likely below WCAG AA contrast requirements.
+
+11. The `<details>` FAQ items use `list-none` on the `<summary>`, but Safari still renders a default disclosure triangle regardless. The custom `+` indicator will coexist with the native triangle.
+
+12. The feature cards use both `border border-border` and `border-l-4 border-l-primary` — the left border color override may lose against the shorthand `border-border` depending on Tailwind's class generation order.
+
+13. The `btn-shimmer` CSS animation class is referenced but has no `prefers-reduced-motion` safeguard. Motion-sensitive users will have no way to disable it.
+
+14. The demo feed has no `max-height` or `overflow` constraint. On very small viewports, four feed items plus the streak rescue banner could consume most of the viewport.
+
+**Copy That Doesn't Convert**
+
+15. "The Strava of Poop Tracking" relies on the user knowing what Strava is. For anyone outside fitness-tech circles, this is meaningless. It also uses a trademarked brand name in marketing copy.
+
+16. "Because your best ideas happen on the throne" is a cliché that doesn't communicate what the product does. It's clever but not clear — clarity converts better than cleverness.
+
+17. "Everyone poops — now you can finally prove you're the best at it" — "finally" implies a longstanding unmet need that doesn't exist. Nobody has been waiting for this. The forced humor undermines credibility.
+
+18. The exact line "everyone poops — now you can finally prove you're the best at it" is repeated verbatim in the FAQ. Lazy copy reuse signals inauthenticity.
+
+19. "Porcelain Premium" appears in the bonus features grid and FAQ but is never explained. Users don't know what it includes, what it costs, or why they'd want it.
+
+20. "My doctor asked how I track my habits. I showed him Deuce Diary. He downloaded it." — This testimonial is not believable. Fabricated-sounding social proof erodes trust rather than building it.
+
+21. "10K+ Deuces Logged" as a headline stat is unimpressive. 10K total actions across all users signals very low engagement.
+
+22. The "throne" metaphor is used in the hero headline, features section, how-it-works, mid-page CTA, and final CTA. By the third occurrence it's exhausted; by the fifth it's actively grating.
+
+**Redundant / Low-Value Sections**
+
+23. The "Bonus Features Strip" lists table-stakes features as differentiators: "Dark Mode," "Privacy First," "Mobile Native." These are expected, not selling points. "Privacy First" is a claim with zero evidence behind it — just an emoji and a label.
+
+24. The "How It Works" section reframes the same content already covered in the features section (sign up → squads → streaks). It's redundant — features already explained what streaks, squads, and logging are.
+
+25. The mid-page CTA section is structurally redundant — it's a weaker version of the hero CTA placed at an arbitrary scroll depth.
+
+**Missing Best Practices**
+
+26. No urgency or scarcity anywhere. "Free forever" explicitly removes urgency. There's no early-adopter incentive, no limited-time offer, no reason to sign up today versus tomorrow.
+
+27. No logo bar, press mentions, or recognizable brand trust signals. The only social proof is three suspicious testimonials and weak stats.
+
+28. Desktop users have no persistent CTA after scrolling past the hero. They must scroll to the mid-page or final CTA — no sticky nav, no floating button, nothing.
+
+29. The footer contains only Privacy Policy and Terms of Service — no contact email, no support channel, no social links. This reduces perceived legitimacy.
+
+30. The "Sign Up Free" step says "One tap with Google or Apple" but Clerk's `SignInButton` may present multiple sign-in methods (email, Google, Apple, etc.). The copy overpromises on frictionlessness.
+
+31. The demo feed is static mockup data, but the caption says "Live — your feed updates in real-time." This is a false claim about the demo, which could erode trust.
+
+**Accessibility Issues**
+
+32. The hero 🚽 emoji has `role="img" aria-label="Toilet emoji"` — "Toilet emoji" is not a meaningful description. Screen readers announce literal "toilet emoji" which communicates nothing of value.
+
+33. The demo feed entries are presented as real content to screen readers (usernames, thoughts, locations, reactions) with no indication they are sample/demo data. Screen reader users will encounter these as factual entries.
+
+34. The `<details>` elements lack ARIA expanded state management. The `+` indicator is `aria-hidden="true"`, but the open/closed state isn't reliably communicated to assistive technologies across browsers.
+
+35. The sticky mobile CTA uses `role="complementary"` — this is semantically wrong. It's a primary action bar, not supplementary content. Screen readers may deprioritize or mischaracterize it.
+
+36. `text-[10px]` with `text-muted-foreground` (timestamps, location text in the demo feed) is very likely below WCAG minimum contrast at that size.
+
+37. Feature card hover effects (`hover:shadow-lg`) have no `:focus-visible` equivalent. Keyboard users see zero visual change when navigating to these cards.
+
+38. The "How It Works" anchor in the hero has no visible focus ring styling defined. Default browser focus styles may be invisible against the card background.
+
+39. The sticky mobile CTA is at the bottom of the DOM, so keyboard users must tab through the entire page to reach it — it's not in the logical tab order matching its visual position.
+
+40. When demo feed items animate in, there's no `aria-live` region to announce new content to screen reader users.
+
+**Code-Level Bug**
+
+41. In `DemoGroupFeed`'s `useEffect`, the cleanup function `return () => { timers.forEach(clearTimeout); clearTimeout(pulseTimer); }` is returned *inside* the `IntersectionObserver` callback, not from the `useEffect`. It never executes. The actual cleanup is only `observer.disconnect()`, so timers and the pulse timer are never cleared on unmount.

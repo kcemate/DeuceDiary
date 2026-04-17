@@ -1,0 +1,83 @@
+## Core Loop Friction
+
+1. **No rotate control for mobile.** The placement subtitle says "Press R to rotate" — a keyboard instruction with no on-screen button alternative. Mobile users have no way to rotate ships.
+
+2. **No ship removal mechanism visible.** Players can place ships but there's no apparent way to pick one back up and reposition it. A misplaced ship means restarting the entire placement phase.
+
+3. **No auto-place or randomize option.** Players who don't care about strategic placement are forced through a tedious multi-step setup every single match. This is a dropout point before the game even starts.
+
+4. **No attack confirmation.** A single accidental tap on the opponent grid immediately fires. On mobile, fat-finger misfires are common and punishing — there's no undo or "are you sure?"
+
+5. **The "defending" phase is a black box.** The subtitle just says "Incoming…" with no visual indication of where the opponent attacked on your board. The player must scan their own grid to spot what changed.
+
+6. **The "waiting" phase has no estimated duration, no cancel option, and no interactive element.** It's a dead screen that offers the player nothing to do.
+
+## Missing Progression
+
+7. **XP and levels exist but unlock nothing.** `LEVEL_THRESHOLDS` defines 20 levels, but no cosmetics, ship skins, titles, abilities, or content are gated by level. Leveling up is a number change with no tangible reward.
+
+8. **Coins are awarded but have no sink.** The reward computation gives coins, but there's no shop, no items, no upgrades to purchase. The currency is meaningless.
+
+9. **No win/loss record, streak tracking, or match history.** Players have no way to see their performance over time, removing a core retention driver.
+
+10. **No daily challenges, missions, or session goals.** There's no structure giving players a reason to come back tomorrow.
+
+11. **Reward multipliers (accuracy bonus, sunk bonus) are invisible during gameplay.** Players don't know accuracy matters until the result screen, so they can't play toward that goal.
+
+## Weak Social / Viral Hooks
+
+12. **Taunts are defined but never sent or displayed.** The `TAUNTS` array exists with 10 options, but there's no UI to select one, no mechanism to deliver it to an opponent, and no animation for receiving one. Dead feature.
+
+13. **No shareable result.** No "share victory" button, no screenshot-worthy victory screen, no generated image for social media. The most viral moment (winning) has no share mechanism.
+
+14. **No opponent identity.** The player is fighting a faceless random number generator. No avatar, no username, no skill rating visible. No rivalry potential.
+
+15. **No leaderboard or ranking visibility.** Players can't see where they stand relative to others.
+
+## Poor Feedback
+
+16. **Hit, miss, and sunk all use the same visual language** — a background color flash plus an emoji that lasts 600ms. Sinking a 5-cell ship feels identical to a single hit. There's no feedback hierarchy.
+
+17. **No audio at all.** No explosion on hit, no splash on miss, no dramatic sound on sink, no victory fanfare. A battle game with zero sound is missing a massive feedback channel.
+
+18. **No haptic feedback on mobile.** Hits, misses, and sinks produce no vibration, removing a key tactile signal on the primary platform.
+
+19. **No "near miss" indicator.** Attacking one cell away from a ship produces the same empty result as attacking the opposite corner. A core tension-building mechanic is absent.
+
+20. **Sinking an opponent's ship doesn't reveal which ship was sunk.** The name stays hidden. The player gets a 💀 emoji but no "You sunk their USS Turdis!" moment.
+
+21. **No running accuracy or hit count displayed during play.** Players can't track how they're doing until the match ends.
+
+## Mobile Usability
+
+22. **Grid cells are too small to tap accurately.** On a 375px-wide screen, 10 columns with gaps means each cell is roughly 30-32px — well below the 44px minimum touch target. Precise targeting is frustrating.
+
+23. **No pinch-to-zoom on the attack grid.** Players must hit tiny cells on a dense 10×10 grid with their finger, which obscures the cell they're aiming at.
+
+24. **The two-step place flow (select ship → tap grid) means the player's finger covers the grid during placement.** No drag-and-drop alternative exists.
+
+25. **Ship selector buttons have 8px padding and flex-wrap on small screens**, making them small and shifting layout unpredictably. Tapping the wrong ship is easy.
+
+## Bland UX / Personality Gap
+
+26. **The toilet theme is in the names but not the design.** Ships are called "Battleshit" and "Turdis" but the UI is sterile purple gradients with clean borders. The visual identity contradicts the written identity.
+
+27. **Ship descriptions ("Small but sneaky," "The pride of the fleet") are defined but never shown to the player during gameplay.** They're data with no display.
+
+28. **The only animation is a 600ms scale(1.25) transform on cells.** No screen shake on hits, no particle effects, no water ripple, no ship-sinking sequence. The game feels static.
+
+29. **No victory celebration or loss commiseration.** The result phase title is just "Battle Over!" regardless of outcome. Winning and losing get the same energy.
+
+30. **The opponent AI is purely random** (`randomOpponentAttack`). It never targets adjacent cells after a hit, never hunts systematically. Once players notice the AI is dumb, the defending phase feels like a waste of time.
+
+## Engagement Gaps
+
+31. **No comeback mechanic.** Once a player is behind in ships, there are no power-ups, special weapons, or abilities to swing the game. Foregone conclusions cause quit-outs.
+
+32. **The loss reward is catastrophically low.** Losing gives 15 XP victory bonus vs. 100+ for winning. The gap is so large that losses feel like a complete waste of time, discouraging re-queue.
+
+33. **No tutorial or onboarding.** The placement phase assumes the player knows Battleship rules, grid conventions, and the ship roster. New players are abandoned.
+
+34. **No mid-match progression or twist.** Every turn is identical — tap a cell. No special weapons, no radar sweep, no repair ability. The core loop has no variation across the entire match.
+
+35. **The "waiting for opponent" is a fiction.** The opponent is a local random function, not a real player. The waiting screen simulates multiplayer that doesn't exist, which feels deceptive once noticed.

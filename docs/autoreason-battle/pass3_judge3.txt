@@ -1,0 +1,48 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**Gets right:** Nothing — the file is completely empty. There is no code to evaluate.
+
+**Gets wrong:** Everything. A blank file accomplishes zero priorities: no core loop, no progression, no social hooks, no feedback, no monetization readiness, no UX of any kind. This is a non-starter.
+
+---
+
+### Version 2 (Revision B)
+**Gets right:**
+- Complete type system covering game state, ships, animations, and rewards
+- All five required ship types preserved (Floater, Log, Corn Log, Battleshit, USS Turdis) with on-brand descriptions
+- Taunt system (8 taunts) addressing social/viral hooks
+- RewardBreakdown interface with XP, accuracy/sunk/victory bonuses, and coins — directly targets progression and monetization readiness
+- Level thresholds (20 levels) for clear progression
+- Utility functions for grid mechanics and placement validation
+- Brand voice present in ship descriptions and taunts
+
+**Gets wrong:**
+- **Truncated mid-function** (`f` at the end) — the file is incomplete, violating the "output the COMPLETE file, never truncate" rule
+- Only 8 taunts — limited variety reduces replay social engagement
+- No phase-specific copy/messaging system to guide players through the core loop
+- Missing `AttackResult` type, making attack feedback handling ambiguous
+
+---
+
+### Version 3 (Synthesis AB)
+**Gets right:**
+- Everything Version 2 has, plus meaningful additions:
+- **`AttackResult` interface** — enables proper hit/miss/sunk feedback with ship identification, directly improving feedback immediacy
+- **10 taunts** (vs. 8) — more variety including "Uranus is next!" and "Sphinc-tacular!" which are peak brand voice (irreverent, competitive, funny)
+- **`PHASE_COPY` constant** — this is a significant UX win. It provides contextual title + subtitle for every game phase, directly addressing core loop clarity. Players always know what screen they're on and what to do next. The copy is on-brand ("Hold your breath…", "Fire at Will!", "Brace Yourself!")
+- Same progression system and reward structure
+
+**Gets wrong:**
+- **Also truncated** mid-function — same rule violation as Version 2
+- Without seeing the full component rendering, we can't verify the actual UI implementation
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+- **Best (3):** Synthesis AB adds the most engagement-critical features visible before truncation — phase-specific UX copy (core loop clarity), attack result typing (feedback), and more taunt variety (social hooks). Its trajectory is clearly superior.
+- **Second (2):** Revision B establishes the foundation well but lacks the phase guidance system and has fewer social hooks. Still a credible starting point.
+- **Worst (1):** Empty file. Unusable.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Autoreason tournament for Deuce Diary landing page.
+Autoreason tournament for Deuce Diary Battle Shits engagement improvements.
 Based on NousResearch/autoreason: Self-Refinement That Knows When to Stop.
 
 Method:
@@ -49,82 +49,88 @@ MODEL = "openai/glm-5.1:cloud"  # Routed via Ollama's OpenAI-compatible endpoint
 AUTHOR_TEMP = 0.8
 CRITIC_TEMP = 0.5
 JUDGE_TEMP = 0.3
-MAX_TOKENS = 8000
+MAX_TOKENS = 4000
 NUM_JUDGES = 3
 CONVERGENCE_K = 2  # A wins k times in a row → converge
 MAX_PASSES = 8
 
-LANDING_FILE = Path(__file__).parent / "client/src/pages/landing.tsx"
-RESULTS_DIR = Path(__file__).parent / "docs/autoreason-landing"
+BATTLE_FILE = Path(__file__).parent / "client/src/pages/battle-match.tsx"
+RESULTS_DIR = Path(__file__).parent / "docs/autoreason-battle"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── System Prompts ─────────────────────────────────────────────────────
 AUTHOR_SYSTEM = (
-    "You are a senior frontend engineer and conversion optimization expert. "
-    "You produce production-quality React + Tailwind + shadcn/ui code. "
-    "Be specific, concrete, and practical. Every change must improve conversion, "
-    "polish, or user experience. Do not add features that don't exist in the app."
+    "You are a senior frontend engineer and game designer specializing in "
+    "mobile multiplayer experiences. You produce production-quality React + "
+    "Tailwind + shadcn/ui code. Focus on engagement loops, retention hooks, "
+    "and frictionless UX. Every change must improve retention, monetization "
+    "potential, or user satisfaction. Do not add features that don't exist in "
+    "the app's current scope."
 )
 
 CRITIC_SYSTEM = (
-    "You are a critical UX reviewer. Your only job is to find real problems with "
-    "this landing page code. Focus on: conversion friction, visual polish gaps, "
-    "mobile responsiveness issues, accessibility, copy that doesn't convert, "
-    "sections that are too long or redundant, and missing best practices. "
-    "Be specific and concrete. Do not suggest fixes."
+    "You are a critical game UX reviewer focused on engagement and retention. "
+    "Your only job is to find real problems with this battle game code. "
+    "Focus on: friction in core loop, unclear feedback, missing progression, "
+    "mobile usability gaps, confusing UI states, lack of social/viral hooks, "
+    "and missed engagement opportunities. Be specific and concrete. "
+    "Do not suggest fixes."
 )
 
 AUTHOR_B_SYSTEM = (
-    "You are a senior frontend engineer revising a landing page based on specific criticisms. "
-    "Address each valid criticism directly with actual code changes. "
-    "Do not make changes that aren't motivated by an identified problem. "
+    "You are a senior frontend engineer revising a battle game screen based on "
+    "specific criticisms. Address each valid criticism directly with actual code "
+    "changes. Do not make changes that aren't motivated by an identified problem. "
     "Produce the COMPLETE updated file — never truncate or abbreviate."
 )
 
 SYNTHESIZER_SYSTEM = (
-    "You are a senior frontend engineer. You are given two versions of a landing page as equal inputs. "
-    "Take the strongest elements from each and produce a coherent synthesis. "
-    "This is not a compromise — pick the best version per section. "
-    "Produce the COMPLETE file — never truncate or abbreviate."
+    "You are a senior frontend engineer. You are given two versions of a battle "
+    "game screen as equal inputs. Take the strongest elements from each and "
+    "produce a coherent synthesis. This is not a compromise — pick the best "
+    "version per section. Produce the COMPLETE file — never truncate or abbreviate."
 )
 
 JUDGE_SYSTEM = (
-    "You are an independent landing page evaluator. You have no authorship stake in any "
-    "version. Evaluate which version best accomplishes the goal: maximizing sign-ups "
-    "while maintaining the brand voice (fun, irreverent, Strava-meets-Duolingo for poop tracking). "
-    "Consider: conversion flow, visual polish, mobile UX, copy quality, and code quality."
+    "You are an independent game UX evaluator. You have no authorship stake in "
+    "any version. Evaluate which version best maximizes engagement and retention "
+    "while maintaining the brand voice (fun, irreverent, competitive). Consider: "
+    "core loop clarity, feedback immediacy, progression systems, social hooks, "
+    "mobile UX, and overall 'fun factor'."
 )
 
 # ── Task Prompt ────────────────────────────────────────────────────────
 TASK_PROMPT = f"""\
-Improve the Deuce Diary landing page (client/src/pages/landing.tsx).
+Improve the Deuce Diary Battle Shits match screen (client/src/pages/battle-match.tsx).
 
-Deuce Diary is "The Strava of Poop Tracking" — a social poop-logging app with streaks, squads, and leaderboards.
+Battle Shits is the real-time multiplayer poop-battling mode — turn-based ship placement 
+and attacking with funny ship names (Floater, Log, Battleshit). It drives DAU through 
+competitive, social gameplay.
 
-Current brand voice: Fun, irreverent, competitive. "Because your best ideas happen on the throne."
-Theme: Dark mode, 🚽 hero, green primary color.
-Auth: Clerk (SignInButton component).
-Stack: React + Tailwind + shadcn/ui + wouter.
+Current state: Functional but barebones. Core loop works but lacks engagement hooks, 
+progression, and viral elements.
 
-Goal: Maximize sign-up conversion while maintaining brand voice.
+Goal: Maximize daily engagement and retention while keeping the silly, competitive 
+brand voice intact.
 
 Priorities:
-1. Remove conversion friction (every extra tap = drop-off)
-2. Improve visual polish and mobile experience
-3. Tighten copy — make every word earn its place
-4. Better social proof and trust signals
-5. Accessibility and performance
+1. Streamline core loop (reduce friction between matches)
+2. Add clear progression (XP, levels, rewards)
+3. Increase social/viral hooks (taunts, replays, shareables)
+4. Improve feedback and satisfaction (better animations, sound cues)
+5. Add light monetization readiness (cosmetics, currency)
+6. Maintain mobile-first UX and accessibility
 
 Rules:
-- Only output the contents of landing.tsx — no other files
-- Keep: dark theme, 🚽 hero, existing brand voice, Clerk auth
-- Do NOT add features that don't exist in the app
-- Keep all existing sections but improve them
+- Only output the contents of battle-match.tsx — no other files
+- Keep: existing ship types, grid mechanics, real-time sync
+- Do NOT add features requiring backend changes not yet built
+- Improve what exists; tighten copy and UX
 - Output the COMPLETE file, never truncate
 """
 
 # ── LLM wrapper ────────────────────────────────────────────────────────
-async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=MAX_TOKENS, max_retries=8):
+async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=min(MAX_TOKENS, 4000), max_retries=8):
     import aiohttp
     url = f"{OLLAMA_BASE}/api/chat"
     payload = {
@@ -164,10 +170,10 @@ async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=MAX_TO
 
 # ── Generate initial A ─────────────────────────────────────────────────
 async def generate_a():
-    current = LANDING_FILE.read_text()
+    current = BATTLE_FILE.read_text()
     prompt = (
         f"{TASK_PROMPT}\n\n"
-        f"Here is the current landing page code:\n\n---\n{current}\n---\n\n"
+        f"Here is the current battle match screen code:\n\n---\n{current}\n---\n\n"
         f"Produce the complete improved version of this file. Every change must be motivated. "
         f"If a section is already strong, keep it as-is. Output the COMPLETE file."
     )
@@ -176,14 +182,15 @@ async def generate_a():
 # ── Critic ──────────────────────────────────────────────────────────────
 async def run_critic(version_a):
     prompt = (
-        f"Here is a landing page implementation:\n\n---\n{version_a}\n---\n\n"
-        f"Find real problems with this landing page. Focus on:\n"
-        f"- Conversion friction (extra taps, unclear CTAs, too much scrolling)\n"
-        f"- Visual polish gaps (spacing, contrast, mobile issues)\n"
-        f"- Copy that doesn't convert (vague, too long, off-brand)\n"
-        f"- Redundant or low-value sections\n"
-        f"- Missing best practices (trust signals, urgency, social proof placement)\n"
-        f"- Accessibility issues\n\n"
+        f"Here is a battle match screen implementation:\n\n---\n{version_a}\n---\n\n"
+        f"Find real problems with this battle game. Focus on:\n"
+        f"- Core loop friction (waiting, unclear next steps)\n"
+        f"- Missing progression (no sense of advancement)\n"
+        f"- Weak social hooks (nothing to share/show off)\n"
+        f"- Poor feedback (delayed/unclear hit/miss/sunk signals)\n"
+        f"- Mobile usability issues (touch targets, spacing)\n"
+        f"- Bland UX (needs more personality/juice)\n"
+        f"- Copy that doesn't engage (functional but boring)\n\n"
         f"Do NOT propose fixes. Just the problems."
     )
     return await call_llm(CRITIC_SYSTEM, prompt, temperature=CRITIC_TEMP)
@@ -192,9 +199,9 @@ async def run_critic(version_a):
 async def run_author_b(version_a, critique):
     prompt = (
         f"ORIGINAL TASK:\n---\n{TASK_PROMPT}\n---\n\n"
-        f"CURRENT LANDING PAGE:\n---\n{version_a}\n---\n\n"
+        f"CURRENT BATTLE MATCH SCREEN:\n---\n{version_a}\n---\n\n"
         f"PROBLEMS FOUND:\n---\n{critique}\n---\n\n"
-        f"Revise the landing page to address these problems. "
+        f"Revise the battle match screen to address these problems. "
         f"For each change, state which problem it fixes. "
         f"Do not make changes that aren't motivated by an identified problem. "
         f"Produce the COMPLETE revised file — never truncate."
@@ -216,14 +223,15 @@ async def run_synthesizer(version_a, version_b):
 # ── Judge Panel ────────────────────────────────────────────────────────
 async def run_single_judge(version_a, version_b, version_ab, judge_id):
     proposals = (
-        f"Version 1 (Incumbent A):\n---\n{version_a[:3000]}\n---\n\n"
-        f"Version 2 (Revision B):\n---\n{version_b[:3000]}\n---\n\n"
-        f"Version 3 (Synthesis AB):\n---\n{version_ab[:3000]}\n---\n\n"
+        f"Version 1 (Incumbent A):\n---\n{version_a[:4000]}\n---\n\n"
+        f"Version 2 (Revision B):\n---\n{version_b[:4000]}\n---\n\n"
+        f"Version 3 (Synthesis AB):\n---\n{version_ab[:4000]}\n---\n\n"
     )
     prompt = (
         f"ORIGINAL TASK:\n---\n{TASK_PROMPT}\n---\n\n"
-        f"Three versions of the landing page have been produced. Evaluate how well each "
-        f"accomplishes the goal of maximizing sign-ups while maintaining brand voice.\n\n"
+        f"Three versions of the battle match screen have been produced. Evaluate how well each "
+        f"accomplishes the goal of maximizing engagement and retention while maintaining "
+        f"brand voice.\n\n"
         f"{proposals}\n"
         f"For each version, state what it gets right and what it gets wrong. "
         f"Then rank all three from best to worst:\n\n"
@@ -267,7 +275,7 @@ def save_version(version_name, content, pass_num):
 # ── Main loop ───────────────────────────────────────────────────────────
 async def main():
     print("═══════════════════════════════════════════════════════════════")
-    print("  AUTOREASON TOURNAMENT — Deuce Diary Landing Page")
+    print("  AUTOREASON TOURNAMENT — Deuce Diary Battle Shits")
     print("═══════════════════════════════════════════════════════════════")
     print(f"  Model: {MODEL}")
     print(f"  Judges: {NUM_JUDGES}")
@@ -276,8 +284,8 @@ async def main():
     print()
 
     # Initial version = current file
-    version_a = LANDING_FILE.read_text()
-    print(f"  Loaded current landing page ({len(version_a)} chars)")
+    version_a = BATTLE_FILE.read_text()
+    print(f"  Loaded current battle match screen ({len(version_a)} chars)")
     save_version("A_initial", version_a, 0)
 
     a_consecutive_wins = 0
@@ -371,9 +379,9 @@ async def main():
     else:
         print(f"  Reached max passes ({MAX_PASSES})")
 
-    # Write winner to landing page
-    LANDING_FILE.write_text(version_a)
-    print(f"  Winner written to {LANDING_FILE}")
+    # Write winner to battle match file
+    BATTLE_FILE.write_text(version_a)
+    print(f"  Winner written to {BATTLE_FILE}")
 
     # Save history
     (RESULTS_DIR / "history.json").write_text(json.dumps(history, indent=2))

@@ -1,0 +1,67 @@
+# Evaluation of Three Landing Page Versions
+
+## Version 1 (Incumbent A)
+
+**What it gets right:**
+- Clean data architecture separating features, steps, and testimonials into well-structured arrays
+- Proper accessibility: `aria-label` on nav, logo link, emoji role attributes
+- Fixed nav with backdrop blur and `z-50` — good for persistent CTA visibility
+- `SignInButton mode="modal"` reduces navigation friction (no page redirect)
+- Pill-shaped "Sign up free" CTA with strong contrast (green on dark)
+- Radial green glow behind hero adds depth without heaviness
+- `selection:bg-green-500/30` is a nice brand touch
+
+**What it gets wrong:**
+- **Code is truncated** — the hero section cuts off mid-gradient, making full evaluation impossible
+- Can't assess: full hero copy, feature grid rendering, how-it-works section, testimonial layout, footer, mobile breakpoints beyond what's hinted
+- The `label` field on features (e.g., "fire", "people") appears unused — dead data
+
+---
+
+## Version 2 (Revision B)
+
+**What it gets right:**
+- Nothing — **no code was provided**
+
+**What it gets wrong:**
+- Complete absence of implementation. This is a total failure to deliver. Cannot evaluate conversion flow, visual polish, mobile UX, copy, or code quality.
+
+---
+
+## Version 3 (Synthesis AB)
+
+**What it gets right:**
+- Identical to Version 1 in all visible portions: same data structures, nav, hero start, accessibility, and CTA approach
+- The "synthesis" label implies intent to combine best elements, but no differentiation is visible
+
+**What it gets wrong:**
+- **Also truncated** at the same point as Version 1
+- No visible improvements or differences from the incumbent
+- Same unused `label` fields on features
+- Cannot evaluate whether the synthesis actually added anything
+
+---
+
+## Comparative Analysis
+
+| Criterion | V1 | V2 | V3 |
+|---|---|---|---|
+| Code completeness | Truncated | Empty | Truncated |
+| Conversion flow (visible) | Good (modal sign-up, persistent nav) | N/A | Same as V1 |
+| Visual polish (visible) | Good (glow, blur, contrast) | N/A | Same as V1 |
+| Mobile UX (visible) | Responsive hints present | N/A | Same as V1 |
+| Copy quality | Strong, on-brand | N/A | Same as V1 |
+| Accessibility | Proper ARIA, roles | N/A | Same as V1 |
+| Differentiation | Baseline | — | None visible |
+
+The core problem: only fragments of V1 and V3 survive, and they're identical fragments. V2 is a void. Between V1 and V3, the incumbent at least has the authority of being first; V3 promises synthesis but delivers a copy.
+
+---
+
+## RANKING: 1, 3, 2
+
+**1** (Incumbent A) — Best: Only version with substantive (if incomplete) working code showing conversion-minded design, proper accessibility, and on-brand execution.
+
+**3** (Synthesis AB) — Second: Identical to V1 in every visible line; no synthesis demonstrated. Ranked below V1 only because it adds nothing over the original.
+
+**2** (Revision B) — Worst: No code delivered. Unrankable on every criterion.

@@ -1,0 +1,74 @@
+**Conversion Friction**
+
+- The "How It Works" section walks the user through three steps ending at "Start Your Streak" but provides no CTA at the end of that section. The user must continue scrolling to find the next action point.
+- The mid-page CTA is extremely thin — a single small line of text and a button with no visual weight, no social proof nearby, and no urgency. It will be skimmed past.
+- The sticky mobile CTA only appears after 600px of scroll. On a phone, that's a lot of real estate with no persistent action available.
+- The "Mobile App Teaser" section generates interest in an iOS app but offers no waitlist signup, email capture, or any action whatsoever — pure dead end.
+- The FAQ section handles objections but provides no CTA after the final objection is addressed. The user who just had their concern resolved has to scroll further or scroll back.
+- The footer contains no final conversion moment — no CTA, no email capture, no social links to community.
+- The hero has two equally-weighted large buttons, diluting the primary action. The secondary "How It Works" link scrolls down, pulling users away from the convert action.
+
+**Visual Polish Gaps**
+
+- The hero 🚽 emoji uses `animate-bounce` with no stop condition and no `prefers-reduced-motion` handling. It bounces infinitely, which becomes visually irritating within seconds.
+- The demo feed "phone frame" is just a rounded card — no device bezel, status bar, or any chrome that signals "this is an app." It reads as a styled card, not a product preview.
+- `text-[10px]` and `text-[11px]` are used extensively in the demo feed for timestamps, locations, and reaction counts. These are below the 12px minimum for readable text and will be illegible for many users.
+- The streak rescue teaser uses `text-red-400` on `bg-red-950/20` in dark mode — extremely low contrast. Similarly, `text-red-600` on `bg-red-50` in light mode is marginal.
+- The green highlight `bg-green-50 dark:bg-green-950/20` with no explicit text color change means the foreground text contrast against these backgrounds is uncontrolled.
+- Sections alternate between `bg-card/50 border-y border-border` and `bg-background` but the pattern is inconsistent and several adjacent sections share the same treatment, making them visually bleed together.
+- The `border-l-4` colored accents on feature cards conflict with the surrounding `border border-border` — the left border color sits on top of the generic border, creating a visual seam at the corner.
+- The stats section is visually anemic — three small numbers with emojis in a thin strip. It lacks the visual weight that social proof needs to carry.
+
+**Mobile Responsiveness Issues**
+
+- The hero `h1` at `text-4xl` with `tracking-tight` and `leading-tight` on a 320px viewport may cause overflow or awkward breaks given the `<br />` placement.
+- The "Plus all the extras" grid at `grid-cols-2` on mobile crams 8 items into small cards with just an emoji and label — tight and scannable but visually noisy.
+- The `safe-area-bottom` class on the sticky CTA is not a standard Tailwind utility — it will silently fail on notched devices unless custom CSS is defined elsewhere.
+- The sticky CTA at the bottom covers content with no dismiss mechanism. Users browsing the FAQ or footer will have content permanently obscured.
+
+**Copy That Doesn't Convert**
+
+- "The Strava of Poop Tracking" requires the user to know what Strava is. For anyone outside the fitness-tech bubble, this is meaningless.
+- The headline "Because your best ideas happen on the throne" is about ideas/creativity. The product is about streaks, competition, and social logging. The headline promise and the product value are misaligned.
+- "Everyone poops — now you can finally prove you're the best at it" — "finally" presupposes a desire that likely doesn't exist. The joke may land but it doesn't convert.
+- "No 47-field symptom forms. No gimmicky map pins." references competitor features the user likely hasn't encountered. It's insider language on a landing page meant for newcomers.
+- The FAQ question "Is this actually a poop tracking app?" raises doubt rather than resolving it. It signals that the concept is so absurd people question whether it's real.
+- "Will my friends judge me?" plants a concern the user may not have had. It normalizes the fear instead of preempting it organically.
+- The mid-page CTA "Ready to claim your throne? Takes 10 seconds." is generic — no urgency, no specific value, no reason to act now.
+- "Three steps to throne glory" — "glory" is abstract. What's the tangible outcome?
+
+**Redundant / Low-Value Sections**
+
+- The "Plus all the extras" section lists 8 features as emoji + label only. "Dark Mode" and "Privacy First" are table-stakes, not selling points. "Porcelain Premium" is referenced with zero explanation. "Mobile Native" duplicates the dedicated mobile app teaser section below it.
+- The mobile app teaser section and the "Mobile Native" extra are redundant — both reference the native app experience.
+- The testimonials have no photos, no real attribution context, no links, and read as fabricated. For a product claiming "500+ Active Streakers," three anonymous text quotes undermine credibility rather than building it.
+- The social proof stats actually signal weakness: "500+ Active Streakers" and "100+ Squads Competing" are very low numbers. Displaying them prominently tells the user the product has minimal adoption.
+
+**Missing Best Practices**
+
+- No trust signals near the primary CTA — no logos, press mentions, or "as seen in" badges. The stats bar is separated from the hero by the demo feed.
+- No urgency or scarcity anywhere — no limited-time framing, no early-adopter positioning, no "join before your squad does" competitive hook.
+- No email capture or waitlist for the iOS app — a section that generates intent but provides no conversion path.
+- "Porcelain Premium" is name-dropped in the extras grid and FAQ but never explained. The user doesn't know what's free vs. paid until the third FAQ answer.
+- The "Streak rescue" feature is teased in the demo feed (the red warning bar) but is never mentioned in the features section or anywhere else on the page.
+- No video, GIF, or animated product walkthrough — the demo feed is a static mockup with staggered CSS reveals, not an actual product demonstration.
+- No social links, community links, or newsletter in the footer.
+- The text "↑ This is live — your feed updates in real-time" below the demo feed is misleading. It's hardcoded mockup data, not live.
+
+**Accessibility Issues**
+
+- `animate-bounce` on the hero emoji has no `prefers-reduced-motion` media query. Users who need reduced motion will see perpetual bouncing.
+- Emoji are used as the sole visual indicators for features, stats, and testimonial avatars. Screen readers will announce these as verbose emoji descriptions ("pile of poo," "fire," "trophy") which is confusing and noisy.
+- The demo feed "NEW" badge communicates status through green color alone with no aria-label.
+- The `SignInButton` from Clerk wrapping a `Button` — the accessible name of the sign-in flow depends on Clerk's internal implementation and may not be descriptive.
+- The "How It Works" anchor link `<a href="#how-it-works">` has no aria-label clarifying it's an in-page scroll action.
+- The FAQ uses static `h3` + paragraph blocks rather than a disclosure/accordion pattern — the questions are always visible, which is fine for 4 items, but the `h3` elements lack `id` attributes for direct linking.
+- `text-[10px]` and `text-[11px]` fail WCAG minimum text size requirements.
+- The sticky mobile CTA has no skip mechanism and no way for screen reader users to bypass it when navigating the bottom of the page.
+
+**Technical / Code-Level Issues**
+
+- The `DemoGroupFeed` animation runs once on mount. If a user scrolls away and returns, they see only the final state — no replay, no indication the animation existed.
+- The scroll listener for `showStickyCta` fires on every pixel with no throttle or debounce beyond `{ passive: true }`.
+- The duplicate `// ── Footer ──` comment suggests a copy-paste artifact.
+- The `useAuth` hook's `isAuthenticated` value may be `undefined` during initial load, meaning the hero could briefly show the wrong CTA state before resolving.

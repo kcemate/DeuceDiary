@@ -1,0 +1,49 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Solid demo feed data with realistic, on-brand entries
+- Staggered reveal animation for engagement
+- Clean section structure with header + phone frame concept
+- Uses shadcn/ui components (Button, Badge)
+
+**Gets wrong:**
+- Animation fires immediately on mount regardless of viewport position (wastes cycles, user may never scroll to see it)
+- Label uses `text-muted-foreground` — weak visual hierarchy for the "See it in action" callout
+- Starts with `visibleItems = 1`, meaning one item is visible before animation even begins (less dramatic reveal)
+- Code is **truncated** — cuts off mid-attribute (`<p classN`), making it impossible to fully evaluate
+- No accessibility attributes on the section
+- No responsive padding adjustments
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- Nothing — the version is **completely empty**. No code was provided.
+
+**Gets wrong:**
+- Does not exist. Cannot accomplish any of the stated goals. Zero conversion optimization, zero brand voice, zero code quality.
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- **IntersectionObserver** for the stagger animation — only triggers when the section scrolls into view, which is a meaningful performance and UX improvement (no wasted animation if user never scrolls there)
+- `aria-label="Live demo feed"` — proper accessibility
+- `text-primary` (green) for the label instead of `text-muted-foreground` — stronger visual hierarchy, better brand alignment
+- Starts with `visibleItems = 0` — cleaner initial state, full dramatic reveal
+- Responsive padding (`md:py-14`) — better mobile/desktop adaptation
+- Slightly faster stagger timing (400ms vs 500ms) — snappier feel
+- Imports `useRef` appropriately for the observer pattern
+
+**Gets wrong:**
+- **Bug in IntersectionObserver cleanup**: the `return` statement inside the observer callback's `if` block returns a cleanup function, but that return value goes nowhere — it's not the useEffect cleanup. The `observer.disconnect()` in the outer return works, but the timer cleanup inside the callback is dead code. If the component unmounts mid-animation, those timers will leak.
+- Code is **truncated** — cuts off at "Fake phone fram", so the full implementation can't be evaluated
+- Same demo data as V1 (not a criticism per se, but no copy improvements visible in the truncated portion)
+
+---
+
+## Ranking
+
+**3** (best), **1** (second), **2** (worst)
+
+**Rationale:** Version 3 is the clear winner among visible code — it meaningfully improves accessibility, performance (IntersectionObserver), visual hierarchy (primary-colored label), and responsive design over V1. The timer cleanup bug is real but minor in practice (component unlikely to unmount mid-animation on a landing page). Version 1 is functional but unpolished by comparison. Version 2 is nonexistent and ranks last by default.

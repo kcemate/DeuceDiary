@@ -1,0 +1,52 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Solid type system covering all game entities (ships, attacks, rewards, taunts)
+- Ship definitions with on-brand copy ("Small but sneaky," "Roughage included")
+- Taunt system with 10 options hitting the irreverent tone well
+- Level thresholds providing a 20-level progression ladder
+- Phase copy gives players phase-appropriate guidance
+
+**Gets wrong:**
+- Truncated mid-implementation — can't evaluate the actual UX, rendering, or interaction logic
+- No sound/feedback system visible
+- No toast/notification system for social moments
+- No visible reward animation or celebration logic
+- The `getShipCells` function is cut off, so core placement logic is incomplete
+
+---
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- Nothing — this is a blank submission
+
+**Gets wrong:**
+- Completely empty. No code, no types, no constants, no components. Fails every priority outright.
+
+---
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- All of Version 1's solid foundation (types, ships, taunts, progression thresholds, phase copy)
+- **Adds `ToastMessage` interface** — directly supports social/viral hooks by enabling in-match notifications that can be shared or screenshot-worthy
+- **Adds Web Audio API sound utility** — directly addresses Priority 4 (feedback and satisfaction) with procedural sound cues for hit/miss/sunk/place/taunt/victory, no backend required
+- Sound system is client-only (no backend dependency), respecting the "no unbuilt backend features" rule
+- The audio context pattern with lazy initialization is mobile-friendly and avoids autoplay policy issues
+- Shows awareness of the engagement loop: sounds for placement (satisfying setup), attacks (immediate feedback), taunts (social reinforcement), and victory (reward climax)
+
+**Gets wrong:**
+- Also truncated — can't see the full `playSound` implementation or the component rendering
+- Sound is synthesis-only (no sampled audio), which may feel less polished than actual sound effects
+- No visible improvement to the core loop friction (rematch flow, etc.) in what's shown
+
+---
+
+## Ranking
+
+**Version 3** is the strongest because it builds on Version 1's complete foundation and adds two engagement-critical systems (toasts for social virality, sounds for feedback immediacy) that directly map to Priorities 3 and 4, all without requiring backend changes. Version 1 is functional but lacks these engagement layers. Version 2 is nonexistent.
+
+RANKING: **3, 1, 2**

@@ -1,0 +1,36 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**What it gets right:** Nothing — the file is completely empty. There is no code to evaluate.
+
+**What it gets wrong:** It doesn't exist. Zero of the six priorities are addressed. There are no ship types, no grid mechanics, no real-time sync, no brand voice, no progression, no social hooks — nothing. This fails the most basic requirement of outputting a functional file.
+
+---
+
+### Version 2 (Revision B)
+**What it gets right:** Builds the entire file from scratch. Solid type system (CellState, GamePhase, PlacedShip, RewardBreakdown). Preserves all five canonical ship names with fun descriptions. Includes 8 taunts for social hooks. Has LEVEL_THRESHOLDS for progression. Utility functions (createEmptyGrid, getShipCells, isValidPlacement) are correct. Coins field in RewardBreakdown signals monetization readiness.
+
+**What it gets wrong:** **The file is truncated** — it cuts off mid-function (`getLevelFromXP(xp: number): number { f`). This violates the explicit rule "Output the COMPLETE file, never truncate." Without the render logic, event handlers, animations, sound cues, phase transitions, and the entire visual UX, we can't assess core loop clarity, feedback immediacy, or mobile UX. The 8 taunts are good but could be more irreverent. No phase-specific copy mapping for clarity.
+
+---
+
+### Version 3 (Synthesis AB)
+**What it gets right:** Everything V2 does, plus meaningful improvements:
+- **AttackResult interface** — properly typed attack feedback (Priority 4)
+- **10 taunts instead of 8** — "Uranus is next!" and "Sphinc-tacular!" are peak brand voice: irreverent, competitive, shareable (Priority 3)
+- **PHASE_COPY constant** — maps every GamePhase to a title + subtitle with on-brand copy ("Hold your breath…", "Fire at Will!"). This directly addresses core loop clarity (Priority 1) by giving players immediate context for what they should be doing
+- More complete type coverage overall
+
+**What it gets wrong:** Also truncated — cuts off mid-function. Same rule violation as V2. But the visible portion is substantively further along and better addresses the priorities.
+
+---
+
+## Ranking
+
+**3 (Synthesis AB)** is best — it has the strongest foundation addressing all six priorities visible in the code: phase-specific UX copy (loop clarity), XP/levels (progression), more taunts (social/viral), typed attack results (feedback), coins (monetization), and the most on-brand irreverent voice.
+
+**2 (Revision B)** is second — competent foundation but fewer engagement hooks, fewer taunts, no phase copy system, and less brand personality on display.
+
+**1 (Incumbent A)** is worst — it doesn't exist.
+
+RANKING: **3, 2, 1**

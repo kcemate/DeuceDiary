@@ -1,0 +1,62 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**Gets right:**
+- Punchy, on-brand copy: "Talk crap — literally" and "The throne awaits" nail the irreverent voice
+- Steps section gives a clear mental model for onboarding
+- Concise feature descriptions respect the reader's time
+- Clean nav with prominent CTA
+
+**Gets wrong:**
+- No FAQ section — this is a **major conversion gap**. A poop-tracking app faces obvious objections (Is this a joke? Can people see my logs? Is it free?). Leaving these unaddressed means drop-offs at the consideration stage.
+- Testimonials lack location detail, making them feel less real
+- Feature descriptions are thin — "Know thyself" is clever but vague
+- Aria labels like "fire" and "people" are not descriptive enough for screen readers
+- No privacy or cost reassurance anywhere on the page
+
+---
+
+### Version 2 (Revision B)
+
+**Gets right:**
+- **FAQ section is the single biggest conversion win** across all versions. It preemptively kills the top 5 objections: joke? privacy? medical? cost? security? Each answer is crafted with brand voice ("Your bathroom habits are your business — literally.")
+- "Free. Full stop." is the strongest conversion copy in any version
+- Testimonials with locations (Portland, Austin, Chicago) feel more credible
+- Feature descriptions are more informative and specific
+- Privacy FAQ directly addresses the #1 concern for this app category
+
+**Gets wrong:**
+- **Removed the Steps section entirely** — this hurts conversion because users lose the "how easy is this?" mental model. "Done in ten seconds" was a powerful friction-reducer.
+- Brand voice drifts slightly more serious/corporate in feature copy ("Create a crew of up to 10" is unnecessarily specific and dry)
+- Aria labels like "Streaks feature" are verbose without being more helpful
+- Longer feature descriptions dilute the punchy Strava/Duolingo energy
+
+---
+
+### Version 3 (Synthesis AB)
+
+**Gets right:**
+- **Retains Steps AND adds FAQ** — this is the optimal conversion structure. Steps reduce perceived effort; FAQ reduces perceived risk. Both friction points addressed.
+- Best copy synthesis: keeps V1's punch ("Talk crap — literally", "The throne awaits") while incorporating V2's specificity ("your squad gets notified", "time-of-day patterns")
+- Testimonials with locations from V2 (more credible)
+- Full FAQ from V2 with all five objection-killing answers
+- Feature descriptions hit the sweet spot between V1's brevity and V2's detail
+- Aria labels are concise but adequate
+
+**Gets wrong:**
+- Slightly longer page overall (minor — users who scroll to FAQ are already high-intent)
+- "Know what your gut's telling you" is a bit softer than V1's "Know thyself" but more informative
+- Nothing significant — this is clearly the best synthesis
+
+---
+
+## Ranking
+
+**RANKING: 3, 2, 1**
+
+**Version 3** wins because it combines the two most powerful conversion tools — Steps (effort reduction) and FAQ (objection elimination) — while maintaining the strongest brand voice. It's the only version that addresses both "is this easy?" and "is this safe/real?" in the same page.
+
+**Version 2** is second because the FAQ alone is such a conversion asset that it outweighs V1's advantages. For a category-defying app like this, objection handling is existential. Losing Steps hurts, but gaining FAQ matters more.
+
+**Version 1** is worst because it leaves too many objections unanswered. The copy is punchy, but punchy copy doesn't convert someone who's thinking "wait, can my friends see my poop logs?"

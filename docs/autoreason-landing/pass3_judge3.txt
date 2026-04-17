@@ -1,0 +1,43 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**Gets right:**
+- Realistic demo feed data with on-brand usernames ("FlushKing99", "TroneZone") and funny micro-copy
+- IntersectionObserver-based staggered reveal animation — adds polish without JS-heavy frameworks
+- Proper component structure with shadcn/ui imports, Clerk auth, and wouter routing
+- Aria labeling on the section for accessibility
+- Green primary color accent usage in the section header
+
+**Gets wrong:**
+- **Critically truncated** — the code cuts off mid-comment ("Fake phone fram") and we never see the hero, CTA, features, social proof, or footer sections
+- The IntersectionObserver cleanup function is returned *inside* the callback rather than from the effect, so it never actually runs — memory leak
+- No visible CTA/sign-up flow in the shown code — the entire conversion mechanism is missing
+- Can't evaluate mobile UX, full visual polish, or copy quality beyond the feed section
+
+### Version 2 (Revision B)
+**Gets right:**
+- Nothing — this is a completely empty submission
+
+**Gets wrong:**
+- No code whatsoever; zero conversion potential, zero brand voice, zero everything
+
+### Version 3 (Synthesis AB)
+**Gets right:**
+- Same demo feed data and animation logic as Version 1 (inherited)
+- Acknowledges Version 2 is empty and attempts to build on Version 1
+
+**Gets wrong:**
+- **Also truncated** at the exact same point as Version 1 — the "refinements" promised (tighter copy, improved accessibility, maximum conversion) are completely absent
+- The code is functionally identical to Version 1's shown portion with no meaningful differences
+- Makes claims about improvements it doesn't deliver
+- Same IntersectionObserver cleanup bug as Version 1
+
+---
+
+## Ranking
+
+**RANKING: 1, 3, 2**
+
+- **1st (Version 1):** At least presents original, substantive code with brand voice and animation polish, even though truncated
+- **2nd (Version 3):** Same truncated code as V1 but with unfulfilled promises of improvement — marginally worse for being misleading
+- **3rd (Version 2):** Empty — worst possible outcome for a landing page

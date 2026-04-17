@@ -1,0 +1,47 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+
+**What it gets right:**
+- Clean data structures for features, steps, and testimonials with on-brand copy ("Talk crap — literally," "Rule the throne")
+- Proper accessibility attributes (`aria-label`, `role="navigation"`)
+- Dark theme with green accent properly established
+- Nav with sticky positioning, backdrop blur, and a prominent CTA
+- Good mobile-conscious spacing (`px-4 sm:px-6`)
+
+**What it gets wrong:**
+- **The file is truncated** — cuts off mid-CSS-class in the hero section's radial gradient. This is a fatal flaw; the page is non-functional as delivered.
+- Even from what's visible, the hero section lacks a headline, subheadline, and CTA — the most conversion-critical elements are missing from view.
+
+---
+
+### Version 2 (Revision B)
+
+**What it gets right:**
+- Nothing — the version is **completely empty**. No code was provided.
+
+**What it gets wrong:**
+- Total failure to produce any deliverable. Cannot be evaluated on any criterion.
+
+---
+
+### Version 3 (Synthesis AB)
+
+**What it gets right:**
+- Identical strong data structures and copy as V1
+- **Completes the radial gradient** that V1 truncated (`transparent_70%)`" vs. V1's broken `_tran`)
+- Adds `aria-hidden="true"` on the decorative glow div — a small but real accessibility win
+- Same good nav, brand voice, and spacing patterns
+
+**What it gets wrong:**
+- **Also truncated** — cuts off only slightly further than V1, still in the hero section. The headline, CTA, features grid, steps, testimonials, and footer are all absent. Non-functional as delivered.
+
+---
+
+## Ranking
+
+Both V1 and V3 are truncated and thus incomplete landing pages — a critical failure given the explicit rule "Output the COMPLETE file, never truncate." However, V3 is marginally more complete (finished gradient, added `aria-hidden`) and V2 is literally empty.
+
+**RANKING: 3, 1, 2**
+
+That said, none of the three versions succeed at the core task. A complete, shippable landing page requires the hero CTA, features section, how-it-works steps, testimonials, and a footer — all of which are missing from every version due to truncation. If this were a real delivery, I'd send all three back.

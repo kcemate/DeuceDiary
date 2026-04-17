@@ -1,0 +1,71 @@
+**Conversion Friction**
+
+1. The CTA buttons trigger Clerk's `SignInButton`, but the copy reads "Sign up free" and "Start your streak." Sign-in and sign-up are different user mental models. A new visitor clicking "Sign up" who encounters a sign-in modal will experience a moment of confusion about whether they're in the right place.
+
+2. There are only two CTAs on the entire page (hero and final section), with a long scroll between them. After the features section and after the how-it-works section — both points where interest may peak — there is no way to act without continuing to scroll.
+
+3. The hero CTA ("Start your streak — it's free") and the final CTA ("Sign up free") use different copy for the same action. The final CTA is noticeably weaker and more generic than the hero version.
+
+4. There is no secondary CTA path for users not ready to commit — no demo video, no app preview, no "see how it works" link.
+
+**Visual Polish Gaps**
+
+5. The hero toilet emoji has `animate-bounce` with `animationIterationCount: "infinite"`. A permanently bouncing element in the most prominent position on the page is visually restless and cheapens perceived product quality.
+
+6. The social proof bar's `animate-ping` green dot continuously pulses, creating visual noise that competes with the primary CTA for attention at a critical moment in the scroll.
+
+7. The testimonials grid uses `sm:grid-cols-3`, meaning at the 640–768px range, three columns of small text (`text-sm`) in narrow cards will feel cramped and be hard to read.
+
+8. Every section uses nearly identical spacing (`pb-20 sm:pb-28`), identical card styling (rounded-2xl, border-white/10, bg-white/[0.02]), and the same heading style. The page has no rhythmic variation — it reads as a flat, monotonous wall.
+
+9. The hero headline on mobile is a single unbroken line: "The Strava of Poop Tracking." On narrow devices (~320–375px), this will wrap unpredictably and may break at an awkward point mid-word.
+
+**Copy That Doesn't Convert**
+
+10. "The Strava of Poop Tracking" assumes the visitor knows what Strava is. For anyone outside the fitness-tech bubble, the analogy is meaningless and the headline's impact is lost entirely.
+
+11. The hero subheadline "Streaks. Squads. Leaderboards." is a feature list, not a value proposition. It describes what the product has, not why the visitor should care.
+
+12. "Because your best ideas happen on the throne" appears twice (hero and footer). It's also a weak justification — the product is about tracking consistency and social accountability, not about having ideas on the toilet. The line doesn't connect to the actual value.
+
+13. The how-it-works section is redundant with the features section. "Log it" restates the core action already implied by streaks, "Stack streaks" is literally the streaks feature, and "Compete" is the leaderboards feature. Two sections are making the same three points.
+
+14. The testimonials read as obviously fabricated — the tone is too polished, the structure is identical across all three, and the quotes sound like ad copy, not user language ("My squad holds me accountable," "10/10 would log again"). This erodes trust rather than building it.
+
+15. "Don't take our word for it" is a stock cliché that signals unoriginality right before the section meant to build credibility.
+
+16. "Ready to get on the board?" is ambiguous — "the board" could mean a leaderboard, a bathroom, a surfboard. The visitor has to decode the reference.
+
+**Missing Best Practices**
+
+17. There are zero product screenshots or app UI previews anywhere. The visitor is asked to sign up without ever seeing what the app looks like or how it works visually.
+
+18. The "Join thousands" claim is unsubstantiated. If the number is real, a specific figure ("2,400+ throne thinkers") is more credible. If it's aspirational, it's a trust-eroding fabrication.
+
+19. There are no privacy or trust signals anywhere. For an app that tracks bodily functions, privacy is the single most obvious objection — and it goes completely unaddressed. No privacy mention, no "your data stays private" line, no link to a policy.
+
+20. The footer contains no links — no privacy policy, terms of service, contact, or social media. The absence of legal links for a health-adjacent tracking app is a trust gap.
+
+21. There is no FAQ or objection-handling section addressing the obvious questions: Is this a joke? Is my data shared with my squad? What exactly gets logged?
+
+22. No app store badges, press logos, or external validation of any kind.
+
+**Accessibility Issues**
+
+23. The `animate-bounce` and `animate-ping` animations have no `prefers-reduced-motion` handling. Users with vestibular disorders or motion sensitivity who have this OS setting enabled will still see continuous bouncing and pulsing.
+
+24. The feature card hover effects (`group-hover:scale-110`) also ignore `prefers-reduced-motion`.
+
+25. `text-neutral-500` on `#0a0a0a` for lines like "No credit card. Sign up in seconds." and "Join with Google, Apple, or email." is likely below the WCAG AA contrast ratio for small text.
+
+26. The emoji characters (🚽, 🔥, 👥, 🏆, 📊) have both the native emoji and `role="img" aria-label`. Screen readers may announce both the emoji's native description and the aria-label, resulting in double-reads (e.g., "fire fire" or "toilet toilet").
+
+27. The how-it-works section uses a semantic `<ol>` but the visual numbers are in `aria-hidden="true"` divs. Screen readers will announce list items without the numbers, creating a disconnect between what sighted users see and what assistive technology reports.
+
+28. There is no skip-navigation link. Keyboard users must tab through the entire nav on every page load before reaching content.
+
+**Structural Issues**
+
+29. The social proof bar is placed between the hero and features — a visitor who just arrived hasn't yet seen any value proposition, so the proof has nothing to reinforce. It would carry more weight after the features or testimonials.
+
+30. The page has six distinct sections before the footer. The how-it-works section adds scroll depth without adding information not already covered in features. This is dead scroll that increases abandonment risk.

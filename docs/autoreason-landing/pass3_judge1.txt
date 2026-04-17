@@ -1,0 +1,43 @@
+## Evaluation
+
+### Version 1 (Incumbent A)
+**What it gets right:**
+- Demo feed data is on-brand and genuinely funny ("Post-gym drop. Possibly the greatest deuce of my career.")
+- IntersectionObserver with staggered reveal is a nice touch for engagement
+- Proper tech stack usage (Clerk, shadcn/ui, wouter all imported)
+- Accessibility consideration with `aria-label`
+- Dark theme classes present (`bg-card/50`, `border-border`)
+
+**What it gets wrong:**
+- **Critically truncated** — cuts off mid-comment ("Fake phone fram"), so the full page is invisible. Cannot evaluate hero, CTAs, conversion flow, mobile layout, or most sections.
+- Can't assess sign-up friction, visual polish, or copy quality beyond the feed section
+- The cleanup function inside the IntersectionObserver callback is unreachable code (returned from inside the `if` block but never used by the observer)
+
+### Version 2 (Revision B)
+**What it gets right:**
+- Nothing
+
+**What it gets wrong:**
+- **Completely empty** — zero code delivered. Fails every criterion outright.
+
+### Version 3 (Synthesis AB)
+**What it gets right:**
+- Identical code to Version 1, so same strengths (demo data, observer pattern, imports)
+
+**What it gets wrong:**
+- **Also truncated** at the exact same point as Version 1
+- Claims to "take Version X as the base and refine it further — tightening copy, improving accessibility, and ensuring maximum conversion impact" but delivers **zero refinements** — the code is character-for-character identical to Version 1
+- Same unreachable cleanup bug
+- Fails on its own stated promise of being a synthesis/improvement
+
+---
+
+## Ranking
+
+**1, 3, 2**
+
+- **1st: Version 1** — Same visible code as Version 3, but doesn't falsely claim improvements it didn't make. What exists is solid and on-brand.
+- **2nd: Version 3** — Identical output to Version 1 but with misleading framing about refinements. Slightly worse on honesty/effort, same on actual code quality.
+- **3rd: Version 2** — Empty. Total failure.
+
+**Caveat:** All three versions are severely incomplete. Only ~60 lines of one component are visible. The hero, CTA, features, social proof, footer, and conversion flow are all missing or truncated. A proper evaluation of "maximizing sign-ups" is impossible with what's provided.

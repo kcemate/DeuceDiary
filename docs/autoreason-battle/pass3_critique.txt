@@ -1,0 +1,3 @@
+No code was provided between the dashes. There is nothing to review.
+
+If you paste the actual battle match screen implementation, I can identify specific problems across the categories you listed.
