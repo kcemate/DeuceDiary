@@ -24,6 +24,7 @@ import sys
 import time
 from pathlib import Path
 
+
 # ── Load env ──────────────────────────────────────────────────────────
 def load_dotenv(path):
     if not Path(path).exists():
@@ -35,9 +36,11 @@ def load_dotenv(path):
         key, _, val = line.partition("=")
         os.environ.setdefault(key.strip(), val.strip())
 
+
 load_dotenv(Path(__file__).parent / ".env")
 
 import litellm
+
 litellm.suppress_debug_info = True
 
 # ── Ollama direct API ────────────────────────────────────────────────
@@ -129,9 +132,18 @@ Rules:
 - Output the COMPLETE file, never truncate
 """
 
+
 # ── LLM wrapper ────────────────────────────────────────────────────────
-async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=min(MAX_TOKENS, 4000), max_retries=8):
+async def call_llm(
+    system,
+    user,
+    model=MODEL,
+    temperature=0.5,
+    max_tokens=min(MAX_TOKENS, 4000),
+    max_retries=8,
+):
     import aiohttp
+
     url = f"{OLLAMA_BASE}/api/chat"
     payload = {
         "model": OLLAMA_MODEL,
@@ -148,7 +160,9 @@ async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=min(MA
     for attempt in range(max_retries):
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=300)) as resp:
+                async with session.post(
+                    url, json=payload, timeout=aiohttp.ClientTimeout(total=300)
+                ) as resp:
                     if resp.status != 200:
                         text = await resp.text()
                         raise Exception(f"HTTP {resp.status}: {text[:200]}")
@@ -156,17 +170,27 @@ async def call_llm(system, user, model=MODEL, temperature=0.5, max_tokens=min(MA
                     return data.get("message", {}).get("content", "")
         except Exception as e:
             err = str(e).lower()
-            if "rate" in err or "429" in err or "overloaded" in err or "529" in err:
-                wait = min((2 ** attempt) * 5, 120)
-                print(f"      [Rate limited, retry {attempt+1}/{max_retries} in {wait}s]")
+            if (
+                "rate" in err
+                or "429" in err
+                or "overloaded" in err
+                or "529" in err
+            ):
+                wait = min((2**attempt) * 5, 120)
+                print(
+                    f"      [Rate limited, retry {attempt+1}/{max_retries} in {wait}s]"
+                )
                 await asyncio.sleep(wait)
             else:
                 if attempt < max_retries - 1:
                     wait = 10 * (attempt + 1)
-                    print(f"      [Error, retry {attempt+1}/{max_retries} in {wait}s: {str(e)[:100]}]")
+                    print(
+                        f"      [Error, retry {attempt+1}/{max_retries} in {wait}s: {str(e)[:100]}]"
+                    )
                     await asyncio.sleep(wait)
                 else:
                     raise
+
 
 # ── Generate initial A ─────────────────────────────────────────────────
 async def generate_a():
@@ -178,6 +202,7 @@ async def generate_a():
         f"If a section is already strong, keep it as-is. Output the COMPLETE file."
     )
     return await call_llm(AUTHOR_SYSTEM, prompt, temperature=AUTHOR_TEMP)
+
 
 # ── Critic ──────────────────────────────────────────────────────────────
 async def run_critic(version_a):
@@ -195,6 +220,7 @@ async def run_critic(version_a):
     )
     return await call_llm(CRITIC_SYSTEM, prompt, temperature=CRITIC_TEMP)
 
+
 # ── Author B (adversarial revision) ───────────────────────────────────
 async def run_author_b(version_a, critique):
     prompt = (
@@ -208,6 +234,7 @@ async def run_author_b(version_a, critique):
     )
     return await call_llm(AUTHOR_B_SYSTEM, prompt, temperature=AUTHOR_TEMP)
 
+
 # ── Synthesizer ────────────────────────────────────────────────────────
 async def run_synthesizer(version_a, version_b):
     prompt = (
@@ -219,6 +246,7 @@ async def run_synthesizer(version_a, version_b):
         f"Produce the COMPLETE file — never truncate."
     )
     return await call_llm(SYNTHESIZER_SYSTEM, prompt, temperature=AUTHOR_TEMP)
+
 
 # ── Judge Panel ────────────────────────────────────────────────────────
 async def run_single_judge(version_a, version_b, version_ab, judge_id):
@@ -238,7 +266,10 @@ async def run_single_judge(version_a, version_b, version_ab, judge_id):
         f"RANKING: [best], [second], [worst]\n\n"
         f"Where each slot is 1, 2, or 3."
     )
-    return await call_llm(JUDGE_SYSTEM, prompt, temperature=JUDGE_TEMP, max_tokens=2000)
+    return await call_llm(
+        JUDGE_SYSTEM, prompt, temperature=JUDGE_TEMP, max_tokens=2000
+    )
+
 
 def parse_ranking(text):
     """Parse judge ranking, return list of ranked version IDs."""
@@ -247,7 +278,9 @@ def parse_ranking(text):
         if line.upper().startswith("RANKING"):
             # Extract numbers after the colon
             after = line.split(":", 1)[-1] if ":" in line else line
-            nums = [int(c) for c in after if c.isdigit() and int(c) in (1, 2, 3)]
+            nums = [
+                int(c) for c in after if c.isdigit() and int(c) in (1, 2, 3)
+            ]
             if len(nums) >= 3:
                 return nums[:3]
     # Fallback: find last line with 3 distinct numbers
@@ -256,6 +289,7 @@ def parse_ranking(text):
         if len(set(nums)) >= 3:
             return list(dict.fromkeys(nums))[:3]  # unique, ordered
     return [1, 2, 3]  # fallback
+
 
 def borda_count(rankings):
     """Borda count: 1st=2pts, 2nd=1pt, 3rd=0pts. Returns {version: total_points}."""
@@ -266,11 +300,13 @@ def borda_count(rankings):
         # 3rd gets 0
     return scores
 
+
 # ── Save version ────────────────────────────────────────────────────────
 def save_version(version_name, content, pass_num):
     path = RESULTS_DIR / f"pass{pass_num}_{version_name}.tsx"
     path.write_text(content)
     return path
+
 
 # ── Main loop ───────────────────────────────────────────────────────────
 async def main():
@@ -390,9 +426,12 @@ async def main():
     print("\n  Pass history:")
     for h in history:
         marker = " 🏁" if h["converged"] else ""
-        print(f"    Pass {h['pass']}: Winner={h['winner']} Scores={h['scores']} {marker}")
+        print(
+            f"    Pass {h['pass']}: Winner={h['winner']} Scores={h['scores']} {marker}"
+        )
 
     print(f"\n  Results saved to {RESULTS_DIR}/")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
