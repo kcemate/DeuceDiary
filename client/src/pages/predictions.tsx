@@ -290,7 +290,7 @@ function LeaderboardView({ groupId, currentUserId }: LeaderboardViewProps) {
               <span className="text-muted-foreground text-sm w-6 text-right">#{entry.rank}</span>
               <Avatar className="h-8 w-8">
                 {entry.profileImageUrl && <AvatarImage src={entry.profileImageUrl} />}
-                <AvatarFallback className="text-xs">{getInitials(entry.displayName)}</AvatarFallback>
+                <AvatarFallback className="text-xs">{getInitials({ username: entry.displayName })}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{entry.displayName}</div>
@@ -347,7 +347,7 @@ function SpyMode({ groupId, questions, members }: SpyModeProps) {
             <div className="text-muted-foreground font-medium">Q{i + 1}: {q.slice(0, 40)}…</div>
             {picks.map((p) => {
               const name =
-                p.username ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || "Member";
+                p.username ?? (`${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || "Member");
               const memberName = members.find((m) => m.userId === p.answer)?.displayName;
               return (
                 <div key={`${p.userId}-${i}`} className="flex justify-between">

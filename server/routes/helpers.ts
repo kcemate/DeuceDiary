@@ -20,7 +20,7 @@ export function parseOrFail<T>(schema: ZodSchema<T>, body: unknown, res: Respons
 export function asyncRoute<T extends Request = Request>(
   label: string,
   failMsg: string,
-  handler: (req: T, res: Response) => Promise<void>,
+  handler: (req: T, res: Response) => Promise<unknown>,
 ) {
   return async (req: Request, res: Response) => {
     try {
@@ -188,7 +188,7 @@ type PremiumCheckUser = {
   subscriptionExpiresAt?: string | Date | null;
 } | null | undefined;
 export function isPremiumUser(user: PremiumCheckUser): boolean {
-  return (
+  return !!(
     user?.subscription === "premium" &&
     user.subscriptionExpiresAt &&
     new Date(user.subscriptionExpiresAt) > new Date()

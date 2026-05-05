@@ -1,4 +1,3 @@
-```tsx
 import { SignInButton } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 
@@ -359,4 +358,3 @@ export default function Landing() {
     </div>
   );
 }
-```

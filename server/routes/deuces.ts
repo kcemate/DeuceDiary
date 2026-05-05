@@ -127,8 +127,9 @@ async function postDeuceSideEffects(opts: {
   }
 
   // Passport stamp (fire-and-forget)
-  triggerPassportStamp(latitude, longitude, (geo, lat, lon) =>
-    storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon));
+  triggerPassportStamp(latitude, longitude, async (geo, lat, lon) => {
+    await storage.upsertPassportStamp(userId, geo.city, geo.country, geo.region, geo.countryCode, lat, lon);
+  });
 
   // Battle tokens
   const entryId = entries[0]?.id ?? '';

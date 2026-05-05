@@ -136,7 +136,7 @@ function generateSquares(): BingoSquare[] {
 type BingoRouteHandler = (
   userId: string, month: string,
   req: Request & { user: { id: string } }, res: Response,
-) => Promise<void>;
+) => Promise<unknown>;
 
 function bingoHandler(label: string, handler: BingoRouteHandler) {
   return async (req: Request & { user: { id: string } }, res: Response) => {

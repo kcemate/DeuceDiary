@@ -58,7 +58,7 @@ async function ensureSppBalance(userId: string, groupId: string): Promise<number
     .where(and(eq(squadPoopPoints.userId, userId), eq(squadPoopPoints.groupId, groupId)))
     .limit(1);
 
-  if (existing.length > 0) return existing[0].balance;
+  if (existing.length > 0) return existing[0].balance ?? 50;
 
   const inserted = await db
     .insert(squadPoopPoints)
@@ -66,7 +66,7 @@ async function ensureSppBalance(userId: string, groupId: string): Promise<number
     .onConflictDoNothing()
     .returning();
 
-  if (inserted.length > 0) return inserted[0].balance;
+  if (inserted.length > 0) return inserted[0].balance ?? 50;
 
   // Race condition: row was created concurrently
   const refetch = await db
@@ -213,11 +213,18 @@ async function computeWeeklyAnswers(
 
 /** Score each prediction, update result/payout, and credit SPP balances. */
 async function scorePredictions(
-  allPredictions: Array<{ id: string; userId: string; questionIndex: number; answer: string; wager: number }>,
+  allPredictions: Array<{
+    id: string;
+    userId: string | null;
+    questionIndex: number | null;
+    answer: string | null;
+    wager: number | null;
+  }>,
   correctAnswers: (string | null)[],
   groupId: string,
 ): Promise<void> {
   for (const pred of allPredictions) {
+    if (!pred.userId || pred.questionIndex === null || pred.answer === null || pred.wager === null) continue;
     const correctAnswer = correctAnswers[pred.questionIndex];
     if (correctAnswer === null) {
       // Unresolvable (Q3) — refund wager

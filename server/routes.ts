@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         wss.emit('connection', ws, req);
       });
     } catch (error) {
-      logger.error('WebSocket auth error:', error);
+      logger.error({ err: error }, 'WebSocket auth error');
       socket.destroy();
     }
   });
@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           authWs.subscribedGroups.delete(groupId);
         }
       } catch (error) {
-        logger.error('Error parsing WebSocket message:', error);
+        logger.error({ err: error }, 'Error parsing WebSocket message');
       }
     });
 
@@ -235,11 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  function broadcastToGroup(groupId: string, message: Record<string, unknown>) {
+  function broadcastToGroup(groupId: string, message: unknown) {
     const connections = groupConnections.get(groupId);
     const onlineUserIds = new Set<string>();
     if (connections) {
-      const stamped = { msgId: uuidv4(), ...message };
+      const stamped = { msgId: uuidv4(), ...(message as Record<string, unknown>) };
       const payload = JSON.stringify(stamped);
       connections.forEach((ws) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -250,17 +250,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Send push notification to offline group members
-    if (message.type === 'deuce_logged' && message.userId) {
+    const msg = message as Record<string, unknown>;
+    if (msg.type === 'deuce_logged' && msg.userId) {
       (async () => {
         try {
           const members = await storage.getGroupMembers(groupId);
           const offlineUserIds = members
-            .filter(m => m.userId !== message.userId && !onlineUserIds.has(m.userId))
+            .filter(m => m.userId !== msg.userId && !onlineUserIds.has(m.userId))
             .map(m => m.userId);
           if (offlineUserIds.length > 0) {
             await sendPushToGroup(offlineUserIds, {
               title: 'Deuce Diary',
-              body: (message.message as string) || 'Someone logged a deuce!',
+              body: (msg.message as string) || 'Someone logged a deuce!',
               icon: '/icon-192.png',
               url: '/',
               tag: `deuce-${groupId}`,
@@ -281,7 +282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.cleanupExpiredInvites();
     } catch (error) {
-      logger.error('Error cleaning up expired invites:', error);
+      logger.error({ err: error }, 'Error cleaning up expired invites');
     }
   }, 60 * 60 * 1000);
 

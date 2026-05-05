@@ -12,10 +12,10 @@ import { getInitials } from "@/lib/userUtils";
 interface ProfilePictureUploadProps {
   user: {
     id: string;
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-    profileImageUrl?: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    username?: string | null;
+    profileImageUrl?: string | null;
   };
   size?: "sm" | "md" | "lg";
   showUploadButton?: boolean;

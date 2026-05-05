@@ -56,7 +56,7 @@ export async function apiRequest<T = unknown>(
   );
 
   // Don't set Content-Type for FormData — browser sets it with the multipart boundary
-  const contentTypeHeader = options?.body instanceof FormData
+  const contentTypeHeader: Record<string, string> = options?.body instanceof FormData
     ? {}
     : { "Content-Type": "application/json" };
 

@@ -47,6 +47,7 @@ type ClerkEvent = { type: string; data: ClerkEventData };
 
 async function handleUserUpsert(data: ClerkEventData, eventType: string): Promise<void> {
   const { id, email_addresses, first_name, last_name, image_url, username } = data;
+  if (!id) return;
   await storage.upsertUser({
     id,
     email: email_addresses?.[0]?.email_address ?? null,
@@ -157,10 +158,11 @@ export function registerClerkWebhook(app: Express): void {
           "svix-id": svixId,
           "svix-timestamp": svixTimestamp,
           "svix-signature": svixSignature,
-        });
+        }) as ClerkEvent;
       } catch (err) {
         logger.error({ err }, "Clerk webhook verification failed");
-        return res.status(400).json({ message: "Invalid webhook signature" });
+        res.status(400).json({ message: "Invalid webhook signature" });
+        return;
       }
 
       // Respond 200 immediately, then process

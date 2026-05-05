@@ -268,11 +268,11 @@ export function createAdminRouter(): Router {
       const r5 = await db.delete(battleMatches);
       res.json({
         deleted: {
-          battlePowerups: r1?.rowsAffected ?? r1?.count ?? 0,
-          battleTokens: r2?.rowsAffected ?? r2?.count ?? 0,
-          battleAttacks: r3?.rowsAffected ?? r3?.count ?? 0,
-          battleShips: r4?.rowsAffected ?? r4?.count ?? 0,
-          battleMatches: r5?.rowsAffected ?? r5?.count ?? 0,
+          battlePowerups: (r1 as any)?.rowsAffected ?? (r1 as any)?.count ?? 0,
+          battleTokens: (r2 as any)?.rowsAffected ?? (r2 as any)?.count ?? 0,
+          battleAttacks: (r3 as any)?.rowsAffected ?? (r3 as any)?.count ?? 0,
+          battleShips: (r4 as any)?.rowsAffected ?? (r4 as any)?.count ?? 0,
+          battleMatches: (r5 as any)?.rowsAffected ?? (r5 as any)?.count ?? 0,
         },
       });
     } catch (error: any) {

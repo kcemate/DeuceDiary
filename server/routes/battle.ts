@@ -6,7 +6,7 @@ import { isAuthenticated } from "../replitAuth";
 import { asyncRoute as helperAsyncRoute, parseOrFail } from "./helpers";
 import { STANDARD_GRID, QUICK_GRID, SHIPS } from "@shared/schema";
 
-const asyncRoute = (failMsg: string, handler: (req: AuthReq, res: Response) => Promise<void>) =>
+const asyncRoute = (failMsg: string, handler: (req: AuthReq, res: Response) => Promise<unknown>) =>
   helperAsyncRoute<AuthReq>(failMsg, failMsg, handler);
 
 type AuthReq = Request & { user: { id: string } };
@@ -132,7 +132,7 @@ function getWeekBounds(matchType: "standard" | "quick"): { weekStart: Date; week
   return { weekStart, weekEnd };
 }
 
-type ShipRecord = { id: string; shipType: string; isSunk: boolean; cells: unknown };
+type ShipRecord = { id: number; shipType: string; isSunk: boolean; cells: unknown };
 type AttackRecord = { col: number; row: number };
 
 /** Find which unsunk ship (if any) occupies cell (col, row). */
@@ -228,7 +228,7 @@ export function createBattleRouter(): Router {
       return res.status(409).json({ message: `Opponent already has an active ${matchType} match` });
     }
 
-    const { weekStart, weekEnd } = getWeekBounds(matchType);
+    const { weekStart, weekEnd } = getWeekBounds(matchType as "standard" | "quick");
     const placementDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const match = await storage.createBattleMatch({
@@ -378,7 +378,7 @@ export function createBattleRouter(): Router {
     const opponentId = match.challengerId === userId ? match.opponentId : match.challengerId;
     const opponentShips = await storage.getShips(matchId, opponentId);
 
-    const { isHit, hitShip } = findHitShip(opponentShips, col, row);
+    const { isHit, hitShip } = findHitShip(opponentShips as ShipRecord[], col, row);
     const attack = await storage.createAttack(matchId, userId, col, row, isHit);
 
     const { sunk, gameOver, winner } = await resolveAttackOutcome(
@@ -498,7 +498,7 @@ export function createBattleRouter(): Router {
     }
 
     const opponent = eligible[Math.floor(Math.random() * eligible.length)];
-    const { weekStart, weekEnd } = getWeekBounds(matchType);
+    const { weekStart, weekEnd } = getWeekBounds(matchType as "standard" | "quick");
     const placementDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const match = await storage.createBattleMatch({
