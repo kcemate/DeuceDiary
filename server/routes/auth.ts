@@ -224,7 +224,6 @@ export function createAuthRouter(uploadsDir: string): Router {
         groups: groups.map((g) => ({
           name: g.name,
           memberCount: g.memberCount,
-          joinedAt: g.joinedAt,
         })),
         badges: badges.map((b) => ({
           name: b.name,

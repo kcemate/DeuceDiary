@@ -8,7 +8,7 @@ import { isPremiumUser, asyncRoute as helperAsyncRoute, parseOrFail } from "./he
 import { CHALLENGE_TEMPLATES, getTemplateByKey } from "../challengeTemplates";
 import { z } from "zod";
 
-const asyncRoute = (failMsg: string, handler: (req: AuthReq, res: Response) => Promise<void>) =>
+const asyncRoute = (failMsg: string, handler: (req: AuthReq, res: Response) => Promise<unknown>) =>
   helperAsyncRoute<AuthReq>(failMsg, failMsg, handler);
 
 const setChallengeSchema = z.object({

@@ -50,7 +50,7 @@ async function checkSquadLimit(req: Request, res: Response): Promise<boolean> {
   return false;
 }
 
-const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Promise<void>) =>
+const asyncRoute = (errMsg: string, handler: (req: Request, res: Response) => Promise<unknown>) =>
   helperAsyncRoute(errMsg, errMsg, handler);
 
 /** Build the full HTML page for OG invite link previews. */

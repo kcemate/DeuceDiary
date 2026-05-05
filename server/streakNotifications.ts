@@ -63,7 +63,7 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
       body: `${group.name} \u2014 ${group.currentStreak}-day streak. ${firstMissing} hasn't logged yet.`,
     };
 
-    logger.info(`[STREAK NOTIFICATION]`, payload);
+    logger.info(payload, "[STREAK NOTIFICATION]");
 
     // Send push notification to all group members
     try {
@@ -75,7 +75,7 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
       );
       logger.info(`[STREAK PUSH] Group ${group.name}: sent=${result.sent}, failed=${result.failed}`);
     } catch (pushErr) {
-      logger.error(`[STREAK PUSH] Failed for group ${group.name}:`, pushErr);
+      logger.error({ err: pushErr, groupName: group.name }, "[STREAK PUSH] Failed");
     }
 
     // Persist alert to DB
@@ -95,6 +95,6 @@ export async function checkAllGroupStreaksAndNotify(): Promise<StreakCheckSummar
     notificationsSent,
   };
 
-  logger.info(`[STREAK CHECK COMPLETE]`, summary);
+  logger.info(summary, "[STREAK CHECK COMPLETE]");
   return summary;
 }

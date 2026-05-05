@@ -25,9 +25,12 @@ declare global {
         first_name?: string | null;
         last_name?: string | null;
         image_url?: string | null;
-      };
+        plan?: string;
+        o?: { per?: string };
+        fea?: string[];
+      } & Record<string, unknown>;
       /** Group ID — set by requireGroupMember middleware */
-      groupId?: string;
+      groupId: string;
     }
   }
 }

@@ -1,16 +1,12 @@
 import type { RequestHandler, Request } from "express";
 
-type PremiumReq = Request & {
-  clerkAuth?: Record<string, unknown>;
-  user?: { subscription?: string | null; subscriptionExpiresAt?: Date | string | null };
-};
+type PremiumReq = Request;
 
 /**
- * Check if a Clerk JWT payload indicates an active premium plan.
- * Clerk Billing embeds plan info in the session token claims.
+ * Check if Clerk JWT claims indicate an active premium plan.
  * Falls back gracefully if claims are absent (dev mode / pre-Billing).
  */
-function hasClerkPlan(clerkAuth: Record<string, unknown> | null | undefined): boolean {
+function hasClerkPlan(clerkAuth: Express.Request['clerkAuth']): boolean {
   if (!clerkAuth) return false;
   // Clerk Billing: user-level subscription stored as `plan` top-level claim
   if (clerkAuth.plan === "premium") return true;
@@ -26,7 +22,7 @@ function hasClerkPlan(clerkAuth: Record<string, unknown> | null | undefined): bo
  */
 type DbPremiumUser = { subscription?: string | null; subscriptionExpiresAt?: Date | string | null } | null | undefined;
 function hasDbPremium(user: DbPremiumUser): boolean {
-  return (
+  return !!(
     user?.subscription === "premium" &&
     user.subscriptionExpiresAt &&
     new Date(user.subscriptionExpiresAt) > new Date()

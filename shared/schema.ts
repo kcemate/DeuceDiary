@@ -405,6 +405,35 @@ export const battleBadges = pgTable(
 );
 
 // Battle grid constants
+export const predictionCards = pgTable("prediction_cards", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  groupId: text("group_id").references(() => groups.id),
+  weekStart: timestamp("week_start"),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const predictions = pgTable("predictions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").references(() => users.id),
+  cardId: text("card_id").references(() => predictionCards.id),
+  questionIndex: integer("question_index"),
+  answer: text("answer"),
+  wager: integer("wager"),
+  result: text("result"),
+  payout: integer("payout"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const squadPoopPoints = pgTable("squad_poop_points", {
+  userId: text("user_id").references(() => users.id),
+  groupId: text("group_id").references(() => groups.id),
+  balance: integer("balance").default(50),
+  lifetimeEarned: integer("lifetime_earned").default(0),
+  lifetimeWagered: integer("lifetime_wagered").default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const STANDARD_GRID = { cols: 7, rows: 3 };
 export const QUICK_GRID = { cols: 3, rows: 3 };
 
@@ -599,6 +628,20 @@ export const battlePowerupsRelations = relations(battlePowerups, ({ one }) => ({
 export const battleBadgesRelations = relations(battleBadges, ({ one }) => ({
   user: one(users, { fields: [battleBadges.userId], references: [users.id] }),
   match: one(battleMatches, { fields: [battleBadges.matchId], references: [battleMatches.id] }),
+}));
+
+export const predictionCardsRelations = relations(predictionCards, ({ one }) => ({
+  group: one(groups, { fields: [predictionCards.groupId], references: [groups.id] }),
+}));
+
+export const predictionsRelations = relations(predictions, ({ one }) => ({
+  user: one(users, { fields: [predictions.userId], references: [users.id] }),
+  card: one(predictionCards, { fields: [predictions.cardId], references: [predictionCards.id] }),
+}));
+
+export const squadPoopPointsRelations = relations(squadPoopPoints, ({ one }) => ({
+  user: one(users, { fields: [squadPoopPoints.userId], references: [users.id] }),
+  group: one(groups, { fields: [squadPoopPoints.groupId], references: [groups.id] }),
 }));
 
 // Schema types

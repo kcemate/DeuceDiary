@@ -10,7 +10,7 @@ import {
 } from "./helpers";
 import { getTodayChallenge, todayChallengeDate } from "../challenges";
 
-const wrap = (logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<void>) =>
+const wrap = (logMsg: string, resMsg: string, fn: (req: AuthReq, res: Response) => Promise<unknown>) =>
   asyncRoute<AuthReq>(logMsg, resMsg, fn);
 
 export function createPremiumRouter(): Router {
