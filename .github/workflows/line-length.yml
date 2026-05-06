@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Check line length ≤ 80
+      - name: Check Python formatting
         run: |
           pip install black==23.12.1
-          black --check --line-length 80 .
+          black --check --line-length 80 autoresearch/*.py

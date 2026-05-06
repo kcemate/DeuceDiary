@@ -19,7 +19,7 @@ export function usePushNotifications({ getToken }: PushNotificationsOptions = {}
     if (!isSupported) return;
     navigator.serviceWorker
       .register('/sw.js')
-      .then((reg) => console.log('[Push] SW registered:', reg.scope))
+      .then(() => undefined)
       .catch((err) => console.warn('[Push] SW registration failed:', err));
   }, [isSupported]);
 
@@ -107,12 +107,13 @@ async function authHeaders(
     for (let attempt = 0; attempt < 3; attempt++) {
       token = await getToken();
       if (token) break;
-      console.warn(`[Push] getToken returned null (attempt ${attempt + 1}/3), retrying in 500ms...`);
-      await new Promise(r => setTimeout(r, 500));
+      console.warn(
+        `[Push] getToken returned null (attempt ${attempt + 1}/3), retrying in 500ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('[Push] Got Clerk token, length:', token.length);
     } else {
       console.error('[Push] getToken returned null after 3 attempts — push will likely 401');
     }
