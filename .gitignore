@@ -7,3 +7,6 @@ uploads/
 .DS_Store
 content/
 .gitnexus/
+
+.ratchet/
+.ratchet-state.json
